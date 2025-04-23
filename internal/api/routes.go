@@ -10,6 +10,7 @@ import (
 	"NodeTurtleAPI/internal/api/handlers"
 	customMiddleware "NodeTurtleAPI/internal/api/middleware"
 	"NodeTurtleAPI/internal/config"
+	"NodeTurtleAPI/internal/models"
 	"NodeTurtleAPI/internal/services/auth"
 	"NodeTurtleAPI/internal/services/mail"
 	"NodeTurtleAPI/internal/services/users"
@@ -96,7 +97,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 
 	// Role-specific routes
 	admin := api.Group("/admin")
-	admin.Use(customMiddleware.RequireRole(auth.RoleAdmin))
+	admin.Use(customMiddleware.RequireRole(models.RoleAdmin))
 	admin.GET("/users", userHandler.ListUsers)
 	admin.GET("/users/:id", userHandler.GetUser)
 	admin.PUT("/users/:id", userHandler.UpdateUser)

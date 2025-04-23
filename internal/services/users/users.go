@@ -4,24 +4,23 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"time"
 
 	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
 	"NodeTurtleAPI/internal/services/mail"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Common errors
-var (
-	ErrUserExists         = errors.New("user already exists")
-	ErrUserNotFound       = errors.New("user not found")
-	ErrInvalidToken       = errors.New("invalid or expired token")
-	ErrInvalidCredentials = errors.New("invalid credentials")
-)
+type IUserService interface {
+	CreateUser(reg models.UserRegistration) (*models.User, error)
+	ActivateUser(token string) error
+	ResetPassword(token, newPassword string) error
+	RequestPasswordReset(email string) error
+}
 
 // Service provides user management functionality
 type Service struct {
@@ -46,7 +45,7 @@ func (s *Service) CreateUser(reg models.UserRegistration) (*models.User, error) 
 		return nil, err
 	}
 	if exists {
-		return nil, ErrUserExists
+		return nil, services.ErrUserExists
 	}
 
 	// Start transaction
@@ -132,7 +131,7 @@ func (s *Service) ActivateUser(token string) error {
 	err = tx.QueryRow(query, token).Scan(&userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return ErrInvalidToken
+			return services.ErrInvalidToken
 		}
 		return err
 	}
@@ -158,14 +157,14 @@ func (s *Service) ResetPassword(token, newPassword string) error {
 	err = tx.QueryRow(query, token).Scan(&userID, &resetTime)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return ErrInvalidToken
+			return services.ErrInvalidToken
 		}
 		return err
 	}
 
 	// Check if token is expired (24 hours)
 	if time.Since(resetTime) > 24*time.Hour {
-		return ErrInvalidToken
+		return services.ErrInvalidToken
 	}
 
 	// Hash new password
@@ -192,7 +191,7 @@ func (s *Service) ChangePassword(userID int, oldPassword, newPassword string) er
 	err := s.db.QueryRow("SELECT password FROM users WHERE id = $1", userID).Scan(&hashedPassword)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return ErrUserNotFound
+			return services.ErrUserNotFound
 		}
 		return err
 	}
@@ -200,7 +199,7 @@ func (s *Service) ChangePassword(userID int, oldPassword, newPassword string) er
 	// Verify old password
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(oldPassword))
 	if err != nil {
-		return ErrInvalidCredentials
+		return services.ErrInvalidCredentials
 	}
 
 	// Hash new password
@@ -241,7 +240,7 @@ func (s *Service) GetUserByID(userID int) (*models.User, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, ErrUserNotFound
+			return nil, services.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -366,7 +365,7 @@ func (s *Service) UpdateUser(userID int, updates map[string]interface{}) error {
 		return err
 	}
 	if !exists {
-		return ErrUserNotFound
+		return services.ErrUserNotFound
 	}
 
 	// Build query and args
@@ -420,7 +419,7 @@ func (s *Service) DeleteUser(userID int) error {
 	}
 
 	if rowsAffected == 0 {
-		return ErrUserNotFound
+		return services.ErrUserNotFound
 	}
 
 	return nil

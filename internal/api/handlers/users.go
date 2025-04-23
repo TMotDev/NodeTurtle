@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
 	"NodeTurtleAPI/internal/services/users"
 
@@ -45,7 +46,7 @@ func (h *UserHandler) GetCurrentUser(c echo.Context) error {
 
 	fullUser, err := h.userService.GetUserByID(user.ID)
 	if err != nil {
-		if err == users.ErrUserNotFound {
+		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
@@ -132,7 +133,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 	}
 
 	if err := h.userService.ChangePassword(user.ID, passwordData.OldPassword, passwordData.NewPassword); err != nil {
-		if err == auth.ErrInvalidCredentials {
+		if err == services.ErrInvalidCredentials {
 			return echo.NewHTTPError(http.StatusBadRequest, "Current password is incorrect")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to change password")
@@ -210,7 +211,7 @@ func (h *UserHandler) GetUser(c echo.Context) error {
 
 	user, err := h.userService.GetUserByID(id)
 	if err != nil {
-		if err == users.ErrUserNotFound {
+		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
@@ -272,7 +273,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	}
 
 	if err := h.userService.UpdateUser(id, updates); err != nil {
-		if err == users.ErrUserNotFound {
+		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
@@ -306,7 +307,7 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 	}
 
 	if err := h.userService.DeleteUser(id); err != nil {
-		if err == users.ErrUserNotFound {
+		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete user")

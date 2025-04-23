@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
 	"NodeTurtleAPI/internal/services/users"
 
@@ -12,11 +13,11 @@ import (
 
 // AuthHandler handles authentication-related requests
 type AuthHandler struct {
-	authService *auth.Service
-	userService *users.Service
+	authService auth.IAuthService
+	userService users.IUserService
 }
 
-func NewAuthHandler(authService *auth.Service, userService *users.Service) *AuthHandler {
+func NewAuthHandler(authService auth.IAuthService, userService users.IUserService) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 		userService: userService,
@@ -47,7 +48,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	user, err := h.userService.CreateUser(registration)
 	if err != nil {
-		if err == users.ErrUserExists {
+		if err == services.ErrUserExists {
 			return echo.NewHTTPError(http.StatusConflict, "User with this email already exists")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create user")
@@ -88,10 +89,10 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	token, user, err := h.authService.Login(login.Email, login.Password)
 	if err != nil {
-		if err == auth.ErrInvalidCredentials {
+		if err == services.ErrInvalidCredentials {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 		}
-		if err == auth.ErrInactiveAccount {
+		if err == services.ErrInactiveAccount {
 			return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to login")
@@ -126,7 +127,7 @@ func (h *AuthHandler) ActivateAccount(c echo.Context) error {
 	}
 
 	if err := h.userService.ActivateUser(token); err != nil {
-		if err == users.ErrInvalidToken {
+		if err == services.ErrInvalidToken {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired activation token")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to activate account")
@@ -198,7 +199,7 @@ func (h *AuthHandler) ResetPassword(c echo.Context) error {
 	}
 
 	if err := h.userService.ResetPassword(token, passwordData.Password); err != nil {
-		if err == users.ErrInvalidToken {
+		if err == services.ErrInvalidToken {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired reset token")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to reset password")

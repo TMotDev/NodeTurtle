@@ -2,30 +2,15 @@ package auth
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
 	"NodeTurtleAPI/internal/config"
 	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/services"
 
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
-)
-
-// Common errors
-var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrInactiveAccount    = errors.New("account is not activated")
-	ErrInvalidToken       = errors.New("invalid or expired token")
-)
-
-// Role constants
-const (
-	RoleUser      = "user"
-	RolePremium   = "premium"
-	RoleModerator = "moderator"
-	RoleAdmin     = "admin"
 )
 
 // Claims represents JWT claims
@@ -34,6 +19,12 @@ type Claims struct {
 	Email  string `json:"email"`
 	Role   string `json:"role"`
 	jwt.StandardClaims
+}
+
+type IAuthService interface {
+	Login(email, password string) (string, *models.User, error)
+	CreateToken(user models.User) (string, error)
+	VerifyToken(tokenString string) (*Claims, error)
 }
 
 // Service provides authentication functionality
@@ -73,7 +64,7 @@ func (s *Service) Login(email, password string) (string, *models.User, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", nil, ErrInvalidCredentials
+			return "", nil, services.ErrInvalidCredentials
 		}
 		return "", nil, err
 	}
@@ -81,12 +72,12 @@ func (s *Service) Login(email, password string) (string, *models.User, error) {
 	// Verify password
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
-		return "", nil, ErrInvalidCredentials
+		return "", nil, services.ErrInvalidCredentials
 	}
 
 	// Check if account is activated
 	if !user.Active {
-		return "", nil, ErrInactiveAccount
+		return "", nil, services.ErrInactiveAccount
 	}
 
 	// Update last login time
@@ -98,7 +89,7 @@ func (s *Service) Login(email, password string) (string, *models.User, error) {
 
 	// Create token
 	user.Role = role
-	token, err := s.createToken(user)
+	token, err := s.CreateToken(user)
 	if err != nil {
 		return "", nil, err
 	}
@@ -119,14 +110,14 @@ func (s *Service) VerifyToken(tokenString string) (*Claims, error) {
 	}
 
 	if !token.Valid {
-		return nil, ErrInvalidToken
+		return nil, services.ErrInvalidToken
 	}
 
 	return claims, nil
 }
 
-// createToken creates a new JWT token
-func (s *Service) createToken(user models.User) (string, error) {
+// CreateToken creates a new JWT token
+func (s *Service) CreateToken(user models.User) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(s.jwtExp) * time.Hour)
 
 	claims := &Claims{
