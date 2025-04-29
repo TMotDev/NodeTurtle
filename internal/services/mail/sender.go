@@ -11,44 +11,41 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-// Service provides email functionality
-type Service struct {
+type IMailService interface {
+	SendEmail(to, subject, templateName string, data map[string]interface{}) error
+}
+
+type MailService struct {
 	config    config.MailConfig
 	templates map[string]*template.Template
 	dialer    *gomail.Dialer
 }
 
-// NewService creates a new mail service
-func NewService(cfg config.MailConfig) *Service {
-	// Initialize email templates
+func NewMailService(cfg config.MailConfig) MailService {
 	templates := make(map[string]*template.Template)
 	templateDir := "internal/services/mail/templates"
 
-	// Load templates
-	templateFiles := []string{"activation", "reset", "welcome"}
+	templateFiles := []string{"activation", "reset"}
 	for _, name := range templateFiles {
 		templatePath := filepath.Join(templateDir, name+".html")
 		tmpl, err := template.ParseFiles(templatePath)
 		if err != nil {
-			// Log error and continue
 			fmt.Printf("Failed to load email template %s: %v\n", name, err)
 			continue
 		}
 		templates[name] = tmpl
 	}
 
-	// Setup mailer
 	dialer := gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
 
-	return &Service{
+	return MailService{
 		config:    cfg,
 		templates: templates,
 		dialer:    dialer,
 	}
 }
 
-// SendEmail sends an email using a template
-func (s *Service) SendEmail(to, subject, templateName string, data map[string]interface{}) error {
+func (s *MailService) SendEmail(to, subject, templateName string, data map[string]interface{}) error {
 	tmpl, ok := s.templates[templateName]
 	if !ok {
 		return fmt.Errorf("template %s not found", templateName)

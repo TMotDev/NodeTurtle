@@ -1,43 +1,39 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
-	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
+	"NodeTurtleAPI/internal/services/mail"
+	"NodeTurtleAPI/internal/services/tokens"
 	"NodeTurtleAPI/internal/services/users"
 
 	"github.com/labstack/echo/v4"
 )
 
-// AuthHandler handles authentication-related requests
 type AuthHandler struct {
-	authService auth.IAuthService
-	userService users.IUserService
+	authService  auth.IAuthService
+	userService  users.IUserService
+	tokenService tokens.ITokenService
+	mailService  mail.IMailService
 }
 
-func NewAuthHandler(authService auth.IAuthService, userService users.IUserService) *AuthHandler {
-	return &AuthHandler{
-		authService: authService,
-		userService: userService,
+func NewAuthHandler(authService auth.IAuthService, userService users.IUserService, tokenService tokens.ITokenService, mailService mail.IMailService) AuthHandler {
+	return AuthHandler{
+		authService:  authService,
+		userService:  userService,
+		tokenService: tokenService,
+		mailService:  mailService,
 	}
 }
 
-// Register handles user registration
-// @Summary Register a new user
-// @Description Register a new user account with email verification
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param user body models.UserRegistration true "User Registration Details"
-// @Success 201 {object} map[string]interface{} "User registered successfully"
-// @Failure 400 {object} echo.HTTPError "Invalid request"
-// @Failure 409 {object} echo.HTTPError "User already exists"
-// @Failure 500 {object} echo.HTTPError "Server error"
-// @Router /register [post]
 func (h *AuthHandler) Register(c echo.Context) error {
-	var registration models.UserRegistration
+	var registration data.UserRegistration
 	if err := c.Bind(&registration); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
@@ -54,6 +50,20 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create user")
 	}
 
+	activationToken, err := h.tokenService.New(user.ID, 24*time.Hour, data.ScopeUserActivation)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create Activation token")
+	}
+
+	activationLink := fmt.Sprintf("http://website.com/activate/%s", activationToken.Plaintext)
+
+	emailData := map[string]interface{}{
+		"Username":       user.Username,
+		"ActivationLink": activationLink,
+	}
+
+	go h.mailService.SendEmail(user.Email, "Activate Your Account", "activation", emailData)
+
 	return c.JSON(http.StatusCreated, map[string]interface{}{
 		"message": "User registered successfully. Please check your email to activate your account.",
 		"user": map[string]interface{}{
@@ -64,21 +74,8 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	})
 }
 
-// Login handles user login
-// @Summary Login user
-// @Description Authenticate a user and return JWT token
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param credentials body models.UserLogin true "Login Credentials"
-// @Success 200 {object} map[string]interface{} "Login successful"
-// @Failure 400 {object} echo.HTTPError "Invalid request"
-// @Failure 401 {object} echo.HTTPError "Invalid credentials"
-// @Failure 403 {object} echo.HTTPError "Account not activated"
-// @Failure 500 {object} echo.HTTPError "Server error"
-// @Router /login [post]
 func (h *AuthHandler) Login(c echo.Context) error {
-	var login models.UserLogin
+	var login data.UserLogin
 	if err := c.Bind(&login); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
@@ -109,28 +106,40 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	})
 }
 
-// ActivateAccount activates a user account using the activation token
-// @Summary Activate user account
-// @Description Activate a user account with the token sent via email
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param token path string true "Activation Token"
-// @Success 200 {object} map[string]string "Account activated successfully"
-// @Failure 400 {object} echo.HTTPError "Invalid token"
-// @Failure 500 {object} echo.HTTPError "Server error"
-// @Router /activate/{token} [get]
 func (h *AuthHandler) ActivateAccount(c echo.Context) error {
 	token := c.Param("token")
 	if token == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid activation token")
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid reset token")
 	}
 
-	if err := h.userService.ActivateUser(token); err != nil {
-		if err == services.ErrInvalidToken {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired activation token")
+	user, err := h.userService.GetForToken(data.ScopeUserActivation, token)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrRecordNotFound):
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
+
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to activate account")
+	}
+
+	err = h.userService.UpdateUser(user.ID, map[string]interface{}{
+		"activated": true,
+	})
+
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrEditConflict):
+			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
+		}
+	}
+
+	err = h.tokenService.DeleteAllForUser(data.ScopeUserActivation, user.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete activation token")
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{
@@ -138,18 +147,8 @@ func (h *AuthHandler) ActivateAccount(c echo.Context) error {
 	})
 }
 
-// RequestPasswordReset handles password reset requests
-// @Summary Request password reset
-// @Description Request a password reset email
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param email body models.PasswordReset true "User Email"
-// @Success 200 {object} map[string]string "Password reset email sent"
-// @Failure 400 {object} echo.HTTPError "Invalid request"
-// @Router /password/reset [post]
 func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
-	var resetRequest models.PasswordReset
+	var resetRequest data.PasswordReset
 	if err := c.Bind(&resetRequest); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
@@ -158,51 +157,78 @@ func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := h.userService.RequestPasswordReset(resetRequest.Email); err != nil {
-		// Don't reveal whether the email exists or not for security reasons
-		// Just return success regardless
+	user, err := h.userService.GetUserByEmail(resetRequest.Email)
+	if err != nil {
+		if err == services.ErrUserNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid email address")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 	}
+
+	resetToken, err := h.tokenService.New(user.ID, 24*time.Hour, data.ScopePasswordReset)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create reset token")
+	}
+
+	resetLink := fmt.Sprintf("http://website.com/reset-password/%s", resetToken.Plaintext)
+	emailData := map[string]interface{}{
+		"Username":  user.Username,
+		"ResetLink": resetLink,
+	}
+
+	go h.mailService.SendEmail(user.Email, "Reset Your Password", "reset", emailData)
 
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "If an account with that email exists, a password reset link has been sent.",
 	})
 }
 
-// ResetPassword handles password reset with token
-// @Summary Reset password
-// @Description Reset user password with token
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param token path string true "Reset Token"
-// @Param password body object{password=string} true "New Password"
-// @Success 200 {object} map[string]string "Password reset successful"
-// @Failure 400 {object} echo.HTTPError "Invalid token or password"
-// @Failure 500 {object} echo.HTTPError "Server error"
-// @Router /password/reset/{token} [post]
 func (h *AuthHandler) ResetPassword(c echo.Context) error {
 	token := c.Param("token")
 	if token == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid reset token")
 	}
 
-	var passwordData struct {
+	var payload struct {
 		Password string `json:"password" validate:"required,min=8"`
 	}
 
-	if err := c.Bind(&passwordData); err != nil {
+	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
-	if err := c.Validate(&passwordData); err != nil {
+	if err := c.Validate(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := h.userService.ResetPassword(token, passwordData.Password); err != nil {
-		if err == services.ErrInvalidToken {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired reset token")
+	// get user associated with the token
+	user, err := h.userService.GetForToken(data.ScopePasswordReset, token)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrRecordNotFound):
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
+
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve data")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to reset password")
+	}
+
+	err = h.userService.ResetPassword(token, payload.Password)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrEditConflict):
+			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
+		default:
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
+		}
+	}
+
+	// delete all password reset tokens for the user
+	err = h.tokenService.DeleteAllForUser(data.ScopePasswordReset, user.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete activation token")
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{

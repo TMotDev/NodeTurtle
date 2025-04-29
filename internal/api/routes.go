@@ -10,9 +10,10 @@ import (
 	"NodeTurtleAPI/internal/api/handlers"
 	customMiddleware "NodeTurtleAPI/internal/api/middleware"
 	"NodeTurtleAPI/internal/config"
-	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services/auth"
 	"NodeTurtleAPI/internal/services/mail"
+	"NodeTurtleAPI/internal/services/tokens"
 	"NodeTurtleAPI/internal/services/users"
 
 	"github.com/go-playground/validator/v10"
@@ -51,22 +52,22 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 
-	// Initialize services
-	mailService := mail.NewService(cfg.Mail)
+	mailService := mail.NewMailService(cfg.Mail)
 	authService := auth.NewService(db, cfg.JWT)
-	userService := users.NewService(db, mailService)
+	userService := users.NewUserService(db)
+	tokenService := tokens.NewTokenService(db)
 
-	// Initialize handlers
-	authHandler := handlers.NewAuthHandler(authService, userService)
-	userHandler := handlers.NewUserHandler(userService, authService)
+	authHandler := handlers.NewAuthHandler(&authService, &userService, &tokenService, &mailService)
+	userHandler := handlers.NewUserHandler(&userService, &authService)
 
-	// Middleware
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "method=${method}, uri=${uri}, status=${status}, error=${error}\n",
+	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
 	// Routes
-	setupRoutes(e, authHandler, userHandler, authService)
+	setupRoutes(e, &authHandler, &userHandler, &authService)
 
 	return &Server{
 		echo:   e,
@@ -75,7 +76,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	}
 }
 
-func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, authService *auth.Service) {
+func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, authService *auth.AuthService) {
 
 	// Public routes
 	e.POST("/api/register", authHandler.Register)
@@ -97,7 +98,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 
 	// Role-specific routes
 	admin := api.Group("/admin")
-	admin.Use(customMiddleware.RequireRole(models.RoleAdmin))
+	admin.Use(customMiddleware.RequireRole(data.RoleAdmin))
 	admin.GET("/users", userHandler.ListUsers)
 	admin.GET("/users/:id", userHandler.GetUser)
 	admin.PUT("/users/:id", userHandler.UpdateUser)

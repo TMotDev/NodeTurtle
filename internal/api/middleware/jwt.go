@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"strings"
 
-	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services/auth"
 
 	"github.com/labstack/echo/v4"
 )
 
 // JWT middleware for authentication
-func JWT(authService *auth.Service) echo.MiddlewareFunc {
+func JWT(authService *auth.AuthService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Get token from Authorization header
@@ -35,10 +35,10 @@ func JWT(authService *auth.Service) echo.MiddlewareFunc {
 			}
 
 			// Store user info in context
-			c.Set("user", &models.User{
+			c.Set("user", &data.User{
 				ID:    claims.UserID,
 				Email: claims.Email,
-				Role:  models.Role{Name: claims.Role},
+				Role:  data.Role{Name: claims.Role},
 			})
 
 			return next(c)
@@ -50,12 +50,12 @@ func JWT(authService *auth.Service) echo.MiddlewareFunc {
 func RequireRole(role string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			user, ok := c.Get("user").(*models.User)
+			user, ok := c.Get("user").(*data.User)
 			if !ok {
 				return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 			}
 
-			if user.Role.Name != role && user.Role.Name != models.RoleAdmin {
+			if user.Role.Name != role && user.Role.Name != data.RoleAdmin {
 				return echo.NewHTTPError(http.StatusForbidden, "Insufficient permissions")
 			}
 

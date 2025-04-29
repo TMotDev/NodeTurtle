@@ -27,3 +27,5 @@ go.work.sum
 coverage.html
 coverage.out
 
+TODO.md
+httpie.json

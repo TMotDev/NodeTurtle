@@ -3,25 +3,20 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/data"
+	"NodeTurtleAPI/internal/mocks"
 	"NodeTurtleAPI/internal/services"
-	"NodeTurtleAPI/internal/services/auth"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
-
-// MockUserService implements the methods used by AuthHandler for testing
-type MockAuthService struct{}
-
-type MockUserService struct{}
 
 type CustomValidator struct {
 	validator *validator.Validate
@@ -31,57 +26,36 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return cv.validator.Struct(i)
 }
 
-func (m *MockAuthService) CreateToken(user models.User) (string, error) {
-	return "mocktoken", nil
-}
-
-func (m *MockUserService) CreateUser(reg models.UserRegistration) (*models.User, error) {
-	if reg.Email == "exists@example.com" {
-		return nil, services.ErrUserExists
-	}
-	if reg.Email == "internal-error@example.com" {
-		return nil, errors.New("database connection failed")
-	}
-	return &models.User{ID: 1, Email: reg.Email, Username: reg.Username}, nil
-}
-func (m *MockUserService) ActivateUser(token string) error {
-	return nil
-}
-
-func (m *MockAuthService) Login(email, password string) (string, *models.User, error) {
-	if email == "inactive@example.com" {
-		return "", nil, services.ErrInactiveAccount
-	}
-	if email != "test@example.com" || password != "TestPassword123" {
-		return "", nil, services.ErrInvalidCredentials
-	}
-	return "mocktoken", &models.User{
-		ID:       1,
-		Email:    email,
-		Username: "testuser",
-		Role:     models.Role{Name: "user", Description: "Regular user", ID: 1},
-	}, nil
-}
-func (m *MockAuthService) VerifyToken(tokenString string) (*auth.Claims, error) {
-	return nil, nil
-}
-
-func (m *MockUserService) RequestPasswordReset(email string) error {
-	return nil
-
-}
-func (m *MockUserService) ResetPassword(token, newPassword string) error {
-	return nil
-
-}
-
 func TestRegisterRoute(t *testing.T) {
 	// Setup
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
-	mockUserService := &MockUserService{}
-	mockAuthService := &MockAuthService{}
-	handler := NewAuthHandler(mockAuthService, mockUserService)
+
+	mockUserService := mocks.MockUserService{}
+	mockAuthService := mocks.MockAuthService{}
+	mockTokenService := mocks.MockTokenService{}
+	mockMailerService := mocks.MockMailService{}
+
+	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
+		return reg.Email == "test@test.test"
+	})).Return(&data.User{ID: 1, Email: "test@test.test", Username: "testuser"}, nil)
+
+	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
+		return reg.Email == "exists@test.test"
+	})).Return(nil, services.ErrUserExists)
+
+	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
+		return reg.Email == "internal-error@test.test"
+	})).Return(nil, services.ErrInternal)
+
+	mockTokenService.On("New", mock.Anything, mock.Anything, data.ScopeUserActivation).Return(&data.Token{
+		Plaintext: "mocktoken",
+		Scope:     data.ScopeUserActivation,
+	}, nil)
+
+	mockMailerService.On("SendEmail", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
 	tests := []struct {
 		name      string
@@ -94,7 +68,7 @@ func TestRegisterRoute(t *testing.T) {
 		{
 			name: "Valid registration",
 			reqBody: map[string]interface{}{
-				"email":    "test@example.com",
+				"email":    "test@test.test",
 				"username": "testuser",
 				"password": "TestPassword123",
 			},
@@ -105,7 +79,7 @@ func TestRegisterRoute(t *testing.T) {
 		{
 			name: "User already exists",
 			reqBody: map[string]interface{}{
-				"email":    "exists@example.com",
+				"email":    "exists@test.test",
 				"username": "existinguser",
 				"password": "TestPassword123",
 			},
@@ -125,7 +99,7 @@ func TestRegisterRoute(t *testing.T) {
 		{
 			name: "Missing required fields",
 			reqBody: map[string]interface{}{
-				"email": "test@example.com",
+				"email": "test@test.test",
 			},
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
@@ -133,7 +107,7 @@ func TestRegisterRoute(t *testing.T) {
 		{
 			name: "Weak password",
 			reqBody: map[string]interface{}{
-				"email":    "test@example.com",
+				"email":    "test@test.test",
 				"username": "testuser",
 				"password": "weak",
 			},
@@ -142,14 +116,14 @@ func TestRegisterRoute(t *testing.T) {
 		},
 		{
 			name:      "Malformed JSON triggers bind error",
-			rawBody:   `{"email": "foo@example.com`,
+			rawBody:   `{"email": "test@test.test`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		{
 			name: "Internal server error",
 			reqBody: map[string]interface{}{
-				"email":    "internal-error@example.com",
+				"email":    "internal-error@test.test",
 				"username": "testuser",
 				"password": "TestPassword123",
 			},
@@ -188,15 +162,33 @@ func TestRegisterRoute(t *testing.T) {
 			}
 		})
 	}
+
+	mockUserService.AssertExpectations(t)
+
 }
 
 func TestLoginRoute(t *testing.T) {
 	// Setup
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
-	mockUserService := &MockUserService{}
-	mockAuthService := &MockAuthService{}
-	handler := NewAuthHandler(mockAuthService, mockUserService)
+
+	mockUserService := mocks.MockUserService{}
+	mockAuthService := mocks.MockAuthService{}
+	mockTokenService := mocks.MockTokenService{}
+	mockMailerService := mocks.MockMailService{}
+
+	validUser := &data.User{
+		ID:        1,
+		Email:     "test@test.test",
+		Username:  "testuser",
+		Activated: true,
+	}
+
+	mockAuthService.On("Login", "test@test.test", "TestPassword123").Return("mocktoken", validUser, nil)
+	mockAuthService.On("Login", "wrong@test.test", "TestPassword123").Return("", nil, services.ErrInvalidCredentials)
+	mockAuthService.On("Login", "inactive@test.test", "TestPassword123").Return("", nil, services.ErrInactiveAccount)
+
+	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
 	tests := []struct {
 		name      string
@@ -209,7 +201,7 @@ func TestLoginRoute(t *testing.T) {
 		{
 			name: "Valid login",
 			reqBody: map[string]interface{}{
-				"email":    "test@example.com",
+				"email":    "test@test.test",
 				"password": "TestPassword123",
 			},
 			wantCode:  http.StatusOK,
@@ -219,7 +211,7 @@ func TestLoginRoute(t *testing.T) {
 		{
 			name: "Invalid credentials",
 			reqBody: map[string]interface{}{
-				"email":    "wrong@example.com",
+				"email":    "wrong@test.test",
 				"password": "TestPassword123",
 			},
 			wantCode:  http.StatusUnauthorized,
@@ -228,7 +220,7 @@ func TestLoginRoute(t *testing.T) {
 		{
 			name: "Inactive account",
 			reqBody: map[string]interface{}{
-				"email":    "inactive@example.com",
+				"email":    "inactive@test.test",
 				"password": "TestPassword123",
 			},
 			wantCode:  http.StatusForbidden,
@@ -246,14 +238,14 @@ func TestLoginRoute(t *testing.T) {
 		{
 			name: "Missing required fields",
 			reqBody: map[string]interface{}{
-				"email": "test@example.com",
+				"email": "test@test.test",
 			},
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		{
 			name:      "Malformed JSON triggers bind error",
-			rawBody:   `{"email": "foo@example.com`,
+			rawBody:   `{"email": "foo@test.test`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
@@ -288,4 +280,91 @@ func TestLoginRoute(t *testing.T) {
 			}
 		})
 	}
+
+	mockAuthService.AssertExpectations(t)
+}
+
+func TestActivateAccountRoute(t *testing.T) {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockUserService := mocks.MockUserService{}
+	mockAuthService := mocks.MockAuthService{}
+	mockTokenService := mocks.MockTokenService{}
+	mockMailerService := mocks.MockMailService{}
+
+	mockUserService.On("GetForToken", mock.Anything, "token").Return(&data.User{ID: 1, Email: "test@test.test", Username: "testuser"}, nil)
+	mockUserService.On("GetForToken", mock.Anything, "editConflict").Return(&data.User{ID: 2, Email: "editConflict@test.test", Username: "testuser2"}, nil)
+	mockUserService.On("GetForToken", mock.Anything, "").Return(nil, services.ErrRecordNotFound)
+	mockUserService.On("GetForToken", mock.Anything, "internal error").Return(nil, services.ErrInternal)
+
+	mockUserService.On("UpdateUser", int64(2), mock.Anything).Return(services.ErrEditConflict)
+	mockUserService.On("UpdateUser", mock.Anything, map[string]interface{}{
+		"anything": false,
+	}).Return(services.ErrInternal)
+	mockUserService.On("UpdateUser", mock.Anything, mock.Anything).Return(nil)
+
+	mockTokenService.On("DeleteAllForUser", mock.Anything, mock.Anything).Return(nil)
+	mockTokenService.On("DeleteAllForUser", mock.Anything, -1).Return(services.ErrInternal)
+
+	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
+
+	tests := []struct {
+		name      string
+		token     string
+		wantCode  int
+		wantError bool
+	}{
+		{
+			name:      "Valid token",
+			token:     "token",
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
+		{
+			name:      "Edit conflict",
+			token:     "editConflict",
+			wantCode:  http.StatusConflict,
+			wantError: true,
+		},
+		{
+			name:      "Invalid token",
+			token:     "",
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		{
+			name:      "User not found",
+			token:     "internal error",
+			wantCode:  http.StatusInternalServerError,
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetPath("/api/activate/:token")
+			c.SetParamNames("token")
+			c.SetParamValues(tt.token)
+
+			err := handler.ActivateAccount(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+			}
+		})
+	}
+
+	mockAuthService.AssertExpectations(t)
+
 }

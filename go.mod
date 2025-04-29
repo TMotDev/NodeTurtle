@@ -9,7 +9,6 @@ require (
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.10.0
-	github.com/swaggo/swag v1.16.4
 	golang.org/x/crypto v0.37.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
@@ -21,6 +20,8 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/swaggo/swag v1.16.4 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )
 

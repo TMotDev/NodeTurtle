@@ -10,8 +10,6 @@ import (
 	"NodeTurtleAPI/internal/api"
 	"NodeTurtleAPI/internal/config"
 	"NodeTurtleAPI/internal/database"
-
-	_ "NodeTurtleAPI/docs"
 )
 
 func main() {

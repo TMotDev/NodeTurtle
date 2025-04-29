@@ -3,9 +3,9 @@ POST http://localhost:8080/api/register
 Content-Type: application/json
 
 {
-  "email": "testuser2@example.com",
-  "username": "testuser",
-  "password": "TestPassword123"
+  "email": "test@test.com",
+  "username": "777",
+  "password": "T3stT3st"
 }
 
 ###
@@ -15,14 +15,15 @@ POST http://localhost:8080/api/login
 Content-Type: application/json
 
 {
-  "email": "testuser2@example.com",
-  "password": "TestPassword123"
+  "email": "test@test.com",
+  "password": "T3stT3st"
 }
 
 ###
 
 ### Activate account (replace TOKEN with actual token from email)
-GET http://localhost:8080/api/activate/1046eee87eddf73fb75224bb9c68587e95c42f8414f466eabe94875daa779786
+GET http://localhost:8080/api/activate/MSRM66XKMBPQRWKRZROZVYPSZE36Q5IY6AKMKH7SMIZELEC6XTUQ
+
 
 ###
 
@@ -31,35 +32,35 @@ POST http://localhost:8080/api/password/reset
 Content-Type: application/json
 
 {
-  "email": "testuser@example.com"
+  "email": "test5@test.test"
 }
 
 ###
 
 ### Reset password (replace TOKEN with actual token from email)
-POST http://localhost:8080/api/password/reset/TOKEN
+POST http://localhost:8080/api/password/reset/RBFADKMPLCNQHFEPVR6TY5XRL7AU5RUVSYSXZEPZS3NX6YOFSIOA
 Content-Type: application/json
 
 {
-  "password": "NewPassword123"
+  "password": "T3stT3st"
 }
 
 ###
 
 ### Get current user (requires Bearer TOKEN)
 GET http://localhost:8080/api/users/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InRlc3R1c2VyQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJleHAiOjE3NDUzMzMxMzV9.rWJNJOxpvaV5DS3-Emw5L7ZY39lKTnIJ-l6dwK7Gc_g
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo3LCJlbWFpbCI6InRlc3Q3QHRlc3QudGVzdCIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzQ1OTIwNzA0fQ.KMki8Bod_b7JL3yMS7wIt5xb7m9ecaiGbcZb_lrjFBk
 
 ###
 
 ### Update current user (requires Bearer TOKEN)
 PUT http://localhost:8080/api/users/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InRlc3R1c2VyQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJleHAiOjE3NDUzMzMxMzV9.rWJNJOxpvaV5DS3-Emw5L7ZY39lKTnIJ-l6dwK7Gc_g
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1LCJlbWFpbCI6InRlc3Q1QHRlc3QudGVzdCIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzQ1ODU2MTYxfQ.tfABMv2FAvw3YIl9jQRvYxdsOZyeDIMh5XcyaZzjbJs
 Content-Type: application/json
 
 {
-  "username": "coolerUSER",
-    "email": "testuser@example.com"
+  "username": "coolUSERNumber5",
+  "email": "test5@test.test"
 }
 
 ###
@@ -79,7 +80,7 @@ Content-Type: application/json
 
 ### List all users (admin only, requires Bearer TOKEN)
 GET http://localhost:8080/api/admin/users
-Authorization: Bearer ADMIN_JWT_TOKEN
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3NDU5MjEwOTF9.ahr6lNoa3MUbh8BcqNYfxFGnO85STIuW2AbyO-4vpKE
 
 ###
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"NodeTurtleAPI/internal/config"
-	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services"
 
 	"github.com/golang-jwt/jwt"
@@ -15,28 +15,28 @@ import (
 
 // Claims represents JWT claims
 type Claims struct {
-	UserID int    `json:"user_id"`
+	UserID int64  `json:"user_id"`
 	Email  string `json:"email"`
 	Role   string `json:"role"`
 	jwt.StandardClaims
 }
 
 type IAuthService interface {
-	Login(email, password string) (string, *models.User, error)
-	CreateToken(user models.User) (string, error)
+	Login(email, password string) (string, *data.User, error)
+	CreateJWTToken(user data.User) (string, error)
 	VerifyToken(tokenString string) (*Claims, error)
 }
 
-// Service provides authentication functionality
-type Service struct {
+// AuthService provides authentication functionality
+type AuthService struct {
 	db     *sql.DB
 	jwtKey []byte
 	jwtExp int
 }
 
 // NewService creates a new authentication service
-func NewService(db *sql.DB, jwtConfig config.JWTConfig) *Service {
-	return &Service{
+func NewService(db *sql.DB, jwtConfig config.JWTConfig) AuthService {
+	return AuthService{
 		db:     db,
 		jwtKey: []byte(jwtConfig.Secret),
 		jwtExp: jwtConfig.ExpireTime,
@@ -44,13 +44,12 @@ func NewService(db *sql.DB, jwtConfig config.JWTConfig) *Service {
 }
 
 // Login authenticates a user and returns a JWT token
-func (s *Service) Login(email, password string) (string, *models.User, error) {
-	var user models.User
-	var hashedPassword string
-	var role models.Role
+func (s AuthService) Login(email, password string) (string, *data.User, error) {
+	var user data.User
+	var role data.Role
 
 	query := `
-		SELECT u.id, u.email, u.username, u.password, u.active,
+		SELECT u.id, u.email, u.username, u.password, u.activated,
 		       r.id, r.name, r.description
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
@@ -58,7 +57,7 @@ func (s *Service) Login(email, password string) (string, *models.User, error) {
 	`
 
 	err := s.db.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.Username, &hashedPassword, &user.Active,
+		&user.ID, &user.Email, &user.Username, &user.Password.Hash, &user.Activated,
 		&role.ID, &role.Name, &role.Description,
 	)
 
@@ -70,13 +69,13 @@ func (s *Service) Login(email, password string) (string, *models.User, error) {
 	}
 
 	// Verify password
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password.Hash), []byte(password))
 	if err != nil {
 		return "", nil, services.ErrInvalidCredentials
 	}
 
 	// Check if account is activated
-	if !user.Active {
+	if !user.Activated {
 		return "", nil, services.ErrInactiveAccount
 	}
 
@@ -89,7 +88,7 @@ func (s *Service) Login(email, password string) (string, *models.User, error) {
 
 	// Create token
 	user.Role = role
-	token, err := s.CreateToken(user)
+	token, err := s.CreateJWTToken(user)
 	if err != nil {
 		return "", nil, err
 	}
@@ -98,7 +97,7 @@ func (s *Service) Login(email, password string) (string, *models.User, error) {
 }
 
 // VerifyToken verifies a JWT token and returns the claims
-func (s *Service) VerifyToken(tokenString string) (*Claims, error) {
+func (s AuthService) VerifyToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
@@ -117,7 +116,7 @@ func (s *Service) VerifyToken(tokenString string) (*Claims, error) {
 }
 
 // CreateToken creates a new JWT token
-func (s *Service) CreateToken(user models.User) (string, error) {
+func (s AuthService) CreateJWTToken(user data.User) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(s.jwtExp) * time.Hour)
 
 	claims := &Claims{

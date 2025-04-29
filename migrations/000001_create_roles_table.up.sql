@@ -1,5 +1,5 @@
 CREATE TABLE roles (
-    id SERIAL PRIMARY KEY,
+    id bigserial PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
     description TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),

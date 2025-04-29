@@ -1,44 +1,42 @@
 package users
 
 import (
-	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
-	"NodeTurtleAPI/internal/models"
+	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
-	"NodeTurtleAPI/internal/services/mail"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type IUserService interface {
-	CreateUser(reg models.UserRegistration) (*models.User, error)
-	ActivateUser(token string) error
+	CreateUser(reg data.UserRegistration) (*data.User, error)
 	ResetPassword(token, newPassword string) error
-	RequestPasswordReset(email string) error
+	ChangePassword(userID int64, oldPassword, newPassword string) error
+	GetUserByID(userID int64) (*data.User, error)
+	GetUserByEmail(email string) (*data.User, error)
+	ListUsers(page, limit int) ([]data.User, int, error)
+	UpdateUser(userID int64, updates map[string]interface{}) error
+	DeleteUser(userID int) error
+	GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error)
 }
 
-// Service provides user management functionality
-type Service struct {
-	db          *sql.DB
-	mailService *mail.Service
+type UserService struct {
+	db *sql.DB
 }
 
-// NewService creates a new user service
-func NewService(db *sql.DB, mailService *mail.Service) *Service {
-	return &Service{
-		db:          db,
-		mailService: mailService,
+func NewUserService(db *sql.DB) UserService {
+	return UserService{
+		db: db,
 	}
 }
 
-// CreateUser creates a new user
-func (s *Service) CreateUser(reg models.UserRegistration) (*models.User, error) {
-	// Check if user already exists
+func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 	var exists bool
 	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", reg.Email).Scan(&exists)
 	if err != nil {
@@ -48,38 +46,28 @@ func (s *Service) CreateUser(reg models.UserRegistration) (*models.User, error) 
 		return nil, services.ErrUserExists
 	}
 
-	// Start transaction
 	tx, err := s.db.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	// Hash password
 	hashedPassword, err := auth.HashPassword(reg.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	// Generate activation token
-	activationToken, err := generateToken()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get default role (user)
 	var roleID int
 	err = tx.QueryRow("SELECT id FROM roles WHERE name = $1", "user").Scan(&roleID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create user
-	var user models.User
+	var user data.User
 	query := `
-		INSERT INTO users (email, username, password, role_id, active, activation_token, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-		RETURNING id, email, username, active, created_at, updated_at
+	INSERT INTO users (email, username, password, role_id, activated, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+	RETURNING id, email, username, activated, created_at, updated_at
 	`
 	err = tx.QueryRow(
 		query,
@@ -87,13 +75,12 @@ func (s *Service) CreateUser(reg models.UserRegistration) (*models.User, error) 
 		reg.Username,
 		hashedPassword,
 		roleID,
-		false, // Not active until confirmed
-		activationToken,
+		false,
 	).Scan(
 		&user.ID,
 		&user.Email,
 		&user.Username,
-		&user.Active,
+		&user.Activated,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -101,50 +88,14 @@ func (s *Service) CreateUser(reg models.UserRegistration) (*models.User, error) 
 		return nil, err
 	}
 
-	// Commit transaction
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	// Send activation email
-	activationLink := fmt.Sprintf("http://yourwebsite.com/activate/%s", activationToken)
-	emailData := map[string]interface{}{
-		"Username":       user.Username,
-		"ActivationLink": activationLink,
-	}
-
-	go s.mailService.SendEmail(user.Email, "Activate Your Account", "activation", emailData)
-
 	return &user, nil
 }
 
-// ActivateUser activates a user account using an activation token
-func (s *Service) ActivateUser(token string) error {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	var userID int
-	query := "SELECT id FROM users WHERE activation_token = $1 AND active = false"
-	err = tx.QueryRow(query, token).Scan(&userID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return services.ErrInvalidToken
-		}
-		return err
-	}
-
-	_, err = tx.Exec("UPDATE users SET active = true, activation_token = NULL, updated_at = NOW() WHERE id = $1", userID)
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-func (s *Service) ResetPassword(token, newPassword string) error {
+func (s UserService) ResetPassword(token, newPassword string) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -162,18 +113,15 @@ func (s *Service) ResetPassword(token, newPassword string) error {
 		return err
 	}
 
-	// Check if token is expired (24 hours)
 	if time.Since(resetTime) > 24*time.Hour {
 		return services.ErrInvalidToken
 	}
 
-	// Hash new password
 	hashedPassword, err := auth.HashPassword(newPassword)
 	if err != nil {
 		return err
 	}
 
-	// Update password and clear reset token
 	_, err = tx.Exec(
 		"UPDATE users SET password = $1, password_reset_token = NULL, password_reset_at = NULL, updated_at = NOW() WHERE id = $2",
 		hashedPassword, userID,
@@ -185,10 +133,15 @@ func (s *Service) ResetPassword(token, newPassword string) error {
 	return tx.Commit()
 }
 
-// ChangePassword changes a user's password
-func (s *Service) ChangePassword(userID int, oldPassword, newPassword string) error {
+func (s UserService) ChangePassword(userID int64, oldPassword, newPassword string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	var hashedPassword string
-	err := s.db.QueryRow("SELECT password FROM users WHERE id = $1", userID).Scan(&hashedPassword)
+	err = s.db.QueryRow("SELECT password FROM users WHERE id = $1", userID).Scan(&hashedPassword)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return services.ErrUserNotFound
@@ -196,19 +149,16 @@ func (s *Service) ChangePassword(userID int, oldPassword, newPassword string) er
 		return err
 	}
 
-	// Verify old password
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(oldPassword))
 	if err != nil {
 		return services.ErrInvalidCredentials
 	}
 
-	// Hash new password
 	newHashedPassword, err := auth.HashPassword(newPassword)
 	if err != nil {
 		return err
 	}
 
-	// Update password
 	_, err = s.db.Exec(
 		"UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2",
 		newHashedPassword, userID,
@@ -217,24 +167,51 @@ func (s *Service) ChangePassword(userID int, oldPassword, newPassword string) er
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
-// GetUserByID retrieves a user by ID
-func (s *Service) GetUserByID(userID int) (*models.User, error) {
-	var user models.User
-	var role models.Role
+func (s UserService) GetUserByID(userID int64) (*data.User, error) {
+	var user data.User
+	var role data.Role
 
 	query := `
-		SELECT u.id, u.email, u.username, u.active, u.created_at, u.updated_at, u.last_login,
-		       r.id, r.name, r.description
+		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.updated_at, u.last_login,
+		       r.id, r.name, r.description, r.created_at, r.updated_at
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
 		WHERE u.id = $1
 	`
 
 	err := s.db.QueryRow(query, userID).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Active, &user.CreatedAt, &user.UpdatedAt, &user.LastLogin,
+		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.UpdatedAt, &user.LastLogin,
+		&role.ID, &role.Name, &role.Description, &role.CreatedAt, &role.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, services.ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	user.Role = role
+	return &user, nil
+}
+
+func (s UserService) GetUserByEmail(email string) (*data.User, error) {
+	var user data.User
+	var role data.Role
+
+	query := `
+		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.updated_at, u.last_login,
+		       r.id, r.name, r.description
+		FROM users u
+		JOIN roles r ON u.role_id = r.id
+		WHERE u.email = $1
+	`
+
+	err := s.db.QueryRow(query, email).Scan(
+		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.UpdatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description,
 	)
 
@@ -249,8 +226,7 @@ func (s *Service) GetUserByID(userID int) (*models.User, error) {
 	return &user, nil
 }
 
-// ListUsers retrieves a list of users with pagination
-func (s *Service) ListUsers(page, limit int) ([]models.User, int, error) {
+func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -260,16 +236,14 @@ func (s *Service) ListUsers(page, limit int) ([]models.User, int, error) {
 
 	offset := (page - 1) * limit
 
-	// Get total count
 	var total int
 	err := s.db.QueryRow("SELECT COUNT(*) FROM users").Scan(&total)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Get users
 	query := `
-		SELECT u.id, u.email, u.username, u.active, u.created_at, u.updated_at, u.last_login,
+		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.updated_at, u.last_login,
 		       r.id, r.name, r.description
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
@@ -283,14 +257,14 @@ func (s *Service) ListUsers(page, limit int) ([]models.User, int, error) {
 	}
 	defer rows.Close()
 
-	users := []models.User{}
+	users := []data.User{}
 	for rows.Next() {
-		var user models.User
-		var role models.Role
+		var user data.User
+		var role data.Role
 		var lastLogin sql.NullTime
 
 		err := rows.Scan(
-			&user.ID, &user.Email, &user.Username, &user.Active, &user.CreatedAt, &user.UpdatedAt, &lastLogin,
+			&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.UpdatedAt, &lastLogin,
 			&role.ID, &role.Name, &role.Description,
 		)
 		if err != nil {
@@ -309,66 +283,24 @@ func (s *Service) ListUsers(page, limit int) ([]models.User, int, error) {
 	return users, total, nil
 }
 
-// RequestPasswordReset initiates a password reset process
-func (s *Service) RequestPasswordReset(email string) error {
-	var user models.User
-	query := "SELECT id, email, username FROM users WHERE email = $1 AND active = true"
-	err := s.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Username)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			// We don't want to reveal if the email exists or not
-			return nil
-		}
-		return err
+func (s UserService) UpdateUser(userID int64, updates map[string]interface{}) error {
+	if len(updates) == 0 {
+		return errors.New("no fields to update")
 	}
 
-	// Generate reset token
-	resetToken, err := generateToken()
-	if err != nil {
-		return err
-	}
-
-	// Update user with reset token
-	_, err = s.db.Exec(
-		"UPDATE users SET password_reset_token = $1, password_reset_at = NOW(), updated_at = NOW() WHERE id = $2",
-		resetToken, user.ID,
-	)
-	if err != nil {
-		return err
-	}
-
-	// Send reset email
-	resetLink := fmt.Sprintf("http://yourwebsite.com/reset-password/%s", resetToken)
-	emailData := map[string]interface{}{
-		"Username":  user.Username,
-		"ResetLink": resetLink,
-	}
-
-	go s.mailService.SendEmail(user.Email, "Reset Your Password", "reset", emailData)
-
-	return nil
-}
-
-// UpdateUser updates a user's information
-func (s *Service) UpdateUser(userID int, updates map[string]interface{}) error {
-	// Start transaction
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	// Check if user exists
-	var exists bool
-	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", userID).Scan(&exists)
+	user, err := s.GetUserByID(userID)
 	if err != nil {
-		return err
-	}
-	if !exists {
-		return services.ErrUserNotFound
+		if err == services.ErrUserNotFound {
+			return services.ErrUserNotFound
+		}
 	}
 
-	// Build query and args
 	query := "UPDATE users SET updated_at = NOW()"
 	args := []interface{}{}
 	argCount := 1
@@ -383,8 +315,8 @@ func (s *Service) UpdateUser(userID int, updates map[string]interface{}) error {
 			query += fmt.Sprintf(", email = $%d", argCount)
 			args = append(args, value)
 			argCount++
-		case "active":
-			query += fmt.Sprintf(", active = $%d", argCount)
+		case "activated":
+			query += fmt.Sprintf(", activated = $%d", argCount)
 			args = append(args, value)
 			argCount++
 		case "role_id":
@@ -395,9 +327,10 @@ func (s *Service) UpdateUser(userID int, updates map[string]interface{}) error {
 	}
 
 	query += fmt.Sprintf(" WHERE id = $%d", argCount)
-	args = append(args, userID)
+	args = append(args, user.ID)
 
-	// Execute update
+	fmt.Println(query)
+
 	_, err = tx.Exec(query, args...)
 	if err != nil {
 		return err
@@ -406,8 +339,7 @@ func (s *Service) UpdateUser(userID int, updates map[string]interface{}) error {
 	return tx.Commit()
 }
 
-// DeleteUser deletes a user
-func (s *Service) DeleteUser(userID int) error {
+func (s UserService) DeleteUser(userID int) error {
 	result, err := s.db.Exec("DELETE FROM users WHERE id = $1", userID)
 	if err != nil {
 		return err
@@ -425,13 +357,38 @@ func (s *Service) DeleteUser(userID int) error {
 	return nil
 }
 
-// Helper functions
+func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error) {
+	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 
-// generateToken generates a random token for activation or password reset
-func generateToken() (string, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
+	query := `
+        SELECT users.id, users.created_at, users.username, users.email, users.password, users.activated
+        FROM users
+        INNER JOIN tokens
+        ON users.id = tokens.user_id
+        WHERE tokens.hash = $1
+        AND tokens.scope = $2
+        AND tokens.expires_at > $3`
+
+	args := []any{tokenHash[:], tokenScope, time.Now()}
+
+	var user data.User
+
+	err := s.db.QueryRow(query, args...).Scan(
+		&user.ID,
+		&user.CreatedAt,
+		&user.Username,
+		&user.Email,
+		&user.Password.Hash,
+		&user.Activated,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, services.ErrRecordNotFound
+		default:
+			return nil, err
+		}
 	}
-	return hex.EncodeToString(bytes), nil
+
+	return &user, nil
 }
