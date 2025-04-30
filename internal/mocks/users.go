@@ -38,7 +38,13 @@ func (m *MockUserService) GetUserByID(userID int64) (*data.User, error) {
 
 func (m *MockUserService) GetUserByEmail(email string) (*data.User, error) {
 	args := m.Called(email)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
 	return args.Get(0).(*data.User), args.Error(1)
+
 }
 
 func (m *MockUserService) ListUsers(page, limit int) ([]data.User, int, error) {
