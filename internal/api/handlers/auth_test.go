@@ -13,6 +13,7 @@ import (
 	"NodeTurtleAPI/internal/services"
 
 	"github.com/go-playground/validator"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -38,7 +39,7 @@ func TestRegisterRoute(t *testing.T) {
 
 	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
 		return reg.Email == "test@test.test"
-	})).Return(&data.User{ID: 1, Email: "test@test.test", Username: "testuser"}, nil)
+	})).Return(&data.User{ID: uuid.New(), Email: "test@test.test", Username: "testuser"}, nil)
 
 	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
 		return reg.Email == "exists@test.test"
@@ -180,7 +181,7 @@ func TestLoginRoute(t *testing.T) {
 	mockMailerService := mocks.MockMailService{}
 
 	validUser := &data.User{
-		ID:        1,
+		ID:        uuid.New(),
 		Email:     "test@test.test",
 		Username:  "testuser",
 		Activated: true,
@@ -295,16 +296,20 @@ func TestActivateAccountRoute(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
-	mockUserService.On("GetForToken", mock.Anything, "token").Return(&data.User{ID: 1, Email: "test@test.test", Username: "testuser"}, nil)
-	mockUserService.On("GetForToken", mock.Anything, "editConflict").Return(&data.User{ID: 2, Email: "editConflict@test.test", Username: "testuser2"}, nil)
-	mockUserService.On("GetForToken", mock.Anything, "updateUserFail").Return(&data.User{ID: -1, Email: "update@test.test", Username: "updateErrorUser"}, nil)
+	userID1 := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	userID2 := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	userIDErr := uuid.MustParse("33333333-3333-3333-3333-333333333333")
+
+	mockUserService.On("GetForToken", mock.Anything, "token").Return(&data.User{ID: userID1, Email: "test@test.test", Username: "testuser"}, nil)
+	mockUserService.On("GetForToken", mock.Anything, "editConflict").Return(&data.User{ID: userID2, Email: "editConflict@test.test", Username: "testuser2"}, nil)
+	mockUserService.On("GetForToken", mock.Anything, "updateUserFail").Return(&data.User{ID: userIDErr, Email: "update@test.test", Username: "updateErrorUser"}, nil)
 	mockUserService.On("GetForToken", mock.Anything, "-").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", mock.Anything, "internal error").Return(nil, services.ErrInternal)
 
-	mockUserService.On("UpdateUser", int64(2), mock.Anything).Return(services.ErrEditConflict)
+	mockUserService.On("UpdateUser", userID2, mock.Anything).Return(services.ErrEditConflict)
 	mockUserService.On("UpdateUser", mock.Anything, mock.Anything).Return(nil)
 
-	mockTokenService.On("DeleteAllForUser", mock.Anything, int64(-1)).Return(services.ErrInternal)
+	mockTokenService.On("DeleteAllForUser", mock.Anything, userIDErr).Return(services.ErrInternal)
 	mockTokenService.On("DeleteAllForUser", mock.Anything, mock.Anything).Return(nil)
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
@@ -391,16 +396,19 @@ func TestRequestPasswordReset(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
+	userID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	userIDFail := uuid.MustParse("33333333-3333-3333-3333-333333333333")
+
 	mockUserService.On("GetUserByEmail", "notfound@test.test").Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByEmail", "internal@test.test").Return(nil, services.ErrInternal)
-	mockUserService.On("GetUserByEmail", "test@test.test").Return(&data.User{ID: 1, Email: "test@test.test", Username: "testuser"}, nil)
-	mockUserService.On("GetUserByEmail", "resetTokenFail@test.test").Return(&data.User{ID: -1, Email: "resetTokenFail@test.test", Username: "resetTokenFail"}, nil)
+	mockUserService.On("GetUserByEmail", "test@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser"}, nil)
+	mockUserService.On("GetUserByEmail", "resetTokenFail@test.test").Return(&data.User{ID: userIDFail, Email: "resetTokenFail@test.test", Username: "resetTokenFail"}, nil)
 
-	mockTokenService.On("New", int64(1), mock.Anything, data.ScopePasswordReset).Return(&data.Token{
+	mockTokenService.On("New", userID, mock.Anything, data.ScopePasswordReset).Return(&data.Token{
 		Plaintext: "mocktoken",
 		Scope:     data.ScopePasswordReset,
 	}, nil)
-	mockTokenService.On("New", int64(-1), mock.Anything, data.ScopePasswordReset).Return(nil, services.ErrInternal)
+	mockTokenService.On("New", userIDFail, mock.Anything, data.ScopePasswordReset).Return(nil, services.ErrInternal)
 	mockMailerService.On("SendEmail", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
@@ -475,10 +483,13 @@ func TestResetPassword(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
-	validUser := &data.User{ID: 1, Email: "test@test.test", Username: "testuser"}
+	userID1 := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	userID2 := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+
+	validUser := &data.User{ID: userID1, Email: "test@test.test", Username: "testuser"}
 
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken").Return(validUser, nil)
-	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken2").Return(&data.User{ID: 2, Email: "fail@test.test", Username: "failuser"}, nil)
+	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken2").Return(&data.User{ID: userID2, Email: "fail@test.test", Username: "failuser"}, nil)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "badtoken").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "internalerror").Return(nil, services.ErrInternal)
 
@@ -486,8 +497,8 @@ func TestResetPassword(t *testing.T) {
 	mockUserService.On("ResetPassword", "validtoken", "failpassword").Return(services.ErrInternal)
 	mockUserService.On("ResetPassword", "validtoken2", "NewPassword123").Return(nil)
 
-	mockTokenService.On("DeleteAllForUser", data.ScopePasswordReset, int64(1)).Return(nil)
-	mockTokenService.On("DeleteAllForUser", data.ScopePasswordReset, int64(2)).Return(services.ErrInternal)
+	mockTokenService.On("DeleteAllForUser", data.ScopePasswordReset, userID1).Return(nil)
+	mockTokenService.On("DeleteAllForUser", data.ScopePasswordReset, userID2).Return(services.ErrInternal)
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 

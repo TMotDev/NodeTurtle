@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -29,7 +30,7 @@ type Role struct {
 // User represents a user in the system
 // @Description Complete user account information including role and status
 type User struct {
-	ID        int64        `json:"id"`
+	ID        uuid.UUID    `json:"id"`
 	Email     string       `json:"email"`
 	Username  string       `json:"username"`
 	Password  password     `json:"-"`

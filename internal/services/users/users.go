@@ -11,18 +11,19 @@ import (
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type IUserService interface {
 	CreateUser(reg data.UserRegistration) (*data.User, error)
 	ResetPassword(token, newPassword string) error
-	ChangePassword(userID int64, oldPassword, newPassword string) error
-	GetUserByID(userID int64) (*data.User, error)
+	ChangePassword(userID uuid.UUID, oldPassword, newPassword string) error
+	GetUserByID(userID uuid.UUID) (*data.User, error)
 	GetUserByEmail(email string) (*data.User, error)
 	ListUsers(page, limit int) ([]data.User, int, error)
-	UpdateUser(userID int64, updates map[string]interface{}) error
-	DeleteUser(userID int) error
+	UpdateUser(userID uuid.UUID, updates map[string]interface{}) error
+	DeleteUser(userID uuid.UUID) error
 	GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error)
 }
 
@@ -102,10 +103,12 @@ func (s UserService) ResetPassword(token, newPassword string) error {
 	}
 	defer tx.Rollback()
 
-	var userID int
-	var resetTime time.Time
-	query := "SELECT id, password_reset_at FROM users WHERE password_reset_token = $1"
-	err = tx.QueryRow(query, token).Scan(&userID, &resetTime)
+	tokenHash := sha256.Sum256([]byte(token))
+
+	var userID uuid.UUID
+	var expiresAt time.Time
+	query := "SELECT user_id, expires_at FROM tokens WHERE hash = $1 AND scope = $2"
+	err = tx.QueryRow(query, tokenHash[:], data.ScopePasswordReset).Scan(&userID, &expiresAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return services.ErrInvalidToken
@@ -113,7 +116,7 @@ func (s UserService) ResetPassword(token, newPassword string) error {
 		return err
 	}
 
-	if time.Since(resetTime) > 24*time.Hour {
+	if time.Now().After(expiresAt) {
 		return services.ErrInvalidToken
 	}
 
@@ -123,7 +126,7 @@ func (s UserService) ResetPassword(token, newPassword string) error {
 	}
 
 	_, err = tx.Exec(
-		"UPDATE users SET password = $1, password_reset_token = NULL, password_reset_at = NULL, updated_at = NOW() WHERE id = $2",
+		"UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2",
 		hashedPassword, userID,
 	)
 	if err != nil {
@@ -133,7 +136,7 @@ func (s UserService) ResetPassword(token, newPassword string) error {
 	return tx.Commit()
 }
 
-func (s UserService) ChangePassword(userID int64, oldPassword, newPassword string) error {
+func (s UserService) ChangePassword(userID uuid.UUID, oldPassword, newPassword string) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -170,7 +173,7 @@ func (s UserService) ChangePassword(userID int64, oldPassword, newPassword strin
 	return tx.Commit()
 }
 
-func (s UserService) GetUserByID(userID int64) (*data.User, error) {
+func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	var user data.User
 	var role data.Role
 
@@ -283,7 +286,7 @@ func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
 	return users, total, nil
 }
 
-func (s UserService) UpdateUser(userID int64, updates map[string]interface{}) error {
+func (s UserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}) error {
 	if len(updates) == 0 {
 		return errors.New("no fields to update")
 	}
@@ -339,7 +342,7 @@ func (s UserService) UpdateUser(userID int64, updates map[string]interface{}) er
 	return tx.Commit()
 }
 
-func (s UserService) DeleteUser(userID int) error {
+func (s UserService) DeleteUser(userID uuid.UUID) error {
 	result, err := s.db.Exec("DELETE FROM users WHERE id = $1", userID)
 	if err != nil {
 		return err

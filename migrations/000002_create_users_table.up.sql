@@ -1,5 +1,8 @@
+CREATE EXTENSION IF NOT EXISTS citext;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE users (
-    id bigserial PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email citext UNIQUE NOT NULL,
     username text NOT NULL,
     password bytea NOT NULL,
@@ -9,5 +12,3 @@ CREATE TABLE users (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
-
-CREATE INDEX idx_users_email ON users(email);

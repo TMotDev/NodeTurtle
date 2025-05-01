@@ -7,12 +7,14 @@ import (
 	"database/sql"
 	"encoding/base32"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type ITokenService interface {
-	New(userID int64, ttl time.Duration, scope data.TokenScope) (*data.Token, error)
+	New(userID uuid.UUID, ttl time.Duration, scope data.TokenScope) (*data.Token, error)
 	Insert(token *data.Token) error
-	DeleteAllForUser(scope data.TokenScope, userID int64) error
+	DeleteAllForUser(scope data.TokenScope, userID uuid.UUID) error
 }
 
 type TokenService struct {
@@ -25,7 +27,7 @@ func NewTokenService(db *sql.DB) TokenService {
 	}
 }
 
-func (s TokenService) New(userID int64, ttl time.Duration, scope data.TokenScope) (*data.Token, error) {
+func (s TokenService) New(userID uuid.UUID, ttl time.Duration, scope data.TokenScope) (*data.Token, error) {
 	token, err := generateToken(userID, ttl, scope)
 	if err != nil {
 		return nil, err
@@ -56,7 +58,7 @@ func (s TokenService) Insert(token *data.Token) error {
 	return tx.Commit()
 }
 
-func (s TokenService) DeleteAllForUser(scope data.TokenScope, userID int64) error {
+func (s TokenService) DeleteAllForUser(scope data.TokenScope, userID uuid.UUID) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -77,7 +79,7 @@ func (s TokenService) DeleteAllForUser(scope data.TokenScope, userID int64) erro
 	return tx.Commit()
 }
 
-func generateToken(userID int64, ttl time.Duration, scope data.TokenScope) (*data.Token, error) {
+func generateToken(userID uuid.UUID, ttl time.Duration, scope data.TokenScope) (*data.Token, error) {
 
 	token := &data.Token{
 		UserID:    userID,

@@ -4,6 +4,7 @@ import (
 	"NodeTurtleAPI/internal/data"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -11,7 +12,7 @@ type MockTokenService struct {
 	mock.Mock
 }
 
-func (m *MockTokenService) New(userID int64, ttl time.Duration, scope data.TokenScope) (*data.Token, error) {
+func (m *MockTokenService) New(userID uuid.UUID, ttl time.Duration, scope data.TokenScope) (*data.Token, error) {
 	args := m.Called(userID, ttl, scope)
 
 	var token *data.Token
@@ -26,7 +27,7 @@ func (m *MockTokenService) Insert(token *data.Token) error {
 	return args.Error(0)
 }
 
-func (m *MockTokenService) DeleteAllForUser(scope data.TokenScope, userID int64) error {
+func (m *MockTokenService) DeleteAllForUser(scope data.TokenScope, userID uuid.UUID) error {
 	args := m.Called(scope, userID)
 	return args.Error(0)
 }

@@ -9,6 +9,7 @@ import (
 	"NodeTurtleAPI/internal/services/auth"
 	"NodeTurtleAPI/internal/services/users"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -152,8 +153,7 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 
 func (h *UserHandler) GetUser(c echo.Context) error {
 	idStr := c.Param("id")
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID")
 	}
@@ -171,8 +171,7 @@ func (h *UserHandler) GetUser(c echo.Context) error {
 
 func (h *UserHandler) UpdateUser(c echo.Context) error {
 	idStr := c.Param("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-
+	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID")
 	}
@@ -225,7 +224,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 
 func (h *UserHandler) DeleteUser(c echo.Context) error {
 	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID")
 	}

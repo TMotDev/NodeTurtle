@@ -201,7 +201,6 @@ func (h *AuthHandler) ResetPassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	// get user associated with the token
 	user, err := h.userService.GetForToken(data.ScopePasswordReset, token)
 
 	if err != nil {
