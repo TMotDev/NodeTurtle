@@ -27,7 +27,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return cv.validator.Struct(i)
 }
 
-func TestRegisterRoute(t *testing.T) {
+func TestRegister(t *testing.T) {
 	// Setup
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
@@ -58,16 +58,14 @@ func TestRegisterRoute(t *testing.T) {
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
-	tests := []struct {
-		name      string
+	tests := map[string]struct {
 		reqBody   map[string]interface{}
 		rawBody   string
 		wantCode  int
 		wantBody  string
 		wantError bool
 	}{
-		{
-			name: "Valid registration",
+		"Valid registration": {
 			reqBody: map[string]interface{}{
 				"email":    "test@test.test",
 				"username": "testuser",
@@ -77,8 +75,7 @@ func TestRegisterRoute(t *testing.T) {
 			wantBody:  "User registered successfully",
 			wantError: false,
 		},
-		{
-			name: "User already exists",
+		"User already exists": {
 			reqBody: map[string]interface{}{
 				"email":    "exists@test.test",
 				"username": "existinguser",
@@ -87,8 +84,7 @@ func TestRegisterRoute(t *testing.T) {
 			wantCode:  http.StatusConflict,
 			wantError: true,
 		},
-		{
-			name: "Invalid email format",
+		"Invalid email format": {
 			reqBody: map[string]interface{}{
 				"email":    "invalid-email",
 				"username": "testuser",
@@ -97,16 +93,14 @@ func TestRegisterRoute(t *testing.T) {
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name: "Missing required fields",
+		"Missing required fields": {
 			reqBody: map[string]interface{}{
 				"email": "test@test.test",
 			},
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name: "Weak password",
+		"Weak password": {
 			reqBody: map[string]interface{}{
 				"email":    "test@test.test",
 				"username": "testuser",
@@ -115,14 +109,12 @@ func TestRegisterRoute(t *testing.T) {
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name:      "Malformed JSON triggers bind error",
+		"Malformed JSON triggers bind error": {
 			rawBody:   `{"email": "test@test.test`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name: "Internal server error",
+		"Internal server error": {
 			reqBody: map[string]interface{}{
 				"email":    "internal-error@test.test",
 				"username": "testuser",
@@ -134,8 +126,8 @@ func TestRegisterRoute(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			var req *http.Request
 			if tt.rawBody != "" {
 				req = httptest.NewRequest(http.MethodPost, "/api/register", strings.NewReader(tt.rawBody))
@@ -170,7 +162,7 @@ func TestRegisterRoute(t *testing.T) {
 
 }
 
-func TestLoginRoute(t *testing.T) {
+func TestLogin(t *testing.T) {
 	// Setup
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
@@ -193,16 +185,14 @@ func TestLoginRoute(t *testing.T) {
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
-	tests := []struct {
-		name      string
+	tests := map[string]struct {
 		reqBody   map[string]interface{}
 		rawBody   string
 		wantCode  int
 		wantBody  string
 		wantError bool
 	}{
-		{
-			name: "Valid login",
+		"Valid login": {
 			reqBody: map[string]interface{}{
 				"email":    "test@test.test",
 				"password": "TestPassword123",
@@ -211,8 +201,7 @@ func TestLoginRoute(t *testing.T) {
 			wantBody:  "mocktoken",
 			wantError: false,
 		},
-		{
-			name: "Invalid credentials",
+		"Invalid credentials": {
 			reqBody: map[string]interface{}{
 				"email":    "wrong@test.test",
 				"password": "TestPassword123",
@@ -220,8 +209,7 @@ func TestLoginRoute(t *testing.T) {
 			wantCode:  http.StatusUnauthorized,
 			wantError: true,
 		},
-		{
-			name: "Inactive account",
+		"Inactive account": {
 			reqBody: map[string]interface{}{
 				"email":    "inactive@test.test",
 				"password": "TestPassword123",
@@ -229,8 +217,7 @@ func TestLoginRoute(t *testing.T) {
 			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
-		{
-			name: "Invalid email format",
+		"Invalid email format": {
 			reqBody: map[string]interface{}{
 				"email":    "invalid-email",
 				"password": "TestPassword123",
@@ -238,24 +225,23 @@ func TestLoginRoute(t *testing.T) {
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name: "Missing required fields",
+		"Missing required fields": {
 			reqBody: map[string]interface{}{
 				"email": "test@test.test",
 			},
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name:      "Malformed JSON triggers bind error",
+		"Malformed JSON triggers bind error": {
+
 			rawBody:   `{"email": "foo@test.test`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			var req *http.Request
 			if tt.rawBody != "" {
 				req = httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(tt.rawBody))
@@ -287,7 +273,7 @@ func TestLoginRoute(t *testing.T) {
 	mockAuthService.AssertExpectations(t)
 }
 
-func TestActivateAccountRoute(t *testing.T) {
+func TestActivateAccount(t *testing.T) {
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
 
@@ -314,53 +300,45 @@ func TestActivateAccountRoute(t *testing.T) {
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
-	tests := []struct {
-		name      string
+	tests := map[string]struct {
 		token     string
 		wantCode  int
 		wantError bool
 	}{
-		{
-			name:      "Valid token",
+		"Valid token": {
 			token:     "token",
 			wantCode:  http.StatusOK,
 			wantError: false,
 		},
-		{
-			name:      "Edit conflict",
+		"Edit conflict": {
 			token:     "editConflict",
 			wantCode:  http.StatusConflict,
 			wantError: true,
 		},
-		{
-			name:      "Invalid token",
+		"Invalid token": {
 			token:     "",
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name:      "Record not found",
+		"Record not found": {
 			token:     "-",
 			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
-		{
-			name:      "Failed to retrieve user",
+		"Failed to retrieve user": {
 			token:     "internal error",
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
-		{
-			name:      "Failed to activate user",
+		"Failed to activate user": {
 			token:     "updateUserFail",
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
@@ -413,40 +391,35 @@ func TestRequestPasswordReset(t *testing.T) {
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
-	tests := []struct {
-		name      string
+	tests := map[string]struct {
 		email     string
 		wantCode  int
 		wantError bool
 	}{
-		{
-			name:      "User not found",
+		"User not found": {
 			email:     "notfound@test.test",
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name:      "Internal error",
+		"Internal error": {
 			email:     "internal@test.test",
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
-		{
-			name:      "Valid request",
+		"Valid request": {
 			email:     "test@test.test",
 			wantCode:  http.StatusOK,
 			wantError: false,
 		},
-		{
-			name:      "Failed to create reset token",
+		"Failed to create reset token": {
 			email:     "resetTokenFail@test.test",
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			body, _ := json.Marshal(data.PasswordReset{
 				Email: tt.email,
 			})
@@ -502,65 +475,56 @@ func TestResetPassword(t *testing.T) {
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
-	tests := []struct {
-		name      string
+	tests := map[string]struct {
 		token     string
 		body      string
 		setupUser func()
 		wantCode  int
 		wantError bool
 	}{
-		{
-			name:      "Success",
+		"Success": {
 			token:     "validtoken",
 			body:      `{"password":"NewPassword123"}`,
 			wantCode:  http.StatusOK,
 			wantError: false,
 		},
-		{
-			name:      "Empty token",
+		"Empty token": {
 			token:     "",
 			body:      `{"password":"NewPassword123"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name:      "Bad token (user not found)",
+		"Bad token (user not found)": {
 			token:     "badtoken",
 			body:      `{"password":"NewPassword123"}`,
 			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
-		{
-			name:      "Short password",
+		"Short password": {
 			token:     "validtoken",
 			body:      `{"password":"short"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name:      "Bad request body",
+		"Bad request body": {
 			token:     "validtoken",
 			body:      `{"password":`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		{
-			name:      "User service GetForToken internal error",
+		"User service GetForToken internal error": {
 			token:     "internalerror",
 			body:      `{"password":"NewPassword123"}`,
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
-		{
-			name:      "User service ResetPassword failed internal",
+		"User service ResetPassword failed internal": {
 			token:     "validtoken",
 			body:      `{"password":"failpassword"}`,
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
-		{
-			name:      "DeleteAllForUser fail",
+		"DeleteAllForUser fail": {
 			token:     "validtoken2",
 			body:      `{"password":"NewPassword123"}`,
 			wantCode:  http.StatusInternalServerError,
@@ -568,12 +532,9 @@ func TestResetPassword(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			token := tt.token
-			if tt.name == "DeleteAllForUser fail" {
-				token = "validtoken2"
-			}
 			req := httptest.NewRequest(http.MethodPost, "/api/password/reset/"+token, bytes.NewReader([]byte(tt.body)))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()

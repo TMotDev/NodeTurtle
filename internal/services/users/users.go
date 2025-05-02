@@ -58,12 +58,6 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 		return nil, err
 	}
 
-	var roleID int
-	err = tx.QueryRow("SELECT id FROM roles WHERE name = $1", "user").Scan(&roleID)
-	if err != nil {
-		return nil, err
-	}
-
 	var user data.User
 	query := `
 	INSERT INTO users (email, username, password, role_id, activated, created_at, updated_at)
@@ -75,7 +69,7 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 		reg.Email,
 		reg.Username,
 		hashedPassword,
-		roleID,
+		data.RoleUser,
 		false,
 	).Scan(
 		&user.ID,

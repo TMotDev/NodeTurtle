@@ -55,7 +55,7 @@ func RequireRole(role string) echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 			}
 
-			if user.Role.Name != role && user.Role.Name != data.RoleAdmin {
+			if user.Role.Name != role && user.Role.Name != data.RoleAdmin.String() {
 				return echo.NewHTTPError(http.StatusForbidden, "Insufficient permissions")
 			}
 

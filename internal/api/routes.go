@@ -98,7 +98,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 
 	// Role-specific routes
 	admin := api.Group("/admin")
-	admin.Use(customMiddleware.RequireRole(data.RoleAdmin))
+	admin.Use(customMiddleware.RequireRole(data.RoleAdmin.String()))
 	admin.GET("/users", userHandler.ListUsers)
 	admin.GET("/users/:id", userHandler.GetUser)
 	admin.PUT("/users/:id", userHandler.UpdateUser)

@@ -34,6 +34,11 @@ func (m *MockUserService) ChangePassword(userID uuid.UUID, oldPassword, newPassw
 
 func (m *MockUserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	args := m.Called(userID)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
 	return args.Get(0).(*data.User), args.Error(1)
 }
 

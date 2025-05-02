@@ -58,19 +58,23 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 	}
 
 	var updateData struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
+		Username *string `json:"username" validate:"omitempty,min=3,max=50"`
+		Email    *string `json:"email" validate:"omitempty,email"`
 	}
 
 	if err := c.Bind(&updateData); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
+	if err := c.Validate(&updateData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	updates := make(map[string]interface{})
-	if updateData.Username != "" {
+	if updateData.Username != nil {
 		updates["username"] = updateData.Username
 	}
-	if updateData.Email != "" {
+	if updateData.Email != nil {
 		updates["email"] = updateData.Email
 	}
 
@@ -185,28 +189,38 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	}
 
 	var updateData struct {
-		Username  string `json:"username"`
-		Email     string `json:"email"`
-		Activated *bool  `json:"activated"`
-		RoleID    *int64 `json:"role_id"`
+		Username  *string `json:"username" validate:"omitempty,min=3,max=50"`
+		Email     *string `json:"email" validate:"omitempty,email"`
+		Activated *bool   `json:"activated" validate:"omitempty"`
+		Role      *string `json:"role" validate:"omitempty"`
 	}
 
 	if err := c.Bind(&updateData); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
+	if err := c.Validate(&updateData); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
 	updates := make(map[string]interface{})
-	if updateData.Username != "" {
+	if updateData.Username != nil {
 		updates["username"] = updateData.Username
 	}
-	if updateData.Email != "" {
+	if updateData.Email != nil {
 		updates["email"] = updateData.Email
 	}
 	if updateData.Activated != nil {
 		updates["activated"] = *updateData.Activated
 	}
-	if updateData.RoleID != nil {
-		updates["role_id"] = *updateData.RoleID
+	if updateData.Role != nil {
+		roleValue, exists := data.RolesByName[*updateData.Role]
+
+		if !exists {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid role name")
+		}
+
+		updates["role_id"] = roleValue
 	}
 
 	if len(updates) == 0 {

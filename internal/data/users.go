@@ -10,25 +10,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const (
-	RoleUser      = "user"
-	RolePremium   = "premium"
-	RoleModerator = "moderator"
-	RoleAdmin     = "admin"
-)
-
-// Role represents a user role in the system
-// @Description User role information including permissions and timestamps
-type Role struct {
-	ID          int64     `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-// User represents a user in the system
-// @Description Complete user account information including role and status
 type User struct {
 	ID        uuid.UUID    `json:"id"`
 	Email     string       `json:"email"`
