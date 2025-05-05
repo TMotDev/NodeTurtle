@@ -374,13 +374,14 @@ func TestRequestPasswordReset(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
-	userID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
-	userIDFail := uuid.MustParse("33333333-3333-3333-3333-333333333333")
+	userID := uuid.New()
+	userIDFail := uuid.New()
 
 	mockUserService.On("GetUserByEmail", "notfound@test.test").Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByEmail", "internal@test.test").Return(nil, services.ErrInternal)
-	mockUserService.On("GetUserByEmail", "test@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser"}, nil)
-	mockUserService.On("GetUserByEmail", "resetTokenFail@test.test").Return(&data.User{ID: userIDFail, Email: "resetTokenFail@test.test", Username: "resetTokenFail"}, nil)
+	mockUserService.On("GetUserByEmail", "test@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser", Activated: true}, nil)
+	mockUserService.On("GetUserByEmail", "resetTokenFail@test.test").Return(&data.User{ID: userIDFail, Email: "resetTokenFail@test.test", Username: "resetTokenFail", Activated: true}, nil)
+	mockUserService.On("GetUserByEmail", "notactivated@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser", Activated: false}, nil)
 
 	mockTokenService.On("New", userID, mock.Anything, data.ScopePasswordReset).Return(&data.Token{
 		Plaintext: "mocktoken",
@@ -399,6 +400,11 @@ func TestRequestPasswordReset(t *testing.T) {
 		"User not found": {
 			email:     "notfound@test.test",
 			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"User not activated": {
+			email:     "notactivated@test.test",
+			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
 		"Internal error": {
@@ -456,22 +462,22 @@ func TestResetPassword(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
-	userID1 := uuid.MustParse("11111111-1111-1111-1111-111111111111")
-	userID2 := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	userIDValid := uuid.New()
+	userIDInternalFail := uuid.New()
 
-	validUser := &data.User{ID: userID1, Email: "test@test.test", Username: "testuser"}
+	validUser := &data.User{ID: userIDValid, Email: "test@test.test", Username: "testuser", Activated: true}
 
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken").Return(validUser, nil)
-	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken2").Return(&data.User{ID: userID2, Email: "fail@test.test", Username: "failuser"}, nil)
+	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken2").Return(&data.User{ID: userIDInternalFail, Email: "fail@test.test", Username: "failuser", Activated: true}, nil)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "badtoken").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "internalerror").Return(nil, services.ErrInternal)
+	mockUserService.On("GetForToken", data.ScopePasswordReset, "inactive").Return(&data.User{ID: userIDValid, Email: "valid@test.test", Username: "validUser", Activated: false}, nil)
 
-	mockUserService.On("ResetPassword", "validtoken", "NewPassword123").Return(nil)
 	mockUserService.On("ResetPassword", "validtoken", "failpassword").Return(services.ErrInternal)
-	mockUserService.On("ResetPassword", "validtoken2", "NewPassword123").Return(nil)
+	mockUserService.On("ResetPassword", mock.Anything, mock.Anything).Return(nil)
 
-	mockTokenService.On("DeleteAllForUser", data.ScopePasswordReset, userID1).Return(nil)
-	mockTokenService.On("DeleteAllForUser", data.ScopePasswordReset, userID2).Return(services.ErrInternal)
+	mockTokenService.On("DeleteAllForUser", data.ScopePasswordReset, userIDValid).Return(nil)
+	mockTokenService.On("DeleteAllForUser", data.ScopePasswordReset, userIDInternalFail).Return(services.ErrInternal)
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
@@ -494,10 +500,16 @@ func TestResetPassword(t *testing.T) {
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		"Bad token (user not found)": {
+		"User not found": {
 			token:     "badtoken",
 			body:      `{"password":"NewPassword123"}`,
 			wantCode:  http.StatusUnprocessableEntity,
+			wantError: true,
+		},
+		"Account not activated": {
+			token:     "inactive",
+			body:      `{"password":"NewPassword123"}`,
+			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
 		"Short password": {

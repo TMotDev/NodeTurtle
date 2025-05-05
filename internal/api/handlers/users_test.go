@@ -109,13 +109,21 @@ func TestUpdateCurrentUser(t *testing.T) {
 
 	notFoundUser := &data.User{
 		ID:        uuid.New(),
-		Email:     "inactiveuser@test.com",
-		Username:  "inactiveuser",
+		Email:     "notfound@test.com",
+		Username:  "notfounduser",
+		Activated: false,
+	}
+
+	inactiveUser := &data.User{
+		ID:        uuid.New(),
+		Email:     "inactive@test.com",
+		Username:  "inactive",
 		Activated: false,
 	}
 
 	mockUserService.On("GetUserByID", validUser.ID).Return(validUser, nil)
 	mockUserService.On("GetUserByID", notFoundUser.ID).Return(nil, services.ErrUserNotFound)
+	mockUserService.On("GetUserByID", inactiveUser.ID).Return(inactiveUser, nil)
 
 	mockUserService.On("UpdateUser", validUser.ID, mock.Anything).Return(nil)
 
@@ -146,6 +154,13 @@ func TestUpdateCurrentUser(t *testing.T) {
 
 			reqBody:   `{"username":"newusername","email":"new@test.test"}`,
 			wantCode:  http.StatusNotFound,
+			wantError: true,
+		},
+		"User not activated": {
+			contextUser: inactiveUser,
+
+			reqBody:   `{"username":"newusername","email":"new@test.test"}`,
+			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
 		"No updates provided": {
@@ -225,12 +240,20 @@ func TestChangePassword(t *testing.T) {
 		Activated: true,
 	}
 
+	inactiveUser := data.User{
+		ID:        uuid.New(),
+		Email:     "inactive@test.com",
+		Username:  "inactive",
+		Activated: false,
+	}
+
 	mockUserService.On("GetUserByID", validUser.ID).Return(&validUser, nil)
 	mockUserService.On("GetUserByID", notFoundUser.ID).Return(nil, services.ErrUserNotFound)
+	mockUserService.On("GetUserByID", inactiveUser.ID).Return(&inactiveUser, nil)
 	mockUserService.On("GetUserByID", mock.Anything).Return(nil, services.ErrInternal)
 
-	mockUserService.On("ChangePassword", validUser.ID, "OldPassword123", "NewPassword123").Return(nil)
 	mockUserService.On("ChangePassword", validUser.ID, "WrongPassword", "NewPassword123").Return(services.ErrInvalidCredentials)
+	mockUserService.On("ChangePassword", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	handler := NewUserHandler(&mockUserService, &mockAuthService)
 
@@ -276,6 +299,12 @@ func TestChangePassword(t *testing.T) {
 			contextUser: &notFoundUser,
 			reqBody:     `{"old_password":"OldPassword123","new_password":"NewPassword123"}`,
 			wantCode:    http.StatusNotFound,
+			wantError:   true,
+		},
+		"User not activated": {
+			contextUser: &inactiveUser,
+			reqBody:     `{"old_password":"OldPassword123","new_password":"NewPassword123"}`,
+			wantCode:    http.StatusForbidden,
 			wantError:   true,
 		},
 	}

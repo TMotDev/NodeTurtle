@@ -165,6 +165,10 @@ func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 	}
 
+	if !user.Activated {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
+	}
+
 	resetToken, err := h.tokenService.New(user.ID, 24*time.Hour, data.ScopePasswordReset)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create reset token")
@@ -211,6 +215,10 @@ func (h *AuthHandler) ResetPassword(c echo.Context) error {
 		default:
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve data")
 		}
+	}
+
+	if !user.Activated {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
 	err = h.userService.ResetPassword(token, payload.Password)

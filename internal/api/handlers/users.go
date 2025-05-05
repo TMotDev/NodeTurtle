@@ -57,6 +57,10 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
+	if !user.Activated {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
+	}
+
 	var updateData struct {
 		Username *string `json:"username" validate:"omitempty,min=3,max=50"`
 		Email    *string `json:"email" validate:"omitempty,email"`
@@ -103,6 +107,10 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
+	}
+
+	if !user.Activated {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
 	var passwordData data.PasswordChange
