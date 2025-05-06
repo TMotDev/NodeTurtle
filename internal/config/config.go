@@ -9,7 +9,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config holds all configuration for the application
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
@@ -17,7 +16,6 @@ type Config struct {
 	JWT      JWTConfig
 }
 
-// ServerConfig holds server configuration
 type ServerConfig struct {
 	Port         int
 	Host         string
@@ -25,7 +23,6 @@ type ServerConfig struct {
 	WriteTimeout int
 }
 
-// DatabaseConfig holds database configuration
 type DatabaseConfig struct {
 	Host     string
 	Port     int
@@ -35,7 +32,6 @@ type DatabaseConfig struct {
 	SSLMode  string
 }
 
-// MailConfig holds mail server configuration
 type MailConfig struct {
 	Host     string
 	Port     int
@@ -49,7 +45,6 @@ type JWTConfig struct {
 	ExpireTime int // in hours
 }
 
-// Load loads configuration from environment variables
 func Load(configPath, envFile string) (*Config, error) {
 	// Load environment variables from file
 	if envFile != "" {
@@ -61,29 +56,29 @@ func Load(configPath, envFile string) (*Config, error) {
 	// Load from environment variables
 	cfg := &Config{
 		Server: ServerConfig{
-			Port:         getEnvAsInt("SERVER_PORT", 8080),
-			Host:         getEnv("SERVER_HOST", ""),
-			ReadTimeout:  getEnvAsInt("SERVER_READ_TIMEOUT", 15),
-			WriteTimeout: getEnvAsInt("SERVER_WRITE_TIMEOUT", 15),
+			Port:         GetEnvAsInt("SERVER_PORT", 8080),
+			Host:         GetEnv("SERVER_HOST", ""),
+			ReadTimeout:  GetEnvAsInt("SERVER_READ_TIMEOUT", 15),
+			WriteTimeout: GetEnvAsInt("SERVER_WRITE_TIMEOUT", 15),
 		},
 		Database: DatabaseConfig{
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnvAsInt("DB_PORT", 5432),
-			User:     getEnv("DB_USER", "postgres"),
-			Password: getEnv("DB_PASSWORD", ""),
-			Name:     getEnv("DB_NAME", "turtlegraphics"),
-			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			Host:     GetEnv("DB_HOST", "localhost"),
+			Port:     GetEnvAsInt("DB_PORT", 5432),
+			User:     GetEnv("DB_USER", "postgres"),
+			Password: GetEnv("DB_PASSWORD", ""),
+			Name:     GetEnv("DB_NAME", "turtlegraphics"),
+			SSLMode:  GetEnv("DB_SSLMODE", "disable"),
 		},
 		Mail: MailConfig{
-			Host:     getEnv("MAIL_HOST", "smtp.mailtrap.io"),
-			Port:     getEnvAsInt("MAIL_PORT", 2525),
-			Username: getEnv("MAIL_USERNAME", ""),
-			Password: getEnv("MAIL_PASSWORD", ""),
-			From:     getEnv("MAIL_FROM", "noreply@turtlegraphics.com"),
+			Host:     GetEnv("MAIL_HOST", "smtp.mailtrap.io"),
+			Port:     GetEnvAsInt("MAIL_PORT", 2525),
+			Username: GetEnv("MAIL_USERNAME", ""),
+			Password: GetEnv("MAIL_PASSWORD", ""),
+			From:     GetEnv("MAIL_FROM", "noreply@turtlegraphics.com"),
 		},
 		JWT: JWTConfig{
-			Secret:     getEnv("JWT_SECRET", ""),
-			ExpireTime: getEnvAsInt("JWT_EXPIRE_TIME", 24), // 24 hours default
+			Secret:     GetEnv("JWT_SECRET", ""),
+			ExpireTime: GetEnvAsInt("JWT_EXPIRE_TIME", 24), // 24 hours default
 		},
 	}
 
@@ -96,15 +91,15 @@ func Load(configPath, envFile string) (*Config, error) {
 }
 
 // Helper functions to get environment variables
-func getEnv(key, fallback string) string {
+func GetEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
 	return fallback
 }
 
-func getEnvAsInt(key string, fallback int) int {
-	strValue := getEnv(key, "")
+func GetEnvAsInt(key string, fallback int) int {
+	strValue := GetEnv(key, "")
 	if value, err := strconv.Atoi(strValue); err == nil {
 		return value
 	}

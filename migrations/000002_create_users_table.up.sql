@@ -9,6 +9,5 @@ CREATE TABLE users (
     role_id INTEGER NOT NULL REFERENCES roles(id),
     activated bool NOT NULL,
     last_login TIMESTAMP,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
+    created_at TIMESTAMP NOT NULL
 );

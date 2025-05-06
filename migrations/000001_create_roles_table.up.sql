@@ -2,8 +2,7 @@ CREATE TABLE roles (
     id bigserial PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
     description TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 INSERT INTO roles (name, description) VALUES

@@ -118,7 +118,7 @@ func (s AuthService) VerifyToken(tokenString string) (*Claims, error) {
 
 // CreateToken creates a new JWT token
 func (s AuthService) CreateJWTToken(user data.User) (string, error) {
-	expirationTime := time.Now().Add(time.Duration(s.jwtExp) * time.Hour)
+	expirationTime := time.Now().UTC().Add(time.Duration(s.jwtExp) * time.Hour)
 
 	claims := &Claims{
 		UserID: user.ID,

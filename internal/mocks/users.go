@@ -13,13 +13,10 @@ type MockUserService struct {
 
 func (m *MockUserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 	args := m.Called(reg)
-
-	// Handle nil user case
 	var user *data.User
 	if args.Get(0) != nil {
 		user = args.Get(0).(*data.User)
 	}
-
 	return user, args.Error(1)
 }
 
@@ -34,34 +31,26 @@ func (m *MockUserService) ChangePassword(userID uuid.UUID, oldPassword, newPassw
 
 func (m *MockUserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	args := m.Called(userID)
-
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-
 	return args.Get(0).(*data.User), args.Error(1)
 }
 
 func (m *MockUserService) GetUserByEmail(email string) (*data.User, error) {
 	args := m.Called(email)
-
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-
 	return args.Get(0).(*data.User), args.Error(1)
-
 }
 
 func (m *MockUserService) ListUsers(page, limit int) ([]data.User, int, error) {
 	args := m.Called(page, limit)
-
-	var users []data.User
-	if args.Get(0) != nil {
-		users = args.Get(0).([]data.User)
+	if args.Get(0) == nil {
+		return nil, args.Int(1), args.Error(2)
 	}
-
-	return users, args.Int(1), args.Error(2)
+	return args.Get(0).([]data.User), args.Int(1), args.Error(2)
 }
 
 func (m *MockUserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}) error {
@@ -76,11 +65,9 @@ func (m *MockUserService) DeleteUser(userID uuid.UUID) error {
 
 func (m *MockUserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error) {
 	args := m.Called(tokenScope, tokenPlaintext)
-
 	var user *data.User
 	if args.Get(0) != nil {
 		user = args.Get(0).(*data.User)
 	}
-
 	return user, args.Error(1)
 }

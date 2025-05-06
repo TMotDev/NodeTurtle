@@ -44,7 +44,7 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 		return nil, err
 	}
 	if exists {
-		return nil, services.ErrUserExists
+		return nil, services.ErrDuplicateEmail
 	}
 
 	tx, err := s.db.Begin()
@@ -60,9 +60,9 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 
 	var user data.User
 	query := `
-	INSERT INTO users (email, username, password, role_id, activated, created_at, updated_at)
-	VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-	RETURNING id, email, username, activated, created_at, updated_at
+	INSERT INTO users (email, username, password, role_id, activated, created_at)
+	VALUES ($1, $2, $3, $4, $5, NOW())
+	RETURNING id, email, username, activated, created_at
 	`
 	err = tx.QueryRow(
 		query,
@@ -77,7 +77,6 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 		&user.Username,
 		&user.Activated,
 		&user.CreatedAt,
-		&user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -110,8 +109,8 @@ func (s UserService) ResetPassword(token, newPassword string) error {
 		return err
 	}
 
-	if time.Now().After(expiresAt) {
-		return services.ErrInvalidToken
+	if time.Now().UTC().After(expiresAt.UTC()) {
+		return services.ErrExpiredToken
 	}
 
 	hashedPassword, err := auth.HashPassword(newPassword)
@@ -120,7 +119,7 @@ func (s UserService) ResetPassword(token, newPassword string) error {
 	}
 
 	_, err = tx.Exec(
-		"UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2",
+		"UPDATE users SET password = $1 WHERE id = $2",
 		hashedPassword, userID,
 	)
 	if err != nil {
@@ -157,7 +156,7 @@ func (s UserService) ChangePassword(userID uuid.UUID, oldPassword, newPassword s
 	}
 
 	_, err = s.db.Exec(
-		"UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2",
+		"UPDATE users SET password = $1 WHERE id = $2",
 		newHashedPassword, userID,
 	)
 	if err != nil {
@@ -172,16 +171,16 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	var role data.Role
 
 	query := `
-		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.updated_at, u.last_login,
-		       r.id, r.name, r.description, r.created_at, r.updated_at
+		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
+		       r.id, r.name, r.description, r.created_at,
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
 		WHERE u.id = $1
 	`
 
 	err := s.db.QueryRow(query, userID).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.UpdatedAt, &user.LastLogin,
-		&role.ID, &role.Name, &role.Description, &role.CreatedAt, &role.UpdatedAt,
+		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.LastLogin,
+		&role.ID, &role.Name, &role.Description, &role.CreatedAt,
 	)
 
 	if err != nil {
@@ -200,7 +199,7 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	var role data.Role
 
 	query := `
-		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.updated_at, u.last_login,
+		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
 		       r.id, r.name, r.description
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
@@ -208,7 +207,7 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	`
 
 	err := s.db.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.UpdatedAt, &user.LastLogin,
+		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description,
 	)
 
@@ -240,7 +239,7 @@ func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
 	}
 
 	query := `
-		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.updated_at, u.last_login,
+		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
 		       r.id, r.name, r.description
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
@@ -261,7 +260,7 @@ func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
 		var lastLogin sql.NullTime
 
 		err := rows.Scan(
-			&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.UpdatedAt, &lastLogin,
+			&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &lastLogin,
 			&role.ID, &role.Name, &role.Description,
 		)
 		if err != nil {
@@ -298,7 +297,7 @@ func (s UserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}
 		}
 	}
 
-	query := "UPDATE users SET updated_at = NOW()"
+	query := "UPDATE users SET "
 	args := []interface{}{}
 	argCount := 1
 
@@ -325,8 +324,6 @@ func (s UserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}
 
 	query += fmt.Sprintf(" WHERE id = $%d", argCount)
 	args = append(args, user.ID)
-
-	fmt.Println(query)
 
 	_, err = tx.Exec(query, args...)
 	if err != nil {
@@ -366,7 +363,7 @@ func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext stri
         AND tokens.scope = $2
         AND tokens.expires_at > $3`
 
-	args := []any{tokenHash[:], tokenScope, time.Now()}
+	args := []any{tokenHash[:], tokenScope, time.Now().UTC()}
 
 	var user data.User
 

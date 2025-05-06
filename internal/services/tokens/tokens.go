@@ -28,7 +28,7 @@ func NewTokenService(db *sql.DB) TokenService {
 }
 
 func (s TokenService) New(userID uuid.UUID, ttl time.Duration, scope data.TokenScope) (*data.Token, error) {
-	token, err := generateToken(userID, ttl, scope)
+	token, err := GenerateToken(userID, ttl, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -79,11 +79,10 @@ func (s TokenService) DeleteAllForUser(scope data.TokenScope, userID uuid.UUID) 
 	return tx.Commit()
 }
 
-func generateToken(userID uuid.UUID, ttl time.Duration, scope data.TokenScope) (*data.Token, error) {
-
+func GenerateToken(userID uuid.UUID, ttl time.Duration, scope data.TokenScope) (*data.Token, error) {
 	token := &data.Token{
 		UserID:    userID,
-		ExpiresAt: time.Now().Add(ttl),
+		ExpiresAt: time.Now().UTC().Add(ttl),
 		Scope:     scope,
 	}
 
