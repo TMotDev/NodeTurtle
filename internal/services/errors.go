@@ -14,4 +14,6 @@ var (
 	ErrExpiredToken       = errors.New("token has expired")
 	ErrEditConflict       = errors.New("edit conflict")
 	ErrInternal           = errors.New("internal server error")
+	ErrInvalidData        = errors.New("invalid data: the provided input does not match the expected format")
+	ErrNoFields           = errors.New("no fields provided")
 )

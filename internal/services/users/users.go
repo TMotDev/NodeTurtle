@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"NodeTurtleAPI/internal/data"
@@ -172,7 +173,7 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 
 	query := `
 		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
-		       r.id, r.name, r.description, r.created_at,
+		       r.id, r.name, r.description, r.created_at
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
 		WHERE u.id = $1
@@ -281,7 +282,7 @@ func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
 
 func (s UserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}) error {
 	if len(updates) == 0 {
-		return errors.New("no fields to update")
+		return services.ErrNoFields
 	}
 
 	tx, err := s.db.Begin()
@@ -297,31 +298,36 @@ func (s UserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}
 		}
 	}
 
-	query := "UPDATE users SET "
+	assignments := []string{}
 	args := []interface{}{}
 	argCount := 1
 
 	for key, value := range updates {
 		switch key {
 		case "username":
-			query += fmt.Sprintf(", username = $%d", argCount)
+			assignments = append(assignments, fmt.Sprintf("username = $%d", argCount))
 			args = append(args, value)
 			argCount++
 		case "email":
-			query += fmt.Sprintf(", email = $%d", argCount)
+			assignments = append(assignments, fmt.Sprintf("email = $%d", argCount))
 			args = append(args, value)
 			argCount++
 		case "activated":
-			query += fmt.Sprintf(", activated = $%d", argCount)
+			assignments = append(assignments, fmt.Sprintf("activated = $%d", argCount))
 			args = append(args, value)
 			argCount++
 		case "role_id":
-			query += fmt.Sprintf(", role_id = $%d", argCount)
+			assignments = append(assignments, fmt.Sprintf("role_id = $%d", argCount))
 			args = append(args, value)
 			argCount++
 		}
 	}
 
+	if len(assignments) == 0 {
+		return services.ErrInvalidData
+	}
+
+	query := "UPDATE users SET " + strings.Join(assignments, ", ")
 	query += fmt.Sprintf(" WHERE id = $%d", argCount)
 	args = append(args, user.ID)
 

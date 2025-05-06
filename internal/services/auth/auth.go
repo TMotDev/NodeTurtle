@@ -31,16 +31,16 @@ type IAuthService interface {
 // AuthService provides authentication functionality
 type AuthService struct {
 	db     *sql.DB
-	jwtKey []byte
-	jwtExp int
+	JwtKey []byte
+	JwtExp int
 }
 
 // NewService creates a new authentication service
 func NewService(db *sql.DB, jwtConfig config.JWTConfig) AuthService {
 	return AuthService{
 		db:     db,
-		jwtKey: []byte(jwtConfig.Secret),
-		jwtExp: jwtConfig.ExpireTime,
+		JwtKey: []byte(jwtConfig.Secret),
+		JwtExp: jwtConfig.ExpireTime,
 	}
 }
 
@@ -75,7 +75,6 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 		return "", nil, services.ErrInvalidCredentials
 	}
 
-	// Check if account is activated
 	if !user.Activated {
 		return "", nil, services.ErrInactiveAccount
 	}
@@ -83,11 +82,10 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 	// Update last login time
 	_, err = s.db.Exec("UPDATE users SET last_login = NOW() WHERE id = $1", user.ID)
 	if err != nil {
-		// Non-critical error, continue
+		// Non-critical error, continuing
 		fmt.Printf("Failed to update last login time: %v\n", err)
 	}
 
-	// Create token
 	user.Role = role
 	token, err := s.CreateJWTToken(user)
 	if err != nil {
@@ -102,7 +100,7 @@ func (s AuthService) VerifyToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return s.jwtKey, nil
+		return s.JwtKey, nil
 	})
 
 	if err != nil {
@@ -118,7 +116,7 @@ func (s AuthService) VerifyToken(tokenString string) (*Claims, error) {
 
 // CreateToken creates a new JWT token
 func (s AuthService) CreateJWTToken(user data.User) (string, error) {
-	expirationTime := time.Now().UTC().Add(time.Duration(s.jwtExp) * time.Hour)
+	expirationTime := time.Now().UTC().Add(time.Duration(s.JwtExp) * time.Hour)
 
 	claims := &Claims{
 		UserID: user.ID,
@@ -130,7 +128,7 @@ func (s AuthService) CreateJWTToken(user data.User) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(s.jwtKey)
+	tokenString, err := token.SignedString(s.JwtKey)
 	if err != nil {
 		return "", err
 	}

@@ -98,6 +98,7 @@ func setupService(t *testing.T) (users.IUserService, TestData, func()) {
 		log.Fatalf("Failed to erase test database: %v", err)
 	}
 
+	// insert users
 	for _, u := range testData.Users {
 		var pwd data.Password
 		err := pwd.Set(u.Password)
@@ -110,6 +111,7 @@ func setupService(t *testing.T) (users.IUserService, TestData, func()) {
 		assert.NoError(t, err)
 	}
 
+	// insert tokens
 	for _, tk := range testData.Tokens {
 		_, err = db.Exec(`
             INSERT INTO tokens (hash, user_id, scope, created_at, expires_at)
@@ -194,6 +196,284 @@ func TestResetPassword(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 
 			err := s.ResetPassword(tt.token, tt.newPassword)
+
+			if tt.err != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nil, err)
+			}
+		})
+	}
+}
+
+func TestChangePassword(t *testing.T) {
+	s, td, close := setupService(t)
+	defer close()
+
+	tests := map[string]struct {
+		userId      uuid.UUID
+		oldPassword string
+		newPassword string
+		err         error
+	}{
+		"Successful password reset": {
+			userId:      td.Users[0].ID,
+			oldPassword: "password1234",
+			newPassword: "newPassword1234",
+			err:         nil,
+		},
+		"User ID not found": {
+			userId:      uuid.New(),
+			oldPassword: "password1234",
+			newPassword: "newPassword1234",
+			err:         services.ErrUserNotFound,
+		},
+		"Wrong old password": {
+			userId:      td.Users[0].ID,
+			oldPassword: "wrongPassword",
+			newPassword: "newPassword1234",
+			err:         services.ErrInvalidCredentials,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			err := s.ChangePassword(tt.userId, tt.oldPassword, tt.newPassword)
+
+			if tt.err != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nil, err)
+			}
+		})
+	}
+}
+
+func TestGetUserById(t *testing.T) {
+	s, td, close := setupService(t)
+	defer close()
+
+	tests := map[string]struct {
+		userId uuid.UUID
+		err    error
+	}{
+		"Successful user fetch": {
+			userId: td.Users[0].ID,
+			err:    nil,
+		},
+		"User ID not found": {
+			userId: uuid.New(),
+			err:    services.ErrUserNotFound,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			_, err := s.GetUserByID(tt.userId)
+
+			if tt.err != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nil, err)
+			}
+		})
+	}
+}
+
+func TestGetUserByEmail(t *testing.T) {
+	s, td, close := setupService(t)
+	defer close()
+
+	tests := map[string]struct {
+		email string
+		err   error
+	}{
+		"Successful user fetch": {
+			email: td.Users[0].Email,
+			err:   nil,
+		},
+		"User ID not found": {
+			email: "notfound@example.com",
+			err:   services.ErrUserNotFound,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			_, err := s.GetUserByEmail(tt.email)
+
+			if tt.err != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nil, err)
+			}
+		})
+	}
+}
+
+func TestListUsers(t *testing.T) {
+	s, td, close := setupService(t)
+	defer close()
+
+	tests := map[string]struct {
+		page          int
+		limit         int
+		expectedCount int
+		err           error
+	}{
+		"Successful user list fetch": {
+			page:          1,
+			limit:         2,
+			expectedCount: 2,
+			err:           nil,
+		},
+		"Negative params": {
+			page:          -1,
+			limit:         -99,
+			expectedCount: len(td.Users),
+			err:           nil,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			u, _, err := s.ListUsers(tt.page, tt.limit)
+
+			if tt.err != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedCount, len(u))
+				assert.Equal(t, nil, err)
+			}
+		})
+	}
+}
+
+func TestUpdateUser(t *testing.T) {
+	s, td, close := setupService(t)
+	defer close()
+
+	tests := map[string]struct {
+		userID  uuid.UUID
+		updates map[string]interface{}
+		err     error
+	}{
+		"Successful user update": {
+			userID:  td.Users[0].ID,
+			updates: map[string]interface{}{"username": "newUsername", "email": "newEmail@example.com", "activated": true, "role_id": data.RolePremium},
+			err:     nil,
+		},
+		"No updates provided": {
+			userID:  td.Users[0].ID,
+			updates: map[string]interface{}{},
+			err:     services.ErrNoFields,
+		},
+		"Incorect updates provided": {
+			userID:  td.Users[0].ID,
+			updates: map[string]interface{}{"USERNAME": "NEWUSERNAME", "Email": "NEWEMAIL@example.com", "active": true},
+			err:     services.ErrInvalidData,
+		},
+		"No user found": {
+			userID:  uuid.New(),
+			updates: map[string]interface{}{"username": "newUsername", "email": "newEmail@example.com", "activated": true, "role_id": data.RolePremium},
+			err:     services.ErrUserNotFound,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			err := s.UpdateUser(tt.userID, tt.updates)
+
+			if tt.err != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nil, err)
+			}
+		})
+	}
+}
+
+func TestDeleteUser(t *testing.T) {
+	s, td, close := setupService(t)
+	defer close()
+
+	tests := map[string]struct {
+		userId uuid.UUID
+		err    error
+	}{
+		"Successful user delete": {
+			userId: td.Users[0].ID,
+			err:    nil,
+		},
+		"User ID not found": {
+			userId: uuid.New(),
+			err:    services.ErrUserNotFound,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			err := s.DeleteUser(tt.userId)
+
+			if tt.err != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nil, err)
+			}
+		})
+	}
+}
+
+func TestGetForToken(t *testing.T) {
+	s, td, close := setupService(t)
+	defer close()
+
+	tests := map[string]struct {
+		tokenScope     data.TokenScope
+		tokenPlaintext string
+		err            error
+	}{
+		"Successful user fetch": {
+			tokenScope:     data.ScopePasswordReset,
+			tokenPlaintext: td.Tokens["bob_valid_password_reset"].Plaintext,
+			err:            nil,
+		},
+		"Invalid token format": {
+			tokenScope:     data.ScopePasswordReset,
+			tokenPlaintext: "asdf",
+			err:            services.ErrRecordNotFound,
+		},
+		"Expired token": {
+			tokenScope:     data.ScopePasswordReset,
+			tokenPlaintext: td.Tokens["alice_expired_password_reset"].Plaintext,
+			err:            services.ErrRecordNotFound,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			_, err := s.GetForToken(tt.tokenScope, tt.tokenPlaintext)
 
 			if tt.err != nil {
 				assert.Error(t, err)
