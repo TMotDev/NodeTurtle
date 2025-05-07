@@ -7,6 +7,7 @@ import (
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services/auth"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -36,9 +37,8 @@ func JWT(authService *auth.AuthService) echo.MiddlewareFunc {
 
 			// Store user info in context
 			c.Set("user", &data.User{
-				ID:    claims.UserID,
-				Email: claims.Email,
-				Role:  data.Role{Name: claims.Role},
+				ID:   uuid.MustParse(claims.Subject),
+				Role: data.Role{Name: claims.Role},
 			})
 
 			return next(c)

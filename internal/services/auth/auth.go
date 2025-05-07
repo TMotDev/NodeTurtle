@@ -10,15 +10,12 @@ import (
 	"NodeTurtleAPI/internal/services"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // Claims represents JWT claims
 type Claims struct {
-	UserID uuid.UUID `json:"user_id"`
-	Email  string    `json:"email"`
-	Role   string    `json:"role"`
+	Role string `json:"role"`
 	jwt.StandardClaims
 }
 
@@ -119,11 +116,10 @@ func (s AuthService) CreateJWTToken(user data.User) (string, error) {
 	expirationTime := time.Now().UTC().Add(time.Duration(s.JwtExp) * time.Hour)
 
 	claims := &Claims{
-		UserID: user.ID,
-		Email:  user.Email,
-		Role:   user.Role.Name,
+		Role: user.Role.Name,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
+			Subject:   user.ID.String(),
 		},
 	}
 

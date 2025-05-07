@@ -10,6 +10,7 @@ import (
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -204,8 +205,7 @@ func TestVerifyToken(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, claims)
-				assert.Equal(t, user.ID, claims.UserID)
-				assert.Equal(t, user.Email, claims.Email)
+				assert.Equal(t, user.ID, uuid.MustParse(claims.Subject))
 				assert.Equal(t, user.Role.Name, claims.Role)
 			}
 		})

@@ -98,10 +98,8 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token": token,
 		"user": map[string]interface{}{
-			"id":       user.ID,
 			"email":    user.Email,
 			"username": user.Username,
-			"role":     user.Role.Name,
 		},
 	})
 }
