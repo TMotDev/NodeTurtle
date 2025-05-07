@@ -87,8 +87,3 @@ type UserLogin struct {
 type PasswordReset struct {
 	Email string `json:"email" validate:"required,email"`
 }
-
-type PasswordChange struct {
-	OldPassword string `json:"old_password" validate:"required"`
-	NewPassword string `json:"new_password" validate:"required,min=8"`
-}

@@ -22,4 +22,5 @@ type TokenScope string
 const (
 	ScopeUserActivation TokenScope = "user_activation"
 	ScopePasswordReset  TokenScope = "password_reset"
+	ScopeRefresh        TokenScope = "refresh"
 )

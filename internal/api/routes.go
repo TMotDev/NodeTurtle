@@ -58,7 +58,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	tokenService := tokens.NewTokenService(db)
 
 	authHandler := handlers.NewAuthHandler(&authService, &userService, &tokenService, &mailService)
-	userHandler := handlers.NewUserHandler(&userService, &authService)
+	userHandler := handlers.NewUserHandler(&userService, &authService, &tokenService)
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}, error=${error}\n",
@@ -66,7 +66,6 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
-	// Routes
 	setupRoutes(e, &authHandler, &userHandler, &authService)
 
 	return &Server{
@@ -79,8 +78,8 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, authService *auth.AuthService) {
 
 	// Public routes
-	e.POST("/api/register", authHandler.Register)
 	e.POST("/api/login", authHandler.Login)
+	e.POST("/api/register", authHandler.Register)
 	e.GET("/api/activate/:token", authHandler.ActivateAccount)
 	e.POST("/api/password/reset", authHandler.RequestPasswordReset)
 	e.POST("/api/password/reset/:token", authHandler.ResetPassword)
@@ -92,6 +91,8 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	api.Use(customMiddleware.JWT(authService))
 
 	// User routes
+	api.POST("/api/auth/refresh", authHandler.RefreshToken)
+	api.POST("/auth/logout", authHandler.Logout)
 	api.GET("/users/me", userHandler.GetCurrentUser)
 	api.PUT("/users/me", userHandler.UpdateCurrentUser)
 	api.POST("/users/me/password", userHandler.ChangePassword)

@@ -7,6 +7,7 @@ import (
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
+	"NodeTurtleAPI/internal/services/tokens"
 	"NodeTurtleAPI/internal/services/users"
 
 	"github.com/google/uuid"
@@ -14,14 +15,16 @@ import (
 )
 
 type UserHandler struct {
-	userService users.IUserService
-	authService auth.IAuthService
+	userService  users.IUserService
+	authService  auth.IAuthService
+	tokenService tokens.ITokenService
 }
 
-func NewUserHandler(userService users.IUserService, authService auth.IAuthService) UserHandler {
+func NewUserHandler(userService users.IUserService, authService auth.IAuthService, tokenService tokens.ITokenService) UserHandler {
 	return UserHandler{
-		userService: userService,
-		authService: authService,
+		userService:  userService,
+		authService:  authService,
+		tokenService: tokenService,
 	}
 }
 
@@ -113,20 +116,29 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
-	var passwordData data.PasswordChange
-	if err := c.Bind(&passwordData); err != nil {
+	var payload struct {
+		OldPassword string `json:"old_password" validate:"required"`
+		NewPassword string `json:"new_password" validate:"required,min=8"`
+	}
+
+	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
-	if err := c.Validate(&passwordData); err != nil {
+	if err := c.Validate(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := h.userService.ChangePassword(user.ID, passwordData.OldPassword, passwordData.NewPassword); err != nil {
+	if err := h.userService.ChangePassword(user.ID, payload.OldPassword, payload.NewPassword); err != nil {
 		if err == services.ErrInvalidCredentials {
 			return echo.NewHTTPError(http.StatusBadRequest, "Current password is incorrect")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to change password")
+	}
+
+	err = h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID)
+	if err != nil {
+		c.Logger().Errorf("Failed to invalidate refresh tokens: %v", err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{

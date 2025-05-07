@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/mocks"
@@ -28,7 +29,6 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 }
 
 func TestRegister(t *testing.T) {
-	// Setup
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
 
@@ -163,7 +163,6 @@ func TestRegister(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	// Setup
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
 
@@ -182,6 +181,7 @@ func TestLogin(t *testing.T) {
 	mockAuthService.On("Login", "test@test.test", "TestPassword123").Return("mocktoken", validUser, nil)
 	mockAuthService.On("Login", "wrong@test.test", "TestPassword123").Return("", nil, services.ErrInvalidCredentials)
 	mockAuthService.On("Login", "inactive@test.test", "TestPassword123").Return("", nil, services.ErrInactiveAccount)
+	mockTokenService.On("New", mock.Anything, mock.Anything, mock.Anything).Return(&data.Token{UserID: uuid.New(), ExpiresAt: time.Now().UTC().Add(time.Hour), Scope: data.ScopeRefresh}, nil)
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
@@ -570,5 +570,173 @@ func TestResetPassword(t *testing.T) {
 	}
 
 	mockUserService.AssertExpectations(t)
+	mockTokenService.AssertExpectations(t)
+}
+
+func TestRefreshToken(t *testing.T) {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockUserService := mocks.MockUserService{}
+	mockAuthService := mocks.MockAuthService{}
+	mockTokenService := mocks.MockTokenService{}
+	mockMailerService := mocks.MockMailService{}
+
+	userID := uuid.New()
+	validUser := &data.User{ID: userID, Email: "test@test.test", Username: "testuser", Activated: true}
+	refreshToken := "valid-refresh-token"
+	newAccessToken := "new-access-token"
+	newRefreshToken := &data.Token{Plaintext: "new-refresh-token", Scope: data.ScopeRefresh}
+
+	mockUserService.On("GetForToken", data.ScopeRefresh, refreshToken).Return(validUser, nil)
+	mockUserService.On("GetForToken", data.ScopeRefresh, "wrongtoken").Return(nil, services.ErrRecordNotFound)
+	mockUserService.On("GetForToken", data.ScopeRefresh, "internalerror").Return(nil, services.ErrInternal)
+	mockAuthService.On("CreateJWTToken", *validUser).Return(newAccessToken, nil)
+	mockTokenService.On("New", userID, mock.Anything, data.ScopeRefresh).Return(newRefreshToken, nil)
+	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, userID).Return(nil)
+
+	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
+
+	tests := map[string]struct {
+		contextUser interface{}
+		body        string
+		setupMocks  func()
+		wantCode    int
+		wantBody    string
+		wantError   bool
+	}{
+		"Success": {
+			contextUser: validUser,
+			body:        `{"refreshToken":"valid-refresh-token"}`,
+			wantCode:    http.StatusCreated,
+			wantBody:    `"token":"new-access-token"`,
+			wantError:   false,
+		},
+		"User not in context": {
+			contextUser: nil,
+			body:        `{"refreshToken":"valid-refresh-token"}`,
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+		"Invalid refresh token": {
+			contextUser: validUser,
+			body:        `{"refreshToken":"wrongtoken"}`,
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+		"Refresh token for different user": {
+			contextUser: &data.User{ID: uuid.New(), Email: "other@test.test"},
+			body:        `{"refreshToken":"valid-refresh-token"}`,
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+		"Malformed JSON": {
+			contextUser: validUser,
+			body:        `{"refreshToken":`,
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
+		"Internal error on GetForToken": {
+			contextUser: validUser,
+			body:        `{"refreshToken":"internalerror"}`,
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/token/refresh", strings.NewReader(tt.body))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			if tt.contextUser != nil {
+				c.Set("user", tt.contextUser)
+			}
+
+			err := handler.RefreshToken(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+				if tt.wantBody != "" {
+					assert.Contains(t, rec.Body.String(), tt.wantBody)
+				}
+			}
+		})
+	}
+
+	mockUserService.AssertExpectations(t)
+	mockAuthService.AssertExpectations(t)
+	mockTokenService.AssertExpectations(t)
+}
+
+func TestLogout(t *testing.T) {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockUserService := mocks.MockUserService{}
+	mockAuthService := mocks.MockAuthService{}
+	mockTokenService := mocks.MockTokenService{}
+	mockMailerService := mocks.MockMailService{}
+
+	userID := uuid.New()
+	validUser := &data.User{ID: userID, Email: "test@test.test", Username: "testuser", Activated: true}
+
+	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, userID).Return(nil)
+
+	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
+
+	tests := map[string]struct {
+		contextUser interface{}
+		wantCode    int
+		wantBody    string
+		wantError   bool
+	}{
+		"Success": {
+			contextUser: validUser,
+			wantCode:    http.StatusOK,
+			wantBody:    `"message":"Logged out successfully."`,
+			wantError:   false,
+		},
+		"User not in context": {
+			contextUser: nil,
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/logout", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			if tt.contextUser != nil {
+				c.Set("user", tt.contextUser)
+			}
+
+			err := handler.Logout(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+				if tt.wantBody != "" {
+					assert.Contains(t, rec.Body.String(), tt.wantBody)
+				}
+			}
+		})
+	}
+
 	mockTokenService.AssertExpectations(t)
 }

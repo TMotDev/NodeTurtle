@@ -95,8 +95,14 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to login")
 	}
 
+	refreshToken, err := h.tokenService.New(user.ID, (time.Hour * 168), data.ScopeRefresh)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new refresh token")
+	}
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"token": token,
+		"token":        token,
+		"refreshToken": refreshToken,
 		"user": map[string]interface{}{
 			"email":    user.Email,
 			"username": user.Username,
@@ -238,5 +244,62 @@ func (h *AuthHandler) ResetPassword(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Password has been reset successfully. You can now login with your new password.",
+	})
+}
+
+func (h *AuthHandler) RefreshToken(c echo.Context) error {
+	contextUser, ok := c.Get("user").(*data.User)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+
+	var payload struct {
+		RefreshToken string `json:"refreshToken"`
+	}
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	user, err := h.userService.GetForToken(data.ScopeRefresh, payload.RefreshToken)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid or expired refresh token")
+	}
+
+	if contextUser.ID != user.ID {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid refresh token")
+	}
+
+	h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID)
+
+	token, err := h.authService.CreateJWTToken(*user)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new access token")
+	}
+
+	refreshToken, err := h.tokenService.New(user.ID, (time.Hour * 168), data.ScopeRefresh)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new refresh token")
+	}
+
+	return c.JSON(http.StatusCreated, map[string]interface{}{
+		"token":        token,
+		"refreshToekn": refreshToken,
+	})
+
+}
+
+func (h *AuthHandler) Logout(c echo.Context) error {
+	contextUser, ok := c.Get("user").(*data.User)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+
+	err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID)
+	if err != nil {
+		c.Logger().Error("Failed to delete refresh tokens on user logout")
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Logged out successfully.",
 	})
 }
