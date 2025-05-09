@@ -1,3 +1,4 @@
+// Package auth provides authentication and authorization functionality.
 package auth
 
 import (
@@ -13,26 +14,28 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Claims represents JWT claims
+// Claims represents the JWT claims structure used for authentication tokens.
+// It extends the standard JWT claims with a custom Role field.
 type Claims struct {
 	Role string `json:"role"`
 	jwt.StandardClaims
 }
 
+// IAuthService defines the interface for authentication operations.
 type IAuthService interface {
 	Login(email, password string) (string, *data.User, error)
 	CreateJWTToken(user data.User) (string, error)
 	VerifyToken(tokenString string) (*Claims, error)
 }
 
-// AuthService provides authentication functionality
+// AuthService implements the IAuthService interface for handling authentication.
 type AuthService struct {
 	db     *sql.DB
 	JwtKey []byte
 	JwtExp int
 }
 
-// NewService creates a new authentication service
+// NewService creates a new AuthService with the provided database connection and JWT configuration.
 func NewService(db *sql.DB, jwtConfig config.JWTConfig) AuthService {
 	return AuthService{
 		db:     db,
@@ -41,7 +44,9 @@ func NewService(db *sql.DB, jwtConfig config.JWTConfig) AuthService {
 	}
 }
 
-// Login authenticates a user and returns a JWT token
+// Login authenticates a user with the provided email and password.
+// It returns a JWT token and the authenticated user on success, or an error if authentication fails.
+// Returns ErrInvalidCredentials if email/password are incorrect or ErrInactiveAccount if the account is not activated.
 func (s AuthService) Login(email, password string) (string, *data.User, error) {
 	var user data.User
 	var role data.Role
@@ -79,7 +84,7 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 	// Update last login time
 	_, err = s.db.Exec("UPDATE users SET last_login = NOW() WHERE id = $1", user.ID)
 	if err != nil {
-		// Non-critical error, continuing
+		// Non-critical error, logging instead of returning http error
 		fmt.Printf("Failed to update last login time: %v\n", err)
 	}
 
@@ -92,7 +97,8 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 	return token, &user, nil
 }
 
-// VerifyToken verifies a JWT token and returns the claims
+// VerifyToken validates a JWT token string and returns the claims if valid.
+// Returns ErrInvalidToken if the token is invalid or expired.
 func (s AuthService) VerifyToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 
@@ -111,7 +117,8 @@ func (s AuthService) VerifyToken(tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
-// CreateToken creates a new JWT token
+// CreateJWTToken generates a new JWT token for the given user.
+// The token includes the user's role and ID, and expires based on the service's configuration.
 func (s AuthService) CreateJWTToken(user data.User) (string, error) {
 	expirationTime := time.Now().UTC().Add(time.Duration(s.JwtExp) * time.Hour)
 
@@ -132,7 +139,8 @@ func (s AuthService) CreateJWTToken(user data.User) (string, error) {
 	return tokenString, nil
 }
 
-// HashPassword hashes a password using bcrypt
+// HashPassword creates a bcrypt hash of the provided password.
+// It returns the hashed password as a string or an error if hashing fails.
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err

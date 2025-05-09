@@ -1,3 +1,4 @@
+// Package data provides data models and structures for the application.
 package data
 
 import (
@@ -10,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// User represents a user in the system with their associated details.
 type User struct {
 	ID        uuid.UUID    `json:"id"`
 	Email     string       `json:"email"`
@@ -22,7 +24,8 @@ type User struct {
 	CreatedAt time.Time    `json:"created_at"`
 }
 
-// Format LastLogin to simple time string, without validity value
+// MarshalJSON provides custom JSON serialization for User.
+// It ensures LastLogin is properly formatted and handles the nil case.
 func (u User) MarshalJSON() ([]byte, error) {
 	type Alias User
 	var lastLogin *string
@@ -42,11 +45,14 @@ func (u User) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// Password represents a user password with both plaintext (for temporary usage) and hash values.
 type Password struct {
 	Plaintext *string
 	Hash      []byte
 }
 
+// Set creates a bcrypt hash from a plaintext password and stores both.
+// Returns an error if hashing fails.
 func (p *Password) Set(plaintextPassword string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
 	if err != nil {
@@ -59,6 +65,8 @@ func (p *Password) Set(plaintextPassword string) error {
 	return nil
 }
 
+// Matches checks whether a plaintext password matches the stored hash.
+// Returns true if the password matches, false otherwise, and any error that occurred.
 func (p *Password) Matches(plaintextPassword string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword(p.Hash, []byte(plaintextPassword))
 	if err != nil {
@@ -73,17 +81,21 @@ func (p *Password) Matches(plaintextPassword string) (bool, error) {
 	return true, nil
 }
 
+// UserRegistration represents the data required for user registration.
 type UserRegistration struct {
 	Email    string `json:"email" validate:"required,email"`
 	Username string `json:"username" validate:"required,min=3,max=50"`
 	Password string `json:"password" validate:"required,min=8"`
 }
 
+// UserLogin represents the data required for user login.
+
 type UserLogin struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
 }
 
+// PasswordReset represents the data required to initiate a password reset.
 type PasswordReset struct {
 	Email string `json:"email" validate:"required,email"`
 }

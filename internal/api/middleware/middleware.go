@@ -11,7 +11,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// JWT middleware for authentication
 func JWT(authService *auth.AuthService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -29,13 +28,11 @@ func JWT(authService *auth.AuthService) echo.MiddlewareFunc {
 
 			tokenString := parts[1]
 
-			// Verify token
 			claims, err := authService.VerifyToken(tokenString)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid or expired token")
 			}
 
-			// Store user info in context
 			c.Set("user", &data.User{
 				ID:   uuid.MustParse(claims.Subject),
 				Role: data.Role{Name: claims.Role},

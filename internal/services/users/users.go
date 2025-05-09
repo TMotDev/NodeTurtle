@@ -1,3 +1,4 @@
+// Package users provides functionality for managing user accounts.
 package users
 
 import (
@@ -16,6 +17,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// IUserService defines the interface for user management operations.
 type IUserService interface {
 	CreateUser(reg data.UserRegistration) (*data.User, error)
 	ResetPassword(token, newPassword string) error
@@ -28,16 +30,21 @@ type IUserService interface {
 	GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error)
 }
 
+// UserService implements the IUserService interface for managing users.
 type UserService struct {
 	db *sql.DB
 }
 
+// NewUserService creates a new UserService with the provided database connection.
 func NewUserService(db *sql.DB) UserService {
 	return UserService{
 		db: db,
 	}
 }
 
+// CreateUser creates a new user with the provided registration data.
+// It returns the created user or an error if the operation fails.
+// If an email already exists in the system, it returns ErrDuplicateEmail.
 func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 	var exists bool
 	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", reg.Email).Scan(&exists)
@@ -90,6 +97,9 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 	return &user, nil
 }
 
+// ResetPassword updates a user's password using a valid password reset token.
+// It returns an error if the token is invalid, expired, or if the password
+// update fails. Used when the user can't remember their password
 func (s UserService) ResetPassword(token, newPassword string) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -130,6 +140,9 @@ func (s UserService) ResetPassword(token, newPassword string) error {
 	return tx.Commit()
 }
 
+// ChangePassword updates a user's password after verifying their old password.
+// It returns ErrUserNotFound if the user doesn't exist or ErrInvalidCredentials
+// if the old password is incorrect.
 func (s UserService) ChangePassword(userID uuid.UUID, oldPassword, newPassword string) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -167,6 +180,9 @@ func (s UserService) ChangePassword(userID uuid.UUID, oldPassword, newPassword s
 	return tx.Commit()
 }
 
+// GetUserByID retrieves a user by their UUID.
+// It returns ErrUserNotFound if the user doesn't exist or ErrInvalidCredentials
+// if the old password is incorrect.
 func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	var user data.User
 	var role data.Role
@@ -195,6 +211,8 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	return &user, nil
 }
 
+// GetUserByEmail retrieves a user by their email address.
+// It returns the user or ErrUserNotFound if no matching user exists.
 func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	var user data.User
 	var role data.Role
@@ -223,6 +241,9 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	return &user, nil
 }
 
+// ListUsers returns a paginated list of users and the total count.
+// The page parameter specifies which page to return (starting from 1),
+// and limit controls how many users to include per page.
 func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
 	if page < 1 {
 		page = 1
@@ -280,6 +301,9 @@ func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
 	return users, total, nil
 }
 
+// UpdateUser modifies a user's fields based on the provided updates map.
+// Valid keys for the updates map are "username", "email", "activated", and "role_id".
+// It returns ErrNoFields if the updates map is empty or ErrUserNotFound if the user doesn't exist.
 func (s UserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}) error {
 	if len(updates) == 0 {
 		return services.ErrNoFields
@@ -339,6 +363,8 @@ func (s UserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}
 	return tx.Commit()
 }
 
+// DeleteUser removes a user from the database by their ID.
+// It returns ErrUserNotFound if no matching user exists.
 func (s UserService) DeleteUser(userID uuid.UUID) error {
 	result, err := s.db.Exec("DELETE FROM users WHERE id = $1", userID)
 	if err != nil {
@@ -357,6 +383,9 @@ func (s UserService) DeleteUser(userID uuid.UUID) error {
 	return nil
 }
 
+// GetForToken retrieves a user associated with a valid token.
+// It verifies the token's scope and expiration before returning the user.
+// Returns ErrRecordNotFound if no valid token exists.
 func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error) {
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 

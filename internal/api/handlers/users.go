@@ -208,6 +208,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
+	//TODO: change string to enum for role?
 	var updateData struct {
 		Username  *string `json:"username" validate:"omitempty,min=3,max=50"`
 		Email     *string `json:"email" validate:"omitempty,email"`

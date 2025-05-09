@@ -1,3 +1,4 @@
+// Package data provides data models and structures for the application.
 package data
 
 import (
@@ -6,8 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Token represents an activation/reset token for passwords or email verification
-// @Description Token information including user association and expiration
+// Token represents an authentication or verification token in the system.
 type Token struct {
 	Plaintext string     `json:"token"`
 	Hash      []byte     `json:"-"`
@@ -17,10 +17,17 @@ type Token struct {
 	ExpiresAt time.Time  `json:"expires_at"`
 }
 
+// TokenScope defines the purpose and associated permissions of a token.
 type TokenScope string
 
+// Predefined token scopes for various authentication and verification purposes.
 const (
+	// ScopeUserActivation is used for verifying and activating new user accounts.
 	ScopeUserActivation TokenScope = "user_activation"
-	ScopePasswordReset  TokenScope = "password_reset"
-	ScopeRefresh        TokenScope = "refresh"
+
+	// ScopePasswordReset is used for the password reset process.
+	ScopePasswordReset TokenScope = "password_reset"
+
+	// ScopeRefresh is used for generating new JWT tokens without requiring re-authentication.
+	ScopeRefresh TokenScope = "refresh"
 )

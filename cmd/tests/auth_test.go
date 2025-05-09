@@ -15,7 +15,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Reusing TestData, TestUser from users_test.go
 func setupAuthService(t *testing.T) (auth.IAuthService, TestData, func()) {
 	testData := createTestData()
 
@@ -238,7 +237,6 @@ func TestHashPassword(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotEmpty(t, hash)
-				// Verify the hash works for the password
 				err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(tt.password))
 				assert.NoError(t, err)
 			}

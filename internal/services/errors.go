@@ -2,7 +2,6 @@ package services
 
 import "errors"
 
-// Common errors
 var (
 	ErrInactiveAccount    = errors.New("account is not activated")
 	ErrUserExists         = errors.New("user already exists")

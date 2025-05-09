@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"net/http"
 	"time"
 
 	"NodeTurtleAPI/internal/api/handlers"
@@ -22,17 +21,6 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
-// @title NodeTurtle API
-// @version 1.0
-// @description API documentation for NodeTurtle service
-
-// @host localhost:8080
-// @BasePath /api
-
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
 type Server struct {
 	echo   *echo.Echo
 	config *config.Config
@@ -104,21 +92,12 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	admin.GET("/users/:id", userHandler.GetUser)
 	admin.PUT("/users/:id", userHandler.UpdateUser)
 	admin.DELETE("/users/:id", userHandler.DeleteUser)
-
-	// Example protected route
-	api.GET("/protected", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"message": "This is a protected route",
-		})
-	})
 }
 
-// Start starts the API server
 func (s *Server) Start() error {
 	return s.echo.Start(fmt.Sprintf("%s:%d", s.config.Server.Host, s.config.Server.Port))
 }
 
-// Shutdown gracefully shuts down the API server
 func (s *Server) Shutdown() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
