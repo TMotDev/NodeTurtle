@@ -210,10 +210,10 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 
 	//TODO: change string to enum for role?
 	var updateData struct {
-		Username  *string `json:"username" validate:"omitempty,min=3,max=50"`
-		Email     *string `json:"email" validate:"omitempty,email"`
-		Activated *bool   `json:"activated" validate:"omitempty"`
-		Role      *string `json:"role" validate:"omitempty"`
+		Username  *string        `json:"username" validate:"omitempty,min=3,max=50"`
+		Email     *string        `json:"email" validate:"omitempty,email"`
+		Activated *bool          `json:"activated" validate:"omitempty"`
+		Role      *data.RoleType `json:"role" validate:"omitempty"`
 	}
 
 	if err := c.Bind(&updateData); err != nil {
@@ -235,13 +235,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		updates["activated"] = *updateData.Activated
 	}
 	if updateData.Role != nil {
-		roleValue, exists := data.RolesByName[*updateData.Role]
-
-		if !exists {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid role name")
-		}
-
-		updates["role_id"] = roleValue
+		updates["role"] = *updateData.Role
 	}
 
 	if len(updates) == 0 {

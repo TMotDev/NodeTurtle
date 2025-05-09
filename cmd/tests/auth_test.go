@@ -130,7 +130,7 @@ func TestCreateJWTToken(t *testing.T) {
 				ID:       td.Users[0].ID,
 				Email:    td.Users[0].Email,
 				Username: td.Users[0].Username,
-				Role:     data.Role{ID: int64(data.RoleUser), Name: "user"},
+				Role:     data.Role{ID: data.RoleUser.ToID(), Name: "user"},
 			},
 			err: nil,
 		},
@@ -160,7 +160,7 @@ func TestVerifyToken(t *testing.T) {
 		ID:       td.Users[0].ID,
 		Email:    td.Users[0].Email,
 		Username: td.Users[0].Username,
-		Role:     data.Role{ID: int64(data.RoleUser), Name: "user"},
+		Role:     data.Role{ID: data.RoleUser.ToID(), Name: "user"},
 	}
 	validToken, err := s.CreateJWTToken(user)
 	assert.NoError(t, err)

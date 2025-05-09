@@ -18,7 +18,7 @@ type TestUser struct {
 	Email     string
 	Username  string
 	Password  string
-	Role      int
+	Role      data.RoleType
 	Activated bool
 }
 
@@ -29,7 +29,7 @@ func createTestData() TestData {
 			Email:     "alice@example.com",
 			Username:  "alice",
 			Password:  "password1234",
-			Role:      int(data.RoleUser),
+			Role:      data.RoleUser,
 			Activated: true,
 		},
 		{
@@ -37,7 +37,7 @@ func createTestData() TestData {
 			Email:     "bob@example.com",
 			Username:  "bob",
 			Password:  "password1234",
-			Role:      int(data.RoleUser),
+			Role:      data.RoleUser,
 			Activated: true,
 		},
 		{
@@ -45,7 +45,7 @@ func createTestData() TestData {
 			Email:     "john@example.com",
 			Username:  "john",
 			Password:  "password1234",
-			Role:      int(data.RoleUser),
+			Role:      data.RoleUser,
 			Activated: false,
 		},
 	}
