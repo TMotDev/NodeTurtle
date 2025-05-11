@@ -47,7 +47,9 @@ func NewUserService(db *sql.DB) UserService {
 // If an email already exists in the system, it returns ErrDuplicateEmail.
 func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 	var exists bool
-	//TODO: have separate function to check existing email, move to handler
+
+	//? maybe have a separate function to check if email exists?
+	// it would also help with registration process to check if email is taken
 	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", reg.Email).Scan(&exists)
 	if err != nil {
 		return nil, err
@@ -56,7 +58,8 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 		return nil, services.ErrDuplicateEmail
 	}
 
-	//TODO: have separate function to check existing username, move to handler
+	//? maybe have a separate function to check if username exists?
+	// it would also help with registration process to check if username is taken
 	err = s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", reg.Username).Scan(&exists)
 	if err != nil {
 		return nil, err

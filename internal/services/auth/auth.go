@@ -127,6 +127,7 @@ func (s AuthService) CreateJWTToken(user data.User) (string, error) {
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 			Subject:   user.ID.String(),
+			IssuedAt:  time.Now().Unix(),
 		},
 	}
 

@@ -49,7 +49,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	userHandler := handlers.NewUserHandler(&userService, &authService, &tokenService)
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "method=${method}, uri=${uri}, status=${status}, error=${error}\n",
+		Format: "ip:${remote_ip} method:${method}, uri:${uri}, status:${status}, error:${error}\n",
 	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
@@ -71,6 +71,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	e.GET("/api/activate/:token", authHandler.ActivateAccount)
 	e.POST("/api/password/reset", authHandler.RequestPasswordReset)
 	e.POST("/api/password/reset/:token", authHandler.ResetPassword)
+	e.POST("/api/refresh", authHandler.RefreshToken)
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -79,7 +80,6 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	api.Use(customMiddleware.JWT(authService))
 
 	// User routes
-	api.POST("/api/auth/refresh", authHandler.RefreshToken)
 	api.POST("/auth/logout", authHandler.Logout)
 	api.GET("/users/me", userHandler.GetCurrentUser)
 	api.PUT("/users/me", userHandler.UpdateCurrentUser)

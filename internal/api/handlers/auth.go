@@ -17,6 +17,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// AuthHandler handles HTTP requests related to authentication operations.
 type AuthHandler struct {
 	authService  auth.IAuthService
 	userService  users.IUserService
@@ -24,6 +25,7 @@ type AuthHandler struct {
 	mailService  mail.IMailService
 }
 
+// NewAuthHandler creates a new AuthHandler with the provided services.
 func NewAuthHandler(authService auth.IAuthService, userService users.IUserService, tokenService tokens.ITokenService, mailService mail.IMailService) AuthHandler {
 	return AuthHandler{
 		authService:  authService,
@@ -33,6 +35,10 @@ func NewAuthHandler(authService auth.IAuthService, userService users.IUserServic
 	}
 }
 
+// Register handles the request to create a new user account.
+// It validates registration data, creates the user, and sends an activation email.
+// Returns an error if the registration data is invalid, if a user with the same
+// email already exists, or if account creation fails.
 func (h *AuthHandler) Register(c echo.Context) error {
 	var registration data.UserRegistration
 	if err := c.Bind(&registration); err != nil {
@@ -75,6 +81,10 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	})
 }
 
+// Login handles user authentication requests.
+// It validates login credentials, creates JWT and refresh tokens for successful logins.
+// Returns an error if credentials are invalid, if the account is not activated,
+// or if authentication fails.
 func (h *AuthHandler) Login(c echo.Context) error {
 	var login data.UserLogin
 	if err := c.Bind(&login); err != nil {
@@ -96,6 +106,11 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to login")
 	}
 
+	err = h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete old refresh tokens")
+	}
+
 	refreshToken, err := h.tokenService.New(user.ID, (time.Hour * 168), data.ScopeRefresh)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new refresh token")
@@ -103,14 +118,13 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token":        token,
-		"refreshToken": refreshToken,
-		"user": map[string]interface{}{
-			"email":    user.Email,
-			"username": user.Username,
-		},
+		"refreshToken": refreshToken.Plaintext,
 	})
 }
 
+// ActivateAccount handles account activation via email token.
+// It validates the activation token, marks the user as activated, and removes the token.
+// Returns an error if the token is invalid or expired, or if activation fails.
 func (h *AuthHandler) ActivateAccount(c echo.Context) error {
 	token := c.Param("token")
 	if token == "" {
@@ -150,6 +164,10 @@ func (h *AuthHandler) ActivateAccount(c echo.Context) error {
 	})
 }
 
+// RequestPasswordReset handles requests to reset a forgotten password.
+// It validates the email, creates a reset token, and sends a reset link via email.
+// Returns an error if the email is invalid, if the account is not activated,
+// or if the reset process fails.
 func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
 	var resetRequest data.PasswordReset
 	if err := c.Bind(&resetRequest); err != nil {
@@ -190,6 +208,11 @@ func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
 	})
 }
 
+// ResetPassword handles password reset requests using a reset token.
+// It validates the token and new password, updates the user's password,
+// and invalidates all reset tokens for the user.
+// Returns an error if the token is invalid or expired, if the account is not activated,
+// or if the password update fails.
 func (h *AuthHandler) ResetPassword(c echo.Context) error {
 	token := c.Param("token")
 	if token == "" {
@@ -246,6 +269,9 @@ func (h *AuthHandler) ResetPassword(c echo.Context) error {
 	})
 }
 
+// RefreshToken handles requests to obtain a new JWT token using a refresh token.
+// It validates the refresh token, creates a new JWT token, and issues a new refresh token.
+// Returns an error if the refresh token is invalid or expired, or if token creation fails.
 func (h *AuthHandler) RefreshToken(c echo.Context) error {
 	contextUser, ok := c.Get("user").(*data.User)
 	if !ok {
@@ -282,11 +308,14 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, map[string]interface{}{
 		"token":        token,
-		"refreshToekn": refreshToken,
+		"refreshToekn": refreshToken.Plaintext,
 	})
 
 }
 
+// Logout handles user logout requests.
+// It invalidates all refresh tokens for the authenticated user.
+// Returns an error if the user is not authenticated or if token invalidation fails.
 func (h *AuthHandler) Logout(c echo.Context) error {
 	contextUser, ok := c.Get("user").(*data.User)
 	if !ok {

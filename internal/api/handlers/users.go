@@ -14,12 +14,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// UserHandler handles HTTP requests related to user operations.
 type UserHandler struct {
 	userService  users.IUserService
 	authService  auth.IAuthService
 	tokenService tokens.ITokenService
 }
 
+// NewUserHandler creates a new UserHandler with the provided services.
 func NewUserHandler(userService users.IUserService, authService auth.IAuthService, tokenService tokens.ITokenService) UserHandler {
 	return UserHandler{
 		userService:  userService,
@@ -28,6 +30,8 @@ func NewUserHandler(userService users.IUserService, authService auth.IAuthServic
 	}
 }
 
+// GetCurrentUser handles the request to fetch the currently authenticated user's information.
+// It returns the user data or an error if the user is not authenticated or not found.
 func (h *UserHandler) GetCurrentUser(c echo.Context) error {
 	contextUser, ok := c.Get("user").(*data.User)
 	if !ok {
@@ -46,6 +50,9 @@ func (h *UserHandler) GetCurrentUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
+// UpdateCurrentUser handles the request to update the currently authenticated user's information.
+// It validates the updates, ensures the user is activated, and applies the changes.
+// Returns an error if the user is not authenticated, not found, not activated, or if the update fails.
 func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 	contextUser, ok := c.Get("user").(*data.User)
 	if !ok {
@@ -86,6 +93,10 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 	})
 }
 
+// ChangePassword handles the request to change a user's password.
+// It verifies the old password, updates to the new one, and invalidates all refresh tokens.
+// Returns an error if the user is not authenticated, not found, not activated,
+// if the old password is incorrect, or if the change fails.
 func (h *UserHandler) ChangePassword(c echo.Context) error {
 	contextUser, ok := c.Get("user").(*data.User)
 	if !ok {
@@ -134,6 +145,9 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 	})
 }
 
+// ListUsers handles the request to retrieve a paginated list of all users.
+// It accepts page and limit query parameters for pagination.
+// Returns the list of users and pagination metadata or an error if the retrieval fails.
 func (h *UserHandler) ListUsers(c echo.Context) error {
 	pageStr := c.QueryParam("page")
 	limitStr := c.QueryParam("limit")
@@ -163,6 +177,9 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 	})
 }
 
+// GetUser handles the request to fetch a specific user by ID.
+// It parses the user ID from the URL parameter and returns the user data.
+// Returns an error if the ID is invalid or if the user is not found.
 func (h *UserHandler) GetUser(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -181,6 +198,10 @@ func (h *UserHandler) GetUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
+// UpdateUser handles the request to update a specific user's information.
+// It validates the provided updates and applies them to the specified user.
+// Returns an error if the user ID is invalid, if the user is not found,
+// if no valid updates are provided, or if the update fails.
 func (h *UserHandler) UpdateUser(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -220,6 +241,10 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	})
 }
 
+// DeleteUser handles the request to remove a user from the system.
+// It deletes the user identified by the ID in the URL parameter.
+// Returns an error if the user ID is invalid, if the user is not found,
+// or if the deletion fails.
 func (h *UserHandler) DeleteUser(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)

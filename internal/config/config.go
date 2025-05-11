@@ -91,6 +91,9 @@ func Load(configPath, envFile string) (*Config, error) {
 }
 
 // Helper functions to get environment variables
+
+// GetEnv retrieves environment value.
+// If the variable is not present, returns fallback value.
 func GetEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
@@ -98,6 +101,8 @@ func GetEnv(key, fallback string) string {
 	return fallback
 }
 
+// GetEnvAsInt retrieves environment value and converts it to integer.
+// If the variable is not present, returns fallback int value.
 func GetEnvAsInt(key string, fallback int) int {
 	strValue := GetEnv(key, "")
 	if value, err := strconv.Atoi(strValue); err == nil {
