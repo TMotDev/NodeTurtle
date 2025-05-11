@@ -53,7 +53,7 @@ func (m *MockUserService) ListUsers(page, limit int) ([]data.User, int, error) {
 	return args.Get(0).([]data.User), args.Int(1), args.Error(2)
 }
 
-func (m *MockUserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}) error {
+func (m *MockUserService) UpdateUser(userID uuid.UUID, updates data.UserUpdate) error {
 	args := m.Called(userID, updates)
 	return args.Error(0)
 }

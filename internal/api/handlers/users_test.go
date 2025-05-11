@@ -179,7 +179,7 @@ func TestUpdateCurrentUser(t *testing.T) {
 		},
 		"Invalid email": {
 			contextUser: validUser,
-			reqBody:     `{"email":"email@"}`,
+			reqBody:     `{"email":"email@??\2"}`,
 			wantCode:    http.StatusBadRequest,
 			wantError:   true,
 		},
@@ -539,6 +539,12 @@ func TestUpdateUser(t *testing.T) {
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
+		"Emoji username": {
+			userID:    validUser.ID.String(),
+			reqBody:   `{"username":"❤️👌👍⭐","email":"new@test.test"}`,
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
 		"User not found": {
 			userID:    missingUserID.String(),
 			reqBody:   `{"username":"newusername","email":"new@test.test"}`,
@@ -569,9 +575,9 @@ func TestUpdateUser(t *testing.T) {
 			wantCode:  http.StatusOK,
 			wantError: false,
 		},
-		"Invalid email ID": {
+		"Invalid email": {
 			userID:    validUser.ID.String(),
-			reqBody:   `{"email":"invalid@"}`,
+			reqBody:   `{"email":"invalid@??"'"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},

@@ -12,6 +12,7 @@ import (
 	"NodeTurtleAPI/internal/services/mail"
 	"NodeTurtleAPI/internal/services/tokens"
 	"NodeTurtleAPI/internal/services/users"
+	"NodeTurtleAPI/internal/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -128,9 +129,7 @@ func (h *AuthHandler) ActivateAccount(c echo.Context) error {
 		}
 	}
 
-	err = h.userService.UpdateUser(user.ID, map[string]interface{}{
-		"activated": true,
-	})
+	err = h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)})
 
 	if err != nil {
 		switch {

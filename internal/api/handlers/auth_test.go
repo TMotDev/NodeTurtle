@@ -75,6 +75,24 @@ func TestRegister(t *testing.T) {
 			wantBody:  "User registered successfully",
 			wantError: false,
 		},
+		"Emoji username": {
+			reqBody: map[string]interface{}{
+				"email":    "test@test.test",
+				"username": "⭐👌👍❤️",
+				"password": "TestPassword123",
+			},
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"Random symbols username": {
+			reqBody: map[string]interface{}{
+				"email":    "test@test.test",
+				"username": "'][]/\\//.;?!/'",
+				"password": "TestPassword123",
+			},
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
 		"User already exists": {
 			reqBody: map[string]interface{}{
 				"email":    "exists@test.test",

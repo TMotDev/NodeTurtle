@@ -64,28 +64,16 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
-	var updateData struct {
-		Username *string `json:"username" validate:"omitempty,min=3,max=50"`
-		Email    *string `json:"email" validate:"omitempty,email"`
-	}
-
-	if err := c.Bind(&updateData); err != nil {
+	var updates data.UserUpdate
+	if err := c.Bind(&updates); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
-	if err := c.Validate(&updateData); err != nil {
+	if err := c.Validate(&updates); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	updates := make(map[string]interface{})
-	if updateData.Username != nil {
-		updates["username"] = updateData.Username
-	}
-	if updateData.Email != nil {
-		updates["email"] = updateData.Email
-	}
-
-	if len(updates) == 0 {
+	if updates.Username == nil && updates.Email == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "No updates provided")
 	}
 
@@ -208,41 +196,22 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
-	//TODO: change string to enum for role?
-	var updateData struct {
-		Username  *string        `json:"username" validate:"omitempty,min=3,max=50"`
-		Email     *string        `json:"email" validate:"omitempty,email"`
-		Activated *bool          `json:"activated" validate:"omitempty"`
-		Role      *data.RoleType `json:"role" validate:"omitempty"`
-	}
+	var updates data.UserUpdate
 
-	if err := c.Bind(&updateData); err != nil {
+	if err := c.Bind(&updates); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
-	if err := c.Validate(&updateData); err != nil {
+	if err := c.Validate(&updates); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	updates := make(map[string]interface{})
-	if updateData.Username != nil {
-		updates["username"] = updateData.Username
-	}
-	if updateData.Email != nil {
-		updates["email"] = updateData.Email
-	}
-	if updateData.Activated != nil {
-		updates["activated"] = *updateData.Activated
-	}
-	if updateData.Role != nil {
-		updates["role"] = *updateData.Role
-	}
-
-	if len(updates) == 0 {
+	if updates.Username == nil && updates.Email == nil && updates.Activated == nil && updates.Role == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "No updates provided")
 	}
 
-	if err := h.userService.UpdateUser(user.ID, updates); err != nil {
+	err = h.userService.UpdateUser(user.ID, updates)
+	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 

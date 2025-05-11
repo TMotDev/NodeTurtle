@@ -9,6 +9,7 @@ import (
 	"NodeTurtleAPI/internal/database"
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/users"
+	"NodeTurtleAPI/internal/utils"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -76,6 +77,14 @@ func TestCreateUser(t *testing.T) {
 				Password: "password123",
 			},
 			err: nil,
+		},
+		"Duplicate username": {
+			reg: data.UserRegistration{
+				Email:    "test2@example.com",
+				Username: td.Users[1].Username,
+				Password: "duplicate123",
+			},
+			err: services.ErrDuplicateUsername,
 		},
 		"Duplicate email": {
 			reg: data.UserRegistration{
@@ -307,35 +316,40 @@ func TestUpdateUser(t *testing.T) {
 
 	tests := map[string]struct {
 		userID  uuid.UUID
-		updates map[string]interface{}
+		updates *data.UserUpdate
 		err     error
 	}{
 		"Successful user update": {
-			userID:  td.Users[0].ID,
-			updates: map[string]interface{}{"username": "newUsername", "email": "newEmail@example.com", "activated": true, "role_id": data.RolePremium},
-			err:     nil,
+			userID: td.Users[0].ID,
+			updates: &data.UserUpdate{
+				Username:  utils.Ptr("newUsername"),
+				Email:     utils.Ptr("newEmail@example.com"),
+				Activated: utils.Ptr(true),
+				Role:      utils.Ptr(data.RolePremium),
+			},
+			err: nil,
 		},
 		"No updates provided": {
 			userID:  td.Users[0].ID,
-			updates: map[string]interface{}{},
+			updates: &data.UserUpdate{},
 			err:     services.ErrNoFields,
 		},
-		"Incorect updates provided": {
-			userID:  td.Users[0].ID,
-			updates: map[string]interface{}{"USERNAME": "NEWUSERNAME", "Email": "NEWEMAIL@example.com", "active": true},
-			err:     services.ErrInvalidData,
-		},
 		"No user found": {
-			userID:  uuid.New(),
-			updates: map[string]interface{}{"username": "newUsername", "email": "newEmail@example.com", "activated": true, "role_id": data.RolePremium},
-			err:     services.ErrUserNotFound,
+			userID: uuid.New(),
+			updates: &data.UserUpdate{
+				Username:  utils.Ptr("newUsername"),
+				Email:     utils.Ptr("newEmail@example.com"),
+				Activated: utils.Ptr(true),
+				Role:      utils.Ptr(data.RolePremium),
+			},
+			err: services.ErrUserNotFound,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			err := s.UpdateUser(tt.userID, tt.updates)
+			err := s.UpdateUser(tt.userID, *tt.updates)
 
 			if tt.err != nil {
 				assert.Error(t, err)

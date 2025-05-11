@@ -84,7 +84,7 @@ func (p *Password) Matches(plaintextPassword string) (bool, error) {
 // UserRegistration represents the data required for user registration.
 type UserRegistration struct {
 	Email    string `json:"email" validate:"required,email"`
-	Username string `json:"username" validate:"required,min=3,max=50"`
+	Username string `json:"username" validate:"required,min=3,max=20,alphanum"`
 	Password string `json:"password" validate:"required,min=8"`
 }
 
@@ -98,4 +98,12 @@ type UserLogin struct {
 // PasswordReset represents the data required to initiate a password reset.
 type PasswordReset struct {
 	Email string `json:"email" validate:"required,email"`
+}
+
+// UserUpdate represents fields that can be updated for a user.
+type UserUpdate struct {
+	Username  *string   `json:"username,omitempty" validate:"omitempty,min=3,max=20,alphanum"`
+	Email     *string   `json:"email,omitempty" validate:"omitempty,email"`
+	Activated *bool     `json:"activated,omitempty"`
+	Role      *RoleType `json:"role,omitempty"`
 }

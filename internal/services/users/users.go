@@ -25,7 +25,7 @@ type IUserService interface {
 	GetUserByID(userID uuid.UUID) (*data.User, error)
 	GetUserByEmail(email string) (*data.User, error)
 	ListUsers(page, limit int) ([]data.User, int, error)
-	UpdateUser(userID uuid.UUID, updates map[string]interface{}) error
+	UpdateUser(userID uuid.UUID, updates data.UserUpdate) error
 	DeleteUser(userID uuid.UUID) error
 	GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error)
 }
@@ -47,12 +47,22 @@ func NewUserService(db *sql.DB) UserService {
 // If an email already exists in the system, it returns ErrDuplicateEmail.
 func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 	var exists bool
+	//TODO: have separate function to check existing email, move to handler
 	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", reg.Email).Scan(&exists)
 	if err != nil {
 		return nil, err
 	}
 	if exists {
 		return nil, services.ErrDuplicateEmail
+	}
+
+	//TODO: have separate function to check existing username, move to handler
+	err = s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", reg.Username).Scan(&exists)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, services.ErrDuplicateUsername
 	}
 
 	tx, err := s.db.Begin()
@@ -304,8 +314,33 @@ func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
 // UpdateUser modifies a user's fields based on the provided updates map.
 // Valid keys for the updates map are "username", "email", "activated", and "role_id".
 // It returns ErrNoFields if the updates map is empty or ErrUserNotFound if the user doesn't exist.
-func (s UserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}) error {
-	if len(updates) == 0 {
+func (s UserService) UpdateUser(userID uuid.UUID, updates data.UserUpdate) error {
+	assignments := []string{}
+	args := []interface{}{}
+	argCount := 1
+
+	if updates.Username != nil {
+		assignments = append(assignments, fmt.Sprintf("username = $%d", argCount))
+		args = append(args, *updates.Username)
+		argCount++
+	}
+	if updates.Email != nil {
+		assignments = append(assignments, fmt.Sprintf("email = $%d", argCount))
+		args = append(args, *updates.Email)
+		argCount++
+	}
+	if updates.Activated != nil {
+		assignments = append(assignments, fmt.Sprintf("activated = $%d", argCount))
+		args = append(args, *updates.Activated)
+		argCount++
+	}
+	if updates.Role != nil {
+		assignments = append(assignments, fmt.Sprintf("role_id = $%d", argCount))
+		args = append(args, *updates.Role)
+		argCount++
+	}
+
+	if len(assignments) == 0 {
 		return services.ErrNoFields
 	}
 
@@ -315,45 +350,14 @@ func (s UserService) UpdateUser(userID uuid.UUID, updates map[string]interface{}
 	}
 	defer tx.Rollback()
 
-	user, err := s.GetUserByID(userID)
+	_, err = s.GetUserByID(userID)
 	if err != nil {
-		if err == services.ErrUserNotFound {
-			return services.ErrUserNotFound
-		}
-	}
-
-	assignments := []string{}
-	args := []interface{}{}
-	argCount := 1
-
-	for key, value := range updates {
-		switch key {
-		case "username":
-			assignments = append(assignments, fmt.Sprintf("username = $%d", argCount))
-			args = append(args, value)
-			argCount++
-		case "email":
-			assignments = append(assignments, fmt.Sprintf("email = $%d", argCount))
-			args = append(args, value)
-			argCount++
-		case "activated":
-			assignments = append(assignments, fmt.Sprintf("activated = $%d", argCount))
-			args = append(args, value)
-			argCount++
-		case "role_id":
-			assignments = append(assignments, fmt.Sprintf("role_id = $%d", argCount))
-			args = append(args, value)
-			argCount++
-		}
-	}
-
-	if len(assignments) == 0 {
-		return services.ErrInvalidData
+		return err
 	}
 
 	query := "UPDATE users SET " + strings.Join(assignments, ", ")
 	query += fmt.Sprintf(" WHERE id = $%d", argCount)
-	args = append(args, user.ID)
+	args = append(args, userID)
 
 	_, err = tx.Exec(query, args...)
 	if err != nil {
