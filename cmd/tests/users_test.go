@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupService(t *testing.T) (users.IUserService, TestData, func()) {
+func setupUserService(t *testing.T) (users.IUserService, TestData, func()) {
 	testData := createTestData()
 
 	config := config.DatabaseConfig{
@@ -63,7 +63,7 @@ func setupService(t *testing.T) (users.IUserService, TestData, func()) {
 }
 
 func TestCreateUser(t *testing.T) {
-	s, td, close := setupService(t)
+	s, td, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {
@@ -114,7 +114,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestResetPassword(t *testing.T) {
-	s, td, close := setupService(t)
+	s, td, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {
@@ -156,7 +156,7 @@ func TestResetPassword(t *testing.T) {
 }
 
 func TestChangePassword(t *testing.T) {
-	s, td, close := setupService(t)
+	s, td, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {
@@ -202,7 +202,7 @@ func TestChangePassword(t *testing.T) {
 }
 
 func TestGetUserById(t *testing.T) {
-	s, td, close := setupService(t)
+	s, td, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {
@@ -236,7 +236,7 @@ func TestGetUserById(t *testing.T) {
 }
 
 func TestGetUserByEmail(t *testing.T) {
-	s, td, close := setupService(t)
+	s, td, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {
@@ -270,7 +270,7 @@ func TestGetUserByEmail(t *testing.T) {
 }
 
 func TestListUsers(t *testing.T) {
-	s, td, close := setupService(t)
+	s, td, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {
@@ -311,7 +311,7 @@ func TestListUsers(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	s, td, close := setupService(t)
+	s, td, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {
@@ -363,7 +363,7 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	s, td, close := setupService(t)
+	s, td, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {
@@ -397,7 +397,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestGetForToken(t *testing.T) {
-	s, td, close := setupService(t)
+	s, td, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {

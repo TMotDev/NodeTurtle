@@ -200,6 +200,7 @@ func TestLogin(t *testing.T) {
 	mockAuthService.On("Login", "wrong@test.test", "TestPassword123").Return("", nil, services.ErrInvalidCredentials)
 	mockAuthService.On("Login", "inactive@test.test", "TestPassword123").Return("", nil, services.ErrInactiveAccount)
 	mockTokenService.On("New", mock.Anything, mock.Anything, mock.Anything).Return(&data.Token{UserID: uuid.New(), ExpiresAt: time.Now().UTC().Add(time.Hour), Scope: data.ScopeRefresh}, nil)
+	mockTokenService.On("DeleteAllForUser", mock.Anything, mock.Anything).Return(nil)
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
