@@ -47,6 +47,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 
 	authHandler := handlers.NewAuthHandler(&authService, &userService, &tokenService, &mailService)
 	userHandler := handlers.NewUserHandler(&userService, &authService, &tokenService)
+	tokenHandler := handlers.NewTokenHandler(&userService, &tokenService, &mailService)
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "ip:${remote_ip} method:${method}, uri:${uri}, status:${status}, error:${error}\n",
@@ -54,7 +55,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
-	setupRoutes(e, &authHandler, &userHandler, &authService)
+	setupRoutes(e, &authHandler, &userHandler, &tokenHandler, &authService)
 
 	return &Server{
 		echo:   e,
@@ -63,14 +64,15 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	}
 }
 
-func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, authService *auth.AuthService) {
+func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, tokenHandler *handlers.TokenHandler, authService *auth.AuthService) {
 
 	// Public routes
 	e.POST("/api/login", authHandler.Login)
 	e.POST("/api/register", authHandler.Register)
-	e.GET("/api/activate/:token", authHandler.ActivateAccount)
-	e.POST("/api/password/reset", authHandler.RequestPasswordReset)
-	e.POST("/api/password/reset/:token", authHandler.ResetPassword)
+	e.GET("/api/activate/:token", tokenHandler.ActivateAccount)
+	e.POST("/api/activate", tokenHandler.RequestActivationToken)
+	e.POST("/api/password/reset", tokenHandler.RequestPasswordReset)
+	e.POST("/api/password/reset/:token", tokenHandler.ResetPassword)
 	e.POST("/api/refresh", authHandler.RefreshToken)
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)

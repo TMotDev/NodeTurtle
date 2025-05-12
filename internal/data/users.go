@@ -95,11 +95,6 @@ type UserLogin struct {
 	Password string `json:"password" validate:"required"`
 }
 
-// PasswordReset represents the data required to initiate a password reset.
-type PasswordReset struct {
-	Email string `json:"email" validate:"required,email"`
-}
-
 // UserUpdate represents fields that can be updated for a user.
 type UserUpdate struct {
 	Username  *string   `json:"username,omitempty" validate:"omitempty,min=3,max=20,alphanum"`

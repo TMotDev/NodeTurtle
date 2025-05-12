@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"NodeTurtleAPI/internal/services/mail"
 	"NodeTurtleAPI/internal/services/tokens"
 	"NodeTurtleAPI/internal/services/users"
-	"NodeTurtleAPI/internal/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -119,153 +117,6 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token":        token,
 		"refreshToken": refreshToken.Plaintext,
-	})
-}
-
-// ActivateAccount handles account activation via email token.
-// It validates the activation token, marks the user as activated, and removes the token.
-// Returns an error if the token is invalid or expired, or if activation fails.
-func (h *AuthHandler) ActivateAccount(c echo.Context) error {
-	token := c.Param("token")
-	if token == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid reset token")
-	}
-
-	user, err := h.userService.GetForToken(data.ScopeUserActivation, token)
-
-	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrRecordNotFound):
-			return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
-
-		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
-		}
-	}
-
-	err = h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)})
-
-	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrEditConflict):
-			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
-		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
-		}
-	}
-
-	err = h.tokenService.DeleteAllForUser(data.ScopeUserActivation, user.ID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete activation token")
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Account activated successfully. You can now login.",
-	})
-}
-
-// RequestPasswordReset handles requests to reset a forgotten password.
-// It validates the email, creates a reset token, and sends a reset link via email.
-// Returns an error if the email is invalid, if the account is not activated,
-// or if the reset process fails.
-func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
-	var resetRequest data.PasswordReset
-	if err := c.Bind(&resetRequest); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
-	}
-
-	if err := c.Validate(&resetRequest); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	user, err := h.userService.GetUserByEmail(resetRequest.Email)
-	if err != nil {
-		if err == services.ErrUserNotFound {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid email address")
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
-	}
-
-	if !user.Activated {
-		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
-	}
-
-	resetToken, err := h.tokenService.New(user.ID, 24*time.Hour, data.ScopePasswordReset)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create reset token")
-	}
-
-	resetLink := fmt.Sprintf("http://website.com/reset-password/%s", resetToken.Plaintext)
-	emailData := map[string]interface{}{
-		"Username":  user.Username,
-		"ResetLink": resetLink,
-	}
-
-	go h.mailService.SendEmail(user.Email, "Reset Your Password", "reset", emailData)
-
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "If an account with that email exists, a password reset link has been sent.",
-	})
-}
-
-// ResetPassword handles password reset requests using a reset token.
-// It validates the token and new password, updates the user's password,
-// and invalidates all reset tokens for the user.
-// Returns an error if the token is invalid or expired, if the account is not activated,
-// or if the password update fails.
-func (h *AuthHandler) ResetPassword(c echo.Context) error {
-	token := c.Param("token")
-	if token == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid reset token")
-	}
-
-	var payload struct {
-		Password string `json:"password" validate:"required,min=8"`
-	}
-
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
-	}
-
-	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	user, err := h.userService.GetForToken(data.ScopePasswordReset, token)
-
-	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrRecordNotFound):
-			return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
-
-		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve data")
-		}
-	}
-
-	if !user.Activated {
-		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
-	}
-
-	err = h.userService.ResetPassword(token, payload.Password)
-
-	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrEditConflict):
-			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
-		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
-		}
-	}
-
-	// delete all password reset tokens for the user
-	err = h.tokenService.DeleteAllForUser(data.ScopePasswordReset, user.ID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete activation token")
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Password has been reset successfully. You can now login with your new password.",
 	})
 }
 
