@@ -24,6 +24,7 @@ type IUserService interface {
 	ChangePassword(userID uuid.UUID, oldPassword, newPassword string) error
 	GetUserByID(userID uuid.UUID) (*data.User, error)
 	GetUserByEmail(email string) (*data.User, error)
+	GetUserByUsername(username string) (*data.User, error)
 	ListUsers(page, limit int) ([]data.User, int, error)
 	UpdateUser(userID uuid.UUID, updates data.UserUpdate) error
 	DeleteUser(userID uuid.UUID) error
@@ -239,6 +240,36 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	`
 
 	err := s.db.QueryRow(query, email).Scan(
+		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.LastLogin,
+		&role.ID, &role.Name, &role.Description,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, services.ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	user.Role = role
+	return &user, nil
+}
+
+// GetUserByUsername retrieves a user by their username.
+// It returns the user or ErrUserNotFound if no matching user exists.
+func (s UserService) GetUserByUsername(username string) (*data.User, error) {
+	var user data.User
+	var role data.Role
+
+	query := `
+		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
+		       r.id, r.name, r.description
+		FROM users u
+		JOIN roles r ON u.role_id = r.id
+		WHERE u.username = $1
+	`
+
+	err := s.db.QueryRow(query, username).Scan(
 		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description,
 	)

@@ -50,6 +50,54 @@ func (h *UserHandler) GetCurrentUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
+// CheckEmail handles checking if provided email is valid and is taken
+func (h *UserHandler) CheckEmail(c echo.Context) error {
+	type EmailParam struct {
+		Email string `validate:"required,email"`
+	}
+	param := EmailParam{Email: c.Param("email")}
+
+	if err := c.Validate(&param); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var exists bool
+	user, err := h.userService.GetUserByEmail(param.Email)
+	if err != nil && err != services.ErrUserNotFound {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate email")
+	}
+
+	if user != nil {
+		exists = true
+	}
+
+	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
+}
+
+// CheckEmail handles checking if provided username is valid and is taken
+func (h *UserHandler) CheckUsername(c echo.Context) error {
+	type UsernameParam struct {
+		Username string `validate:"required,min=3,max=20,alphanum"`
+	}
+	param := UsernameParam{Username: c.Param("username")}
+
+	if err := c.Validate(&param); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var exists bool
+	user, err := h.userService.GetUserByUsername(param.Username)
+	if err != nil && err != services.ErrUserNotFound {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate username")
+	}
+
+	if user != nil {
+		exists = true
+	}
+
+	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
+}
+
 // UpdateCurrentUser handles the request to update the currently authenticated user's information.
 // It validates the updates, ensures the user is activated, and applies the changes.
 // Returns an error if the user is not authenticated, not found, not activated, or if the update fails.
@@ -71,20 +119,55 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
-	var updates data.UserUpdate
-	if err := c.Bind(&updates); err != nil {
+	var payload struct {
+		data.UserUpdate
+		Password string `json:"password" validate:"required"`
+	}
+
+	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
-	if err := c.Validate(&updates); err != nil {
+	if err := c.Validate(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if updates.Username == nil && updates.Email == nil {
+	// Password revalidation
+	ok, err = user.Password.Matches(payload.Password)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to verify password")
+	}
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Password is incorrect")
+	}
+
+	if payload.Username == nil && payload.Email == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "No updates provided")
 	}
 
-	if err := h.userService.UpdateUser(user.ID, updates); err != nil {
+	// Check if email is taken
+	if payload.Email != nil {
+		existingUser, err := h.userService.GetUserByEmail(*payload.Email)
+		if err != nil && err != services.ErrUserNotFound {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
+		}
+		if existingUser != nil && existingUser.ID != user.ID {
+			return echo.NewHTTPError(http.StatusConflict, "Email already in use")
+		}
+	}
+
+	// Check if username is taken
+	if payload.Username != nil {
+		existingUser, err := h.userService.GetUserByUsername(*payload.Username)
+		if err != nil && err != services.ErrUserNotFound {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
+		}
+		if existingUser != nil && existingUser.ID != user.ID {
+			return echo.NewHTTPError(http.StatusConflict, "Username already in use")
+		}
+	}
+
+	if err := h.userService.UpdateUser(user.ID, payload.UserUpdate); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
@@ -229,6 +312,28 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 
 	if updates.Username == nil && updates.Email == nil && updates.Activated == nil && updates.Role == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "No updates provided")
+	}
+
+	// Check if email is taken
+	if updates.Email != nil {
+		existingUser, err := h.userService.GetUserByEmail(*updates.Email)
+		if err != nil && err != services.ErrUserNotFound {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
+		}
+		if existingUser != nil && existingUser.ID != user.ID {
+			return echo.NewHTTPError(http.StatusConflict, "Email already in use")
+		}
+	}
+
+	// Check if username is taken
+	if updates.Username != nil {
+		existingUser, err := h.userService.GetUserByUsername(*updates.Username)
+		if err != nil && err != services.ErrUserNotFound {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
+		}
+		if existingUser != nil && existingUser.ID != user.ID {
+			return echo.NewHTTPError(http.StatusConflict, "Username already in use")
+		}
 	}
 
 	err = h.userService.UpdateUser(user.ID, updates)

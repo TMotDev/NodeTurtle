@@ -269,6 +269,40 @@ func TestGetUserByEmail(t *testing.T) {
 	}
 }
 
+func TestGetUserByUsername(t *testing.T) {
+	s, td, close := setupUserService(t)
+	defer close()
+
+	tests := map[string]struct {
+		username string
+		err      error
+	}{
+		"Successful user fetch": {
+			username: td.Users[0].Username,
+			err:      nil,
+		},
+		"User not found": {
+			username: "notfound",
+			err:      services.ErrUserNotFound,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			_, err := s.GetUserByUsername(tt.username)
+
+			if tt.err != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nil, err)
+			}
+		})
+	}
+}
+
 func TestListUsers(t *testing.T) {
 	s, td, close := setupUserService(t)
 	defer close()

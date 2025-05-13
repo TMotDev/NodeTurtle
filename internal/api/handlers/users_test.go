@@ -108,6 +108,15 @@ func TestUpdateCurrentUser(t *testing.T) {
 		Username:  "validuser",
 		Activated: true,
 	}
+	_ = validUser.Password.Set("testpass")
+
+	validUser2 := &data.User{
+		ID:        uuid.New(),
+		Email:     "validuser2@test.com",
+		Username:  "validuser2",
+		Activated: true,
+	}
+	_ = validUser2.Password.Set("testpass")
 
 	notFoundUser := &data.User{
 		ID:        uuid.New(),
@@ -115,6 +124,7 @@ func TestUpdateCurrentUser(t *testing.T) {
 		Username:  "notfounduser",
 		Activated: false,
 	}
+	_ = notFoundUser.Password.Set("testpass")
 
 	inactiveUser := &data.User{
 		ID:        uuid.New(),
@@ -122,10 +132,16 @@ func TestUpdateCurrentUser(t *testing.T) {
 		Username:  "inactive",
 		Activated: false,
 	}
+	_ = inactiveUser.Password.Set("testpass")
 
 	mockUserService.On("GetUserByID", validUser.ID).Return(validUser, nil)
 	mockUserService.On("GetUserByID", notFoundUser.ID).Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByID", inactiveUser.ID).Return(inactiveUser, nil)
+
+	mockUserService.On("GetUserByEmail", validUser2.Email).Return(validUser2, nil)
+	mockUserService.On("GetUserByEmail", mock.Anything).Return(nil, services.ErrUserNotFound)
+	mockUserService.On("GetUserByUsername", validUser2.Username).Return(validUser2, nil)
+	mockUserService.On("GetUserByUsername", mock.Anything).Return(nil, services.ErrUserNotFound)
 
 	mockUserService.On("UpdateUser", validUser.ID, mock.Anything).Return(nil)
 
@@ -140,34 +156,50 @@ func TestUpdateCurrentUser(t *testing.T) {
 	}{
 		"No user in context": {
 			contextUser: nil,
-			reqBody:     `{"username":"newusername","email":"new@test.test"}`,
+			reqBody:     `{"username":"newusername","email":"new@test.test","password":"testpass"}`,
 			wantCode:    http.StatusUnauthorized,
 			wantError:   true,
 		},
 		"Valid update": {
 			contextUser: validUser,
-			reqBody:     `{"username":"newusername","email":"new@test.test"}`,
+			reqBody:     `{"username":"newusername","email":"new@test.test","password":"testpass"}`,
 			wantCode:    http.StatusOK,
 			wantBody:    `"message":"User updated successfully"`,
 			wantError:   false,
 		},
+		"Email already used": {
+			contextUser: validUser,
+			reqBody:     `{"username":"newusername","email":"validuser2@test.com","password":"testpass"}`,
+			wantCode:    http.StatusConflict,
+			wantError:   true,
+		},
+		"Username already used": {
+			contextUser: validUser,
+			reqBody:     `{"username":"validuser2","email":"new@test.test","password":"testpass"}`,
+			wantCode:    http.StatusConflict,
+			wantError:   true,
+		},
+		"Incorrect password": {
+			contextUser: validUser,
+			reqBody:     `{"username":"newusername","email":"new@test.test","password":"incorrect"}`,
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
 		"User not found": {
 			contextUser: notFoundUser,
-
-			reqBody:   `{"username":"newusername","email":"new@test.test"}`,
-			wantCode:  http.StatusNotFound,
-			wantError: true,
+			reqBody:     `{"username":"newusername","email":"new@test.test","password":"testpass"}`,
+			wantCode:    http.StatusNotFound,
+			wantError:   true,
 		},
 		"User not activated": {
 			contextUser: inactiveUser,
-
-			reqBody:   `{"username":"newusername","email":"new@test.test"}`,
-			wantCode:  http.StatusForbidden,
-			wantError: true,
+			reqBody:     `{"username":"newusername","email":"new@test.test","password":"testpass"}`,
+			wantCode:    http.StatusForbidden,
+			wantError:   true,
 		},
 		"No updates provided": {
 			contextUser: validUser,
-			reqBody:     `{}`,
+			reqBody:     `{"password":"testpass"}`,
 			wantCode:    http.StatusBadRequest,
 			wantError:   true,
 		},
@@ -179,13 +211,13 @@ func TestUpdateCurrentUser(t *testing.T) {
 		},
 		"Invalid email": {
 			contextUser: validUser,
-			reqBody:     `{"email":"email@??\2"}`,
+			reqBody:     `{"email":"email@??\2","password":"testpass"}`,
 			wantCode:    http.StatusBadRequest,
 			wantError:   true,
 		},
 		"Valid email": {
 			contextUser: validUser,
-			reqBody:     `{"email":"email@email.com"}`,
+			reqBody:     `{"email":"email@email.com","password":"testpass"}`,
 			wantCode:    http.StatusOK,
 			wantError:   false,
 		},
@@ -513,12 +545,23 @@ func TestUpdateUser(t *testing.T) {
 		Username:  "testuser1",
 		Activated: true,
 	}
+
+	validUser2 := &data.User{
+		ID:        uuid.New(),
+		Email:     "validuser2@test.com",
+		Username:  "validuser2",
+		Activated: true,
+	}
+
 	missingUserID := uuid.New()
 
 	mockUserService.On("GetUserByID", validUser.ID).Return(&validUser, nil)
 	mockUserService.On("GetUserByID", missingUserID).Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByID", mock.Anything).Return(nil, services.ErrInternal)
-
+	mockUserService.On("GetUserByEmail", validUser2.Email).Return(validUser2, nil)
+	mockUserService.On("GetUserByEmail", mock.Anything).Return(nil, services.ErrUserNotFound)
+	mockUserService.On("GetUserByUsername", validUser2.Username).Return(validUser2, nil)
+	mockUserService.On("GetUserByUsername", mock.Anything).Return(nil, services.ErrUserNotFound)
 	mockUserService.On("UpdateUser", validUser.ID, mock.Anything).Return(nil)
 
 	tests := map[string]struct {
@@ -543,6 +586,18 @@ func TestUpdateUser(t *testing.T) {
 			userID:    validUser.ID.String(),
 			reqBody:   `{"username":"❤️👌👍⭐","email":"new@test.test"}`,
 			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"Duplicate username": {
+			userID:    validUser.ID.String(),
+			reqBody:   `{"username":"validuser2","email":"new@test.test"}`,
+			wantCode:  http.StatusConflict,
+			wantError: true,
+		},
+		"Duplicate email": {
+			userID:    validUser.ID.String(),
+			reqBody:   `{"username":"validuser22","email":"validuser2@test.com"}`,
+			wantCode:  http.StatusConflict,
 			wantError: true,
 		},
 		"User not found": {
@@ -677,4 +732,181 @@ func TestDeleteUser(t *testing.T) {
 	}
 	mockUserService.AssertExpectations(t)
 
+}
+
+func TestCheckEmail(t *testing.T) {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockUserService := mocks.MockUserService{}
+	mockAuthService := mocks.MockAuthService{}
+	mockTokenService := mocks.MockTokenService{}
+
+	existingUser := &data.User{
+		ID:        uuid.New(),
+		Email:     "existing@test.com",
+		Username:  "existinguser",
+		Activated: true,
+	}
+
+	mockUserService.On("GetUserByEmail", "existing@test.com").Return(existingUser, nil)
+	mockUserService.On("GetUserByEmail", "new@test.com").Return(nil, services.ErrUserNotFound)
+	mockUserService.On("GetUserByEmail", "error@test.com").Return(nil, services.ErrInternal)
+
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+
+	tests := map[string]struct {
+		email     string
+		wantCode  int
+		wantBody  string
+		wantError bool
+	}{
+		"Email exists": {
+			email:     "existing@test.com",
+			wantCode:  http.StatusOK,
+			wantBody:  `{"exists":true}`,
+			wantError: false,
+		},
+		"Email doesn't exist": {
+			email:     "new@test.com",
+			wantCode:  http.StatusOK,
+			wantBody:  `{"exists":false}`,
+			wantError: false,
+		},
+		"Internal error": {
+			email:     "error@test.com",
+			wantCode:  http.StatusInternalServerError,
+			wantBody:  "Failed to validate email",
+			wantError: true,
+		},
+		"Invalid email format": {
+			email:     "invalid-email",
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			c.SetPath("/api/accounts/email/:email")
+			c.SetParamNames("email")
+			c.SetParamValues(tt.email)
+
+			err := handler.CheckEmail(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+					if tt.wantBody != "" {
+						assert.Contains(t, he.Message, tt.wantBody)
+					}
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+				if tt.wantBody != "" {
+					assert.JSONEq(t, tt.wantBody, rec.Body.String())
+				}
+			}
+		})
+	}
+
+	mockUserService.AssertExpectations(t)
+}
+
+func TestCheckUsername(t *testing.T) {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockUserService := mocks.MockUserService{}
+	mockAuthService := mocks.MockAuthService{}
+	mockTokenService := mocks.MockTokenService{}
+
+	existingUser := &data.User{
+		ID:        uuid.New(),
+		Email:     "test@test.com",
+		Username:  "existinguser",
+		Activated: true,
+	}
+
+	mockUserService.On("GetUserByUsername", "existinguser").Return(existingUser, nil)
+	mockUserService.On("GetUserByUsername", "newusername").Return(nil, services.ErrUserNotFound)
+	mockUserService.On("GetUserByUsername", "erroruser").Return(nil, services.ErrInternal)
+
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+
+	tests := map[string]struct {
+		username  string
+		wantCode  int
+		wantBody  string
+		wantError bool
+	}{
+		"Username exists": {
+			username:  "existinguser",
+			wantCode:  http.StatusOK,
+			wantBody:  `{"exists":true}`,
+			wantError: false,
+		},
+		"Username doesn't exist": {
+			username:  "newusername",
+			wantCode:  http.StatusOK,
+			wantBody:  `{"exists":false}`,
+			wantError: false,
+		},
+		"Internal error": {
+			username:  "erroruser",
+			wantCode:  http.StatusInternalServerError,
+			wantBody:  "Failed to validate username",
+			wantError: true,
+		},
+		"Username too short": {
+			username:  "a",
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"Username with special characters": {
+			username:  "user@name!",
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			c.SetPath("/api/accounts/username/:username")
+			c.SetParamNames("username")
+			c.SetParamValues(tt.username)
+
+			err := handler.CheckUsername(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+					if tt.wantBody != "" {
+						assert.Contains(t, he.Message, tt.wantBody)
+					}
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+				if tt.wantBody != "" {
+					assert.JSONEq(t, tt.wantBody, rec.Body.String())
+				}
+			}
+		})
+	}
+
+	mockUserService.AssertExpectations(t)
 }

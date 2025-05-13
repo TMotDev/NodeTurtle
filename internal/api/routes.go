@@ -18,7 +18,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 type Server struct {
@@ -70,12 +69,12 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	e.POST("/api/login", authHandler.Login)
 	e.POST("/api/register", authHandler.Register)
 	e.GET("/api/activate/:token", tokenHandler.ActivateAccount)
+	e.GET("/api/accounts/username/:username", userHandler.CheckUsername)
+	e.GET("/api/accounts/email/:email", userHandler.CheckEmail)
 	e.POST("/api/activate", tokenHandler.RequestActivationToken)
 	e.POST("/api/password/reset", tokenHandler.RequestPasswordReset)
 	e.POST("/api/password/reset/:token", tokenHandler.ResetPassword)
 	e.POST("/api/refresh", authHandler.RefreshToken)
-
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// Protected routes - requires authentication
 	api := e.Group("/api")
