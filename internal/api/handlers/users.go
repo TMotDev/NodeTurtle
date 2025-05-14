@@ -49,7 +49,7 @@ func (h *UserHandler) GetCurrentUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-// CheckEmail handles checking if provided email is valid and is taken
+// CheckEmail handles checking if provided email is valid and is taken or not
 func (h *UserHandler) CheckEmail(c echo.Context) error {
 	type EmailParam struct {
 		Email string `validate:"required,email"`
@@ -68,7 +68,7 @@ func (h *UserHandler) CheckEmail(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
 }
 
-// CheckEmail handles checking if provided username is valid and is taken
+// CheckEmail handles checking if provided username is valid and is taken or not
 func (h *UserHandler) CheckUsername(c echo.Context) error {
 	type UsernameParam struct {
 		Username string `validate:"required,min=3,max=20,alphanum"`
@@ -207,9 +207,9 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to change password")
 	}
 
-	err = h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID)
-	if err != nil {
+	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID); err != nil {
 		c.Logger().Errorf("Failed to invalidate refresh tokens: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to change password")
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{
@@ -218,6 +218,8 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 }
 
 // ListUsers handles the request to retrieve a paginated list of all users.
+//
+// uses data.UserFilter for filtering options
 func (h *UserHandler) ListUsers(c echo.Context) error {
 	filters := data.DefaultUserFilter()
 
@@ -286,11 +288,9 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	}
 
 	var updates data.UserUpdate
-
 	if err := c.Bind(&updates); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
-
 	if err := c.Validate(&updates); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -321,8 +321,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		}
 	}
 
-	err = h.userService.UpdateUser(user.ID, updates)
-	if err != nil {
+	if err := h.userService.UpdateUser(user.ID, updates); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 

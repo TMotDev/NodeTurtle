@@ -171,8 +171,7 @@ func (s UserService) ChangePassword(userID uuid.UUID, oldPassword, newPassword s
 		return err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(oldPassword))
-	if err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(oldPassword)); err != nil {
 		return services.ErrInvalidCredentials
 	}
 
@@ -285,7 +284,6 @@ func (s UserService) GetUserByUsername(username string) (*data.User, error) {
 
 // ListUsers returns a paginated list of users and the total count.
 func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error) {
-
 	// Calculate offset for pagination
 	offset := (filters.Page - 1) * filters.Limit
 
@@ -467,7 +465,13 @@ func (s UserService) UpdateUser(userID uuid.UUID, updates data.UserUpdate) error
 // DeleteUser removes a user from the database by their ID.
 // It returns ErrUserNotFound if no matching user exists.
 func (s UserService) DeleteUser(userID uuid.UUID) error {
-	result, err := s.db.Exec("DELETE FROM users WHERE id = $1", userID)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	result, err := tx.Exec("DELETE FROM users WHERE id = $1", userID)
 	if err != nil {
 		return err
 	}
@@ -481,13 +485,15 @@ func (s UserService) DeleteUser(userID uuid.UUID) error {
 		return services.ErrUserNotFound
 	}
 
-	return nil
+	return tx.Commit()
+
 }
 
 // GetForToken retrieves a user associated with a valid token.
 // It verifies the token's scope and expiration before returning the user.
 // Returns ErrRecordNotFound if no valid token exists.
 func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error) {
+
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 
 	query := `

@@ -61,12 +61,10 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	}
 
 	activationLink := fmt.Sprintf("http://website.com/activate/%s", activationToken.Plaintext)
-
 	emailData := map[string]interface{}{
 		"Username":       user.Username,
 		"ActivationLink": activationLink,
 	}
-
 	go h.mailService.SendEmail(user.Email, "Activate Your Account", "activation", emailData)
 
 	return c.JSON(http.StatusCreated, map[string]interface{}{
@@ -104,11 +102,12 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to login")
 	}
 
-	err = h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID)
-	if err != nil {
+	// delete all refresh tokens
+	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete old refresh tokens")
 	}
 
+	// generate a new refresh token
 	refreshToken, err := h.tokenService.New(user.ID, (time.Hour * 168), data.ScopeRefresh)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new refresh token")
@@ -147,6 +146,8 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 
 	h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID)
 
+	//TODO check if user is banned
+
 	token, err := h.authService.CreateJWTToken(*user)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new access token")
@@ -173,8 +174,8 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 	}
 
-	err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID)
-	if err != nil {
+	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID); err != nil {
+		// logging instead of returning to allow user to smoothly logout
 		c.Logger().Error("Failed to delete refresh tokens on user logout")
 	}
 

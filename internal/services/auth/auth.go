@@ -48,6 +48,12 @@ func NewService(db *sql.DB, jwtConfig config.JWTConfig) AuthService {
 // It returns a JWT token and the authenticated user on success, or an error if authentication fails.
 // Returns ErrInvalidCredentials if email/password are incorrect or ErrInactiveAccount if the account is not activated.
 func (s AuthService) Login(email, password string) (string, *data.User, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return "", nil, err
+	}
+	defer tx.Rollback()
+
 	var user data.User
 	var role data.Role
 
@@ -59,7 +65,7 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 		WHERE u.email = $1
 	`
 
-	err := s.db.QueryRow(query, email).Scan(
+	err = tx.QueryRow(query, email).Scan(
 		&user.ID, &user.Email, &user.Username, &user.Password.Hash, &user.Activated,
 		&role.ID, &role.Name, &role.Description,
 	)
@@ -82,15 +88,18 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 	}
 
 	// Update last login time
-	_, err = s.db.Exec("UPDATE users SET last_login = NOW() WHERE id = $1", user.ID)
+	_, err = tx.Exec("UPDATE users SET last_login = NOW() WHERE id = $1", user.ID)
 	if err != nil {
-		// Non-critical error, logging instead of returning http error
-		fmt.Printf("Failed to update last login time: %v\n", err)
+		return "", nil, fmt.Errorf("failed to update last login time: %w", err)
 	}
 
 	user.Role = role
 	token, err := s.CreateJWTToken(user)
 	if err != nil {
+		return "", nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
 		return "", nil, err
 	}
 

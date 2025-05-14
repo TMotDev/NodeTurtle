@@ -44,20 +44,23 @@ func customFunc(fl validator.FieldLevel) bool {
 func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	e := echo.New()
 
+	// validator setup
 	v := validator.New()
-
 	v.RegisterValidation("email", customFunc)
 	e.Validator = &CustomValidator{validator: v}
 
+	// setup services
 	mailService := mail.NewMailService(cfg.Mail)
 	authService := auth.NewService(db, cfg.JWT)
 	userService := users.NewUserService(db)
 	tokenService := tokens.NewTokenService(db)
 
+	// setup handlers
 	authHandler := handlers.NewAuthHandler(&authService, &userService, &tokenService, &mailService)
 	userHandler := handlers.NewUserHandler(&userService, &authService, &tokenService)
 	tokenHandler := handlers.NewTokenHandler(&userService, &tokenService, &mailService)
 
+	// setup middleware
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "ip:${remote_ip} method:${method}, uri:${uri}, status:${status}, error:${error}\n",
 	}))

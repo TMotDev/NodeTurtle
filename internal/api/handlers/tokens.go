@@ -65,12 +65,10 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 	}
 
 	activationLink := fmt.Sprintf("http://website.com/activate/%s", activationToken.Plaintext)
-
 	emailData := map[string]interface{}{
 		"Username":       user.Username,
 		"ActivationLink": activationLink,
 	}
-
 	go h.mailService.SendEmail(user.Email, "Activate Your Account", "activation", emailData)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -99,19 +97,15 @@ func (h *TokenHandler) ActivateAccount(c echo.Context) error {
 		}
 	}
 
-	err = h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)})
-
-	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrEditConflict):
+	if err := h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)}); err != nil {
+		if err == services.ErrEditConflict {
 			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
-		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
+
 		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
-	err = h.tokenService.DeleteAllForUser(data.ScopeUserActivation, user.ID)
-	if err != nil {
+	if err := h.tokenService.DeleteAllForUser(data.ScopeUserActivation, user.ID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete activation token")
 	}
 
@@ -206,20 +200,15 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
-	err = h.userService.ResetPassword(token, payload.Password)
-
-	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrEditConflict):
+	if err := h.userService.ResetPassword(token, payload.Password); err != nil {
+		if err == services.ErrEditConflict {
 			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
-		default:
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
 	// delete all password reset tokens for the user
-	err = h.tokenService.DeleteAllForUser(data.ScopePasswordReset, user.ID)
-	if err != nil {
+	if err := h.tokenService.DeleteAllForUser(data.ScopePasswordReset, user.ID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete activation token")
 	}
 
