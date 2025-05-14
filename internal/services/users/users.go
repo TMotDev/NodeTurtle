@@ -25,10 +25,12 @@ type IUserService interface {
 	GetUserByID(userID uuid.UUID) (*data.User, error)
 	GetUserByEmail(email string) (*data.User, error)
 	GetUserByUsername(username string) (*data.User, error)
-	ListUsers(page, limit int) ([]data.User, int, error)
+	ListUsers(filters data.UserFilter) ([]data.User, int, error)
 	UpdateUser(userID uuid.UUID, updates data.UserUpdate) error
 	DeleteUser(userID uuid.UUID) error
 	GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error)
+	UsernameExists(username string) (bool, error)
+	EmailExists(email string) (bool, error)
 }
 
 // UserService implements the IUserService interface for managing users.
@@ -49,9 +51,7 @@ func NewUserService(db *sql.DB) UserService {
 func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 	var exists bool
 
-	//? maybe have a separate function to check if email exists?
-	// it would also help with registration process to check if email is taken
-	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", reg.Email).Scan(&exists)
+	exists, err := s.EmailExists(reg.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +59,7 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 		return nil, services.ErrDuplicateEmail
 	}
 
-	//? maybe have a separate function to check if username exists?
-	// it would also help with registration process to check if username is taken
-	err = s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", reg.Username).Scan(&exists)
+	exists, err = s.UsernameExists(reg.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -286,39 +284,104 @@ func (s UserService) GetUserByUsername(username string) (*data.User, error) {
 }
 
 // ListUsers returns a paginated list of users and the total count.
-// The page parameter specifies which page to return (starting from 1),
-// and limit controls how many users to include per page.
-func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
+func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error) {
+
+	// Calculate offset for pagination
+	offset := (filters.Page - 1) * filters.Limit
+
+	// Build WHERE clause and args for filtering
+	whereClause := []string{}
+	args := []interface{}{}
+	argCount := 1
+
+	// Filter by activation status
+	if filters.ActivationStatus != nil {
+		whereClause = append(whereClause, "u.activated = $"+fmt.Sprint(argCount))
+		args = append(args, *filters.ActivationStatus)
+		argCount++
 	}
 
-	offset := (page - 1) * limit
+	// Filter by role
+	if filters.Role != nil {
+		whereClause = append(whereClause, "u.role_id = $"+fmt.Sprint(argCount))
+		roleId := filters.Role.ToID()
+		args = append(args, roleId)
+		argCount++
+	}
 
+	// Filter by username (partial match)
+	if filters.Username != nil && *filters.Username != "" {
+		whereClause = append(whereClause, "u.username ILIKE $"+fmt.Sprint(argCount))
+		args = append(args, "%"+*filters.Username+"%")
+		argCount++
+	}
+
+	// Filter by email (partial match)
+	if filters.Email != nil && *filters.Email != "" {
+		whereClause = append(whereClause, "u.email ILIKE $"+fmt.Sprint(argCount))
+		args = append(args, "%"+*filters.Email+"%")
+		argCount++
+	}
+
+	// Filter by creation time
+	if filters.CreatedAfter != nil {
+		whereClause = append(whereClause, "u.created_at >= $"+fmt.Sprint(argCount))
+		args = append(args, *filters.CreatedAfter)
+		argCount++
+	}
+	if filters.CreatedBefore != nil {
+		whereClause = append(whereClause, "u.created_at <= $"+fmt.Sprint(argCount))
+		args = append(args, *filters.CreatedBefore)
+		argCount++
+	}
+
+	// Filter by last login time
+	if filters.LastLoginAfter != nil {
+		whereClause = append(whereClause, "u.last_login >= $"+fmt.Sprint(argCount))
+		args = append(args, *filters.LastLoginAfter)
+		argCount++
+	}
+	if filters.LastLoginBefore != nil {
+		whereClause = append(whereClause, "u.last_login <= $"+fmt.Sprint(argCount))
+		args = append(args, *filters.LastLoginBefore)
+		argCount++
+	}
+
+	// Construct the final WHERE clause
+	where := ""
+	if len(whereClause) > 0 {
+		where = "WHERE " + strings.Join(whereClause, " AND ")
+	}
+
+	// Count total matching users
+	countQuery := "SELECT COUNT(*) FROM users u " + where
 	var total int
-	err := s.db.QueryRow("SELECT COUNT(*) FROM users").Scan(&total)
+	err := s.db.QueryRow(countQuery, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, err
 	}
 
+	// Build the SELECT query
 	query := `
 		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
-		       r.id, r.name, r.description
+		       r.id, r.name
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
-		ORDER BY u.id
-		LIMIT $1 OFFSET $2
-	`
+		` + where + `
+		ORDER BY u.` + filters.SortField + ` ` + filters.SortOrder + `
+		LIMIT $` + fmt.Sprint(argCount) + ` OFFSET $` + fmt.Sprint(argCount+1)
 
-	rows, err := s.db.Query(query, limit, offset)
+	// Add the limit and offset args
+	args = append(args, filters.Limit, offset)
+
+	// Execute the query
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
 
+	// Process the results
 	users := []data.User{}
 	for rows.Next() {
 		var user data.User
@@ -327,7 +390,7 @@ func (s UserService) ListUsers(page, limit int) ([]data.User, int, error) {
 
 		err := rows.Scan(
 			&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &lastLogin,
-			&role.ID, &role.Name, &role.Description,
+			&role.ID, &role.Name,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -448,14 +511,31 @@ func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext stri
 		&user.Password.Hash,
 		&user.Activated,
 	)
+
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		if err == sql.ErrNoRows {
 			return nil, services.ErrRecordNotFound
-		default:
-			return nil, err
 		}
+		return nil, err
 	}
 
 	return &user, nil
+}
+
+func (s UserService) EmailExists(email string) (bool, error) {
+	var exists bool
+	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", email).Scan(&exists)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return false, services.ErrRecordNotFound
+	}
+	return exists, nil
+}
+
+func (s UserService) UsernameExists(username string) (bool, error) {
+	var exists bool
+	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", username).Scan(&exists)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return false, services.ErrRecordNotFound
+	}
+	return exists, nil
 }

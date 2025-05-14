@@ -45,7 +45,7 @@ func createTestData() TestData {
 			Email:     "john@example.com",
 			Username:  "john",
 			Password:  "password1234",
-			Role:      data.RoleUser,
+			Role:      data.RolePremium,
 			Activated: false,
 		},
 	}

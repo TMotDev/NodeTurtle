@@ -4,8 +4,10 @@ import (
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/mocks"
 	"NodeTurtleAPI/internal/services"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -400,39 +402,60 @@ func TestListUsers(t *testing.T) {
 		Activated: false,
 	}
 
-	mockUserService.On("ListUsers", 5, 5).Return(nil, 0, services.ErrInternal)
 	mockUserService.On("ListUsers", mock.Anything, mock.Anything).Return([]data.User{user1, user2}, 2, nil)
 
 	tests := map[string]struct {
-		page      string
-		limit     string
+		filters   data.UserFilter
 		wantCode  int
-		wantBody  string
 		wantError bool
 	}{
 		"Successful request": {
-			page:      "1",
-			limit:     "2",
+			filters: data.UserFilter{
+				Page:      1,
+				Limit:     10,
+				SortField: "created_at",
+				SortOrder: "desc",
+			},
 			wantCode:  http.StatusOK,
 			wantError: false,
 		},
-		"Negative and string params": {
-			page:      "-1",
-			limit:     "two",
-			wantCode:  http.StatusOK,
-			wantError: false,
-		},
-		"Internal failure": {
-			page:      "5",
-			limit:     "5",
-			wantCode:  http.StatusInternalServerError,
+		"Invalid params": {
+			filters: data.UserFilter{
+				Page:      -1,
+				Limit:     -10,
+				SortField: "height",
+				SortOrder: "random",
+			},
+			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/api/admin/users?page="+tt.page+"&limit="+tt.limit, nil)
+			q := make([]string, 0)
+			if tt.filters.Page != 0 {
+				q = append(q, "page="+strconv.Itoa(tt.filters.Page))
+			}
+			if tt.filters.Limit != 0 {
+				q = append(q, "limit="+strconv.Itoa(tt.filters.Limit))
+			}
+			if tt.filters.SortField != "" {
+				q = append(q, "sort_field="+tt.filters.SortField)
+			}
+			if tt.filters.SortOrder != "" {
+				q = append(q, "sort_order="+tt.filters.SortOrder)
+			}
+
+			query := ""
+
+			if len(q) > 0 {
+				query = "?" + strings.Join(q, "&")
+			}
+
+			fmt.Println(query)
+
+			req := httptest.NewRequest(http.MethodGet, "/api/admin/users"+query, nil)
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)

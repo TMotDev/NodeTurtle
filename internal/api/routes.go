@@ -15,6 +15,8 @@ import (
 	"NodeTurtleAPI/internal/services/tokens"
 	"NodeTurtleAPI/internal/services/users"
 
+	gomail "net/mail"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -34,10 +36,18 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return cv.validator.Struct(i)
 }
 
+func customFunc(fl validator.FieldLevel) bool {
+	_, err := gomail.ParseAddress(fl.Field().String())
+	return err == nil
+}
+
 func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	e := echo.New()
 
-	e.Validator = &CustomValidator{validator: validator.New()}
+	v := validator.New()
+
+	v.RegisterValidation("email", customFunc)
+	e.Validator = &CustomValidator{validator: v}
 
 	mailService := mail.NewMailService(cfg.Mail)
 	authService := auth.NewService(db, cfg.JWT)

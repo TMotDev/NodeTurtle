@@ -52,8 +52,8 @@ func (m *MockUserService) GetUserByEmail(email string) (*data.User, error) {
 	return args.Get(0).(*data.User), args.Error(1)
 }
 
-func (m *MockUserService) ListUsers(page, limit int) ([]data.User, int, error) {
-	args := m.Called(page, limit)
+func (m *MockUserService) ListUsers(filters data.UserFilter) ([]data.User, int, error) {
+	args := m.Called(filters)
 	if args.Get(0) == nil {
 		return nil, args.Int(1), args.Error(2)
 	}
@@ -77,4 +77,15 @@ func (m *MockUserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext
 		user = args.Get(0).(*data.User)
 	}
 	return user, args.Error(1)
+}
+
+func (m *MockUserService) UsernameExists(username string) (bool, error) {
+	args := m.Called(username)
+
+	return args.Get(0).(bool), args.Error(1)
+}
+func (m *MockUserService) EmailExists(email string) (bool, error) {
+	args := m.Called(email)
+
+	return args.Get(0).(bool), args.Error(1)
 }

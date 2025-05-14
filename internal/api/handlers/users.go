@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services"
@@ -61,14 +60,9 @@ func (h *UserHandler) CheckEmail(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var exists bool
-	user, err := h.userService.GetUserByEmail(param.Email)
+	exists, err := h.userService.EmailExists(param.Email)
 	if err != nil && err != services.ErrUserNotFound {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate email")
-	}
-
-	if user != nil {
-		exists = true
 	}
 
 	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
@@ -85,14 +79,9 @@ func (h *UserHandler) CheckUsername(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var exists bool
-	user, err := h.userService.GetUserByUsername(param.Username)
+	exists, err := h.userService.UsernameExists(param.Username)
 	if err != nil && err != services.ErrUserNotFound {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate username")
-	}
-
-	if user != nil {
-		exists = true
 	}
 
 	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
@@ -229,24 +218,21 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 }
 
 // ListUsers handles the request to retrieve a paginated list of all users.
-// It accepts page and limit query parameters for pagination.
-// Returns the list of users and pagination metadata or an error if the retrieval fails.
 func (h *UserHandler) ListUsers(c echo.Context) error {
-	pageStr := c.QueryParam("page")
-	limitStr := c.QueryParam("limit")
+	filters := data.DefaultUserFilter()
 
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		page = 1
+	if err := c.Bind(&filters); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit < 1 {
-		limit = 10
+	if err := c.Validate(&filters); err != nil {
+		c.Logger().Errorf("Filter validation error: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	users, total, err := h.userService.ListUsers(page, limit)
+	users, total, err := h.userService.ListUsers(filters)
 	if err != nil {
+		c.Logger().Errorf("Failed to retrieve users: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve users")
 	}
 
@@ -254,8 +240,7 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 		"users": users,
 		"meta": map[string]interface{}{
 			"total": total,
-			"page":  page,
-			"limit": limit,
+			"page":  filters.Page,
 		},
 	})
 }

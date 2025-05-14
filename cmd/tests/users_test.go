@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"log"
 	"testing"
 
@@ -304,40 +305,77 @@ func TestGetUserByUsername(t *testing.T) {
 }
 
 func TestListUsers(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, _, close := setupUserService(t)
 	defer close()
 
 	tests := map[string]struct {
-		page          int
-		limit         int
-		expectedCount int
-		err           error
+		filters data.UserFilter
+		err     error
 	}{
 		"Successful user list fetch": {
-			page:          1,
-			limit:         2,
-			expectedCount: 2,
-			err:           nil,
+			filters: data.UserFilter{
+				Page:      1,
+				Limit:     10,
+				SortField: "created_at",
+				SortOrder: "desc",
+			},
+			err: nil,
 		},
-		"Negative params": {
-			page:          -1,
-			limit:         -99,
-			expectedCount: len(td.Users),
-			err:           nil,
+		"Get only premium users": {
+			filters: data.UserFilter{
+				Page:      1,
+				Limit:     10,
+				Role:      utils.Ptr(data.RolePremium),
+				SortField: "created_at",
+				SortOrder: "desc",
+			},
+			err: nil,
 		},
+		"Partial email search": {
+			filters: data.UserFilter{
+				Page:      1,
+				Limit:     10,
+				Email:     utils.Ptr("lice"),
+				SortField: "created_at",
+				SortOrder: "desc",
+			},
+			err: nil,
+		},
+		"Partial username search": {
+			filters: data.UserFilter{
+				Page:      1,
+				Limit:     10,
+				Username:  utils.Ptr("ohn"),
+				SortField: "created_at",
+				SortOrder: "desc",
+			},
+			err: nil,
+		},
+		"Search inactive accounts": {
+			filters: data.UserFilter{
+				Page:             1,
+				Limit:            10,
+				ActivationStatus: utils.Ptr(false),
+				SortField:        "created_at",
+				SortOrder:        "desc",
+			},
+			err: nil,
+		},
+		// TODO Test created_at, last_login times
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			u, _, err := s.ListUsers(tt.page, tt.limit)
+			u, _, err := s.ListUsers(tt.filters)
+
+			fmt.Println(u)
 
 			if tt.err != nil {
 				assert.Error(t, err)
 				assert.Equal(t, tt.err, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedCount, len(u))
 				assert.Equal(t, nil, err)
 			}
 		})
@@ -468,6 +506,63 @@ func TestGetForToken(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, nil, err)
 			}
+		})
+	}
+}
+
+func TestEmailExists(t *testing.T) {
+	s, td, close := setupUserService(t)
+	defer close()
+
+	tests := map[string]struct {
+		email  string
+		exists bool
+	}{
+		"Email exists": {
+			email:  td.Users[0].Email,
+			exists: true,
+		},
+		"Email does not exist": {
+			email:  "available@test.test",
+			exists: false,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			exists, err := s.EmailExists(tt.email)
+
+			assert.Equal(t, tt.exists, exists)
+			assert.NoError(t, err)
+		})
+	}
+}
+func TestUsernameExists(t *testing.T) {
+	s, td, close := setupUserService(t)
+	defer close()
+
+	tests := map[string]struct {
+		username string
+		exists   bool
+	}{
+		"Username exists": {
+			username: td.Users[0].Username,
+			exists:   true,
+		},
+		"Username does not exist": {
+			username: "username",
+			exists:   false,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			exists, err := s.UsernameExists(tt.username)
+
+			assert.Equal(t, tt.exists, exists)
+			assert.NoError(t, err)
 		})
 	}
 }

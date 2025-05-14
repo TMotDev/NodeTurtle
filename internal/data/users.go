@@ -102,3 +102,33 @@ type UserUpdate struct {
 	Activated *bool     `json:"activated,omitempty"`
 	Role      *RoleType `json:"role,omitempty"`
 }
+
+type UserFilter struct {
+	// Pagination
+	Page  int `query:"page" validate:"omitempty,min=1"`
+	Limit int `query:"limit" validate:"omitempty,min=1,max=100"`
+
+	// Filters
+	ActivationStatus *bool     `query:"activated"`
+	Role             *RoleType `query:"role" validate:"omitempty"`
+	Username         *string   `query:"username" validate:"omitempty"`
+	Email            *string   `query:"email" validate:"omitempty"`
+
+	// Time fields
+	CreatedBefore   *time.Time `query:"created_before" validate:"omitempty"`
+	CreatedAfter    *time.Time `query:"created_after" validate:"omitempty"`
+	LastLoginBefore *time.Time `query:"last_login_before" validate:"omitempty"`
+	LastLoginAfter  *time.Time `query:"last_login_after" validate:"omitempty"`
+
+	SortField string `query:"sort_field" validate:"omitempty,oneof=id email username activated created_at last_login"`
+	SortOrder string `query:"sort_order" validate:"omitempty,oneof=asc desc"`
+}
+
+func DefaultUserFilter() UserFilter {
+	return UserFilter{
+		Page:      1,
+		Limit:     10,
+		SortField: "created_at",
+		SortOrder: "desc",
+	}
+}
