@@ -310,7 +310,7 @@ func TestRefreshToken(t *testing.T) {
 	mockUserService.On("GetForToken", data.ScopeRefresh, refreshToken).Return(validUser, nil)
 	mockUserService.On("GetForToken", data.ScopeRefresh, "wrongtoken").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", data.ScopeRefresh, "internalerror").Return(nil, services.ErrInternal)
-	mockAuthService.On("CreateJWTToken", *validUser).Return(newAccessToken, nil)
+	mockAuthService.On("CreateAccessToken", *validUser).Return(newAccessToken, nil)
 	mockTokenService.On("New", userID, mock.Anything, data.ScopeRefresh).Return(newRefreshToken, nil)
 	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, userID).Return(nil)
 

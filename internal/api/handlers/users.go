@@ -43,6 +43,7 @@ func (h *UserHandler) GetCurrentUser(c echo.Context) error {
 		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
+		c.Logger().Errorf("Internal user creation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
@@ -62,6 +63,7 @@ func (h *UserHandler) CheckEmail(c echo.Context) error {
 
 	exists, err := h.userService.EmailExists(param.Email)
 	if err != nil && err != services.ErrUserNotFound {
+		c.Logger().Errorf("Internal email validation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate email")
 	}
 
@@ -81,6 +83,7 @@ func (h *UserHandler) CheckUsername(c echo.Context) error {
 
 	exists, err := h.userService.UsernameExists(param.Username)
 	if err != nil && err != services.ErrUserNotFound {
+		c.Logger().Errorf("Internal username validation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate username")
 	}
 
@@ -101,6 +104,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
+		c.Logger().Errorf("Internal user fetch error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
@@ -124,6 +128,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 	// Password revalidation
 	ok, err = user.Password.Matches(payload.Password)
 	if err != nil {
+		c.Logger().Errorf("Internal password matching error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to verify password")
 	}
 	if !ok {
@@ -138,6 +143,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 	if payload.Email != nil {
 		existingUser, err := h.userService.GetUserByEmail(*payload.Email)
 		if err != nil && err != services.ErrUserNotFound {
+			c.Logger().Errorf("Internal user update error %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 		}
 		if existingUser != nil && existingUser.ID != user.ID {
@@ -149,6 +155,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 	if payload.Username != nil {
 		existingUser, err := h.userService.GetUserByUsername(*payload.Username)
 		if err != nil && err != services.ErrUserNotFound {
+			c.Logger().Errorf("Internal user retrieval error %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 		}
 		if existingUser != nil && existingUser.ID != user.ID {
@@ -157,6 +164,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 	}
 
 	if err := h.userService.UpdateUser(user.ID, payload.UserUpdate); err != nil {
+		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
@@ -180,6 +188,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
+		c.Logger().Errorf("Internal user retrieval error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
@@ -204,11 +213,12 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		if err == services.ErrInvalidCredentials {
 			return echo.NewHTTPError(http.StatusBadRequest, "Current password is incorrect")
 		}
+		c.Logger().Errorf("Internal password change error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to change password")
 	}
 
 	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID); err != nil {
-		c.Logger().Errorf("Failed to invalidate refresh tokens: %v", err)
+		c.Logger().Errorf("Internal token deletion error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to change password")
 	}
 
@@ -234,7 +244,7 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 
 	users, total, err := h.userService.ListUsers(filters)
 	if err != nil {
-		c.Logger().Errorf("Failed to retrieve users: %v", err)
+		c.Logger().Errorf("Internal user retrieval error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve users")
 	}
 
@@ -262,6 +272,7 @@ func (h *UserHandler) GetUser(c echo.Context) error {
 		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
+		c.Logger().Errorf("Internal user retrieval error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
@@ -284,6 +295,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
+		c.Logger().Errorf("Internal user retrieval error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
@@ -303,6 +315,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	if updates.Email != nil {
 		existingUser, err := h.userService.GetUserByEmail(*updates.Email)
 		if err != nil && err != services.ErrUserNotFound {
+			c.Logger().Errorf("Internal user retrieval error %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 		}
 		if existingUser != nil && existingUser.ID != user.ID {
@@ -314,6 +327,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	if updates.Username != nil {
 		existingUser, err := h.userService.GetUserByUsername(*updates.Username)
 		if err != nil && err != services.ErrUserNotFound {
+			c.Logger().Errorf("Internal user retrieval error %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 		}
 		if existingUser != nil && existingUser.ID != user.ID {
@@ -322,6 +336,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	}
 
 	if err := h.userService.UpdateUser(user.ID, updates); err != nil {
+		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
@@ -345,6 +360,7 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
+		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete user")
 	}
 

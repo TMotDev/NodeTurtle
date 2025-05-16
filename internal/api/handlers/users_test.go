@@ -223,6 +223,12 @@ func TestUpdateCurrentUser(t *testing.T) {
 			wantCode:    http.StatusOK,
 			wantError:   false,
 		},
+		"Invalid body": {
+			contextUser: validUser,
+			reqBody:     `{"email":"email@email.com","premium":true}`,
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
 	}
 
 	for name, tt := range tests {
@@ -765,16 +771,9 @@ func TestCheckEmail(t *testing.T) {
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
 
-	existingUser := &data.User{
-		ID:        uuid.New(),
-		Email:     "existing@test.com",
-		Username:  "existinguser",
-		Activated: true,
-	}
-
-	mockUserService.On("GetUserByEmail", "existing@test.com").Return(existingUser, nil)
-	mockUserService.On("GetUserByEmail", "new@test.com").Return(nil, services.ErrUserNotFound)
-	mockUserService.On("GetUserByEmail", "error@test.com").Return(nil, services.ErrInternal)
+	mockUserService.On("EmailExists", "existing@test.com").Return(true, nil)
+	mockUserService.On("EmailExists", "new@test.com").Return(false, services.ErrUserNotFound)
+	mockUserService.On("EmailExists", "error@test.com").Return(false, services.ErrInternal)
 
 	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
 
@@ -851,16 +850,9 @@ func TestCheckUsername(t *testing.T) {
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
 
-	existingUser := &data.User{
-		ID:        uuid.New(),
-		Email:     "test@test.com",
-		Username:  "existinguser",
-		Activated: true,
-	}
-
-	mockUserService.On("GetUserByUsername", "existinguser").Return(existingUser, nil)
-	mockUserService.On("GetUserByUsername", "newusername").Return(nil, services.ErrUserNotFound)
-	mockUserService.On("GetUserByUsername", "erroruser").Return(nil, services.ErrInternal)
+	mockUserService.On("UsernameExists", "existinguser").Return(true, nil)
+	mockUserService.On("UsernameExists", "newusername").Return(false, services.ErrUserNotFound)
+	mockUserService.On("UsernameExists", "erroruser").Return(false, services.ErrInternal)
 
 	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
 

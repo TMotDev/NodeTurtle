@@ -24,7 +24,7 @@ type Claims struct {
 // IAuthService defines the interface for authentication operations.
 type IAuthService interface {
 	Login(email, password string) (string, *data.User, error)
-	CreateJWTToken(user data.User) (string, error)
+	CreateAccessToken(user data.User) (string, error)
 	VerifyToken(tokenString string) (*Claims, error)
 }
 
@@ -94,7 +94,7 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 	}
 
 	user.Role = role
-	token, err := s.CreateJWTToken(user)
+	token, err := s.CreateAccessToken(user)
 	if err != nil {
 		return "", nil, err
 	}
@@ -128,7 +128,7 @@ func (s AuthService) VerifyToken(tokenString string) (*Claims, error) {
 
 // CreateJWTToken generates a new JWT token for the given user.
 // The token includes the user's role and ID, and expires based on the service's configuration.
-func (s AuthService) CreateJWTToken(user data.User) (string, error) {
+func (s AuthService) CreateAccessToken(user data.User) (string, error) {
 	expirationTime := time.Now().UTC().Add(time.Duration(s.JwtExp) * time.Hour)
 
 	claims := &Claims{

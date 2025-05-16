@@ -52,6 +52,7 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "No matching email address found")
 		}
+		c.Logger().Errorf("Internal user retrieval error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 	}
 
@@ -61,6 +62,7 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 
 	activationToken, err := h.tokenService.New(user.ID, 24*time.Hour, data.ScopeUserActivation)
 	if err != nil {
+		c.Logger().Errorf("Internal activation token creation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create Activation token")
 	}
 
@@ -93,6 +95,7 @@ func (h *TokenHandler) ActivateAccount(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
 
 		default:
+			c.Logger().Errorf("Internal user retrieval error %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 		}
 	}
@@ -102,10 +105,12 @@ func (h *TokenHandler) ActivateAccount(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
 
 		}
+		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
 	if err := h.tokenService.DeleteAllForUser(data.ScopeUserActivation, user.ID); err != nil {
+		c.Logger().Errorf("Internal activation token deletion error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete activation token")
 	}
 
@@ -136,6 +141,7 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid email address")
 		}
+		c.Logger().Errorf("Internal user retrieval error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 	}
 
@@ -145,6 +151,7 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 
 	resetToken, err := h.tokenService.New(user.ID, 24*time.Hour, data.ScopePasswordReset)
 	if err != nil {
+		c.Logger().Errorf("Internal reset token creation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create reset token")
 	}
 
@@ -185,13 +192,13 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 	}
 
 	user, err := h.userService.GetForToken(data.ScopePasswordReset, token)
-
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrRecordNotFound):
 			return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
 
 		default:
+			c.Logger().Errorf("Internal user retrieval error %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve data")
 		}
 	}
@@ -204,12 +211,14 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 		if err == services.ErrEditConflict {
 			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
 		}
+		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
 	// delete all password reset tokens for the user
 	if err := h.tokenService.DeleteAllForUser(data.ScopePasswordReset, user.ID); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete activation token")
+		c.Logger().Errorf("Internal password reset deletion error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{

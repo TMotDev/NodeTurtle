@@ -52,11 +52,13 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		if err == services.ErrUserExists {
 			return echo.NewHTTPError(http.StatusConflict, "User with this email already exists")
 		}
+		c.Logger().Errorf("Internal user creation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create user")
 	}
 
 	activationToken, err := h.tokenService.New(user.ID, 24*time.Hour, data.ScopeUserActivation)
 	if err != nil {
+		c.Logger().Errorf("Internal activation token creation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create Activation token")
 	}
 
@@ -99,17 +101,20 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		if err == services.ErrInactiveAccount {
 			return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 		}
+		c.Logger().Errorf("Internal login error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to login")
 	}
 
 	// delete all refresh tokens
 	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID); err != nil {
+		c.Logger().Errorf("Internal refresh token deletion error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete old refresh tokens")
 	}
 
 	// generate a new refresh token
 	refreshToken, err := h.tokenService.New(user.ID, (time.Hour * 168), data.ScopeRefresh)
 	if err != nil {
+		c.Logger().Errorf("Internal refresh token creation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new refresh token")
 	}
 
@@ -148,13 +153,15 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 
 	//TODO check if user is banned
 
-	token, err := h.authService.CreateJWTToken(*user)
+	token, err := h.authService.CreateAccessToken(*user)
 	if err != nil {
+		c.Logger().Errorf("Internal access token creation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new access token")
 	}
 
 	refreshToken, err := h.tokenService.New(user.ID, (time.Hour * 168), data.ScopeRefresh)
 	if err != nil {
+		c.Logger().Errorf("Internal refresh token creation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new refresh token")
 	}
 

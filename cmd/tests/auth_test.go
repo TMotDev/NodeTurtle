@@ -138,7 +138,7 @@ func TestCreateJWTToken(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			token, err := s.CreateJWTToken(tt.user)
+			token, err := s.CreateAccessToken(tt.user)
 
 			if tt.err != nil {
 				assert.Error(t, err)
@@ -162,14 +162,14 @@ func TestVerifyToken(t *testing.T) {
 		Username: td.Users[0].Username,
 		Role:     data.Role{ID: data.RoleUser.ToID(), Name: "user"},
 	}
-	validToken, err := s.CreateJWTToken(user)
+	validToken, err := s.CreateAccessToken(user)
 	assert.NoError(t, err)
 
 	invalidService := auth.AuthService{
 		JwtKey: []byte("different-secret"),
 		JwtExp: 24,
 	}
-	invalidToken, err := invalidService.CreateJWTToken(user)
+	invalidToken, err := invalidService.CreateAccessToken(user)
 	assert.NoError(t, err)
 
 	tests := map[string]struct {

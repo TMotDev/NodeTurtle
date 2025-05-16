@@ -22,7 +22,7 @@ func (m *MockAuthService) Login(email, password string) (string, *data.User, err
 	return args.String(0), user, args.Error(2)
 }
 
-func (m *MockAuthService) CreateJWTToken(user data.User) (string, error) {
+func (m *MockAuthService) CreateAccessToken(user data.User) (string, error) {
 	args := m.Called(user)
 	return args.String(0), args.Error(1)
 }
