@@ -13,15 +13,23 @@ import (
 
 // User represents a user in the system with their associated details.
 type User struct {
-	ID        uuid.UUID    `json:"id"`
-	Email     string       `json:"email"`
-	Username  string       `json:"username"`
-	Password  Password     `json:"-"`
-	RoleID    int64        `json:"-"`
-	Role      Role         `json:"role,omitempty"`
-	Activated bool         `json:"activated"`
-	LastLogin sql.NullTime `json:"last_login,omitempty"`
-	CreatedAt time.Time    `json:"created_at"`
+	ID          uuid.UUID    `json:"id"`
+	Email       string       `json:"email"`
+	Username    string       `json:"username"`
+	Password    Password     `json:"-"`
+	RoleID      int64        `json:"-"`
+	Role        Role         `json:"role,omitempty"`
+	IsActivated bool         `json:"activated"`
+	LastLogin   sql.NullTime `json:"last_login,omitempty"`
+	CreatedAt   time.Time    `json:"created_at"`
+	Ban         *Ban         `json:"ban,omitempty"`
+}
+
+type Ban struct {
+	BannedAt  time.Time `json:"banned_at"`
+	Reason    string    `json:"reason"`
+	BannedBy  *User     `json:"banned_by,omitempty"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 // MarshalJSON provides custom JSON serialization for User.

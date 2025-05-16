@@ -3,15 +3,17 @@ package middleware
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services/auth"
+	"NodeTurtleAPI/internal/services/users"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
-func JWT(authService *auth.AuthService) echo.MiddlewareFunc {
+func JWT(authService *auth.AuthService, userService *users.UserService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Get token from Authorization header
@@ -33,11 +35,12 @@ func JWT(authService *auth.AuthService) echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid or expired token")
 			}
 
-			c.Set("user", &data.User{
-				ID:   uuid.MustParse(claims.Subject),
-				Role: data.Role{Name: claims.Role},
-			})
+			user, err := userService.GetUserByID(uuid.MustParse(claims.Subject))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, "User not found")
+			}
 
+			c.Set("user", user)
 			return next(c)
 		}
 	}
@@ -48,15 +51,26 @@ func RequireRole(role string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			user, ok := c.Get("user").(*data.User)
-			if !ok {
+			if !ok || user == nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 			}
-
 			if user.Role.Name != role && user.Role.Name != data.RoleAdmin.String() {
 				return echo.NewHTTPError(http.StatusForbidden, "Insufficient permissions")
 			}
-
 			return next(c)
 		}
+	}
+}
+
+func CheckBan(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		user, ok := c.Get("user").(*data.User)
+		if !ok || user == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+		}
+		if user.Ban != nil && user.Ban.ExpiresAt.After(time.Now().UTC()) {
+			return echo.NewHTTPError(http.StatusForbidden, "User is banned")
+		}
+		return next(c)
 	}
 }

@@ -56,7 +56,7 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 	}
 
-	if user.Activated {
+	if user.IsActivated {
 		return echo.NewHTTPError(http.StatusConflict, "Account is already been activated")
 	}
 
@@ -145,7 +145,7 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 	}
 
-	if !user.Activated {
+	if !user.IsActivated {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
@@ -203,7 +203,7 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 		}
 	}
 
-	if !user.Activated {
+	if !user.IsActivated {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 

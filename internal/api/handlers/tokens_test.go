@@ -27,16 +27,16 @@ func TestRequestActivationToken(t *testing.T) {
 	mockMailerService := mocks.MockMailService{}
 
 	validUser := data.User{
-		ID:        uuid.New(),
-		Email:     "validuser@test.com",
-		Username:  "validuser",
-		Activated: false,
+		ID:          uuid.New(),
+		Email:       "validuser@test.com",
+		Username:    "validuser",
+		IsActivated: false,
 	}
 	activatedUser := data.User{
-		ID:        uuid.New(),
-		Email:     "activated@test.com",
-		Username:  "active",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "activated@test.com",
+		Username:    "active",
+		IsActivated: true,
 	}
 	newRefreshToken := data.Token{Plaintext: "new-refresh-token", Scope: data.ScopeRefresh}
 
@@ -204,9 +204,9 @@ func TestRequestPasswordReset(t *testing.T) {
 
 	mockUserService.On("GetUserByEmail", "notfound@test.test").Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByEmail", "internal@test.test").Return(nil, services.ErrInternal)
-	mockUserService.On("GetUserByEmail", "test@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser", Activated: true}, nil)
-	mockUserService.On("GetUserByEmail", "resetTokenFail@test.test").Return(&data.User{ID: userIDFail, Email: "resetTokenFail@test.test", Username: "resetTokenFail", Activated: true}, nil)
-	mockUserService.On("GetUserByEmail", "notactivated@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser", Activated: false}, nil)
+	mockUserService.On("GetUserByEmail", "test@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser", IsActivated: true}, nil)
+	mockUserService.On("GetUserByEmail", "resetTokenFail@test.test").Return(&data.User{ID: userIDFail, Email: "resetTokenFail@test.test", Username: "resetTokenFail", IsActivated: true}, nil)
+	mockUserService.On("GetUserByEmail", "notactivated@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser", IsActivated: false}, nil)
 
 	mockTokenService.On("New", userID, mock.Anything, data.ScopePasswordReset).Return(&data.Token{
 		Plaintext: "mocktoken",
@@ -289,13 +289,13 @@ func TestResetPassword(t *testing.T) {
 	userIDValid := uuid.New()
 	userIDInternalFail := uuid.New()
 
-	validUser := &data.User{ID: userIDValid, Email: "test@test.test", Username: "testuser", Activated: true}
+	validUser := &data.User{ID: userIDValid, Email: "test@test.test", Username: "testuser", IsActivated: true}
 
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken").Return(validUser, nil)
-	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken2").Return(&data.User{ID: userIDInternalFail, Email: "fail@test.test", Username: "failuser", Activated: true}, nil)
+	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken2").Return(&data.User{ID: userIDInternalFail, Email: "fail@test.test", Username: "failuser", IsActivated: true}, nil)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "badtoken").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "internalerror").Return(nil, services.ErrInternal)
-	mockUserService.On("GetForToken", data.ScopePasswordReset, "inactive").Return(&data.User{ID: userIDValid, Email: "valid@test.test", Username: "validUser", Activated: false}, nil)
+	mockUserService.On("GetForToken", data.ScopePasswordReset, "inactive").Return(&data.User{ID: userIDValid, Email: "valid@test.test", Username: "validUser", IsActivated: false}, nil)
 
 	mockUserService.On("ResetPassword", "validtoken", "failpassword").Return(services.ErrInternal)
 	mockUserService.On("ResetPassword", mock.Anything, mock.Anything).Return(nil)

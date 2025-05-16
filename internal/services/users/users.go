@@ -94,7 +94,7 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 		&user.ID,
 		&user.Email,
 		&user.Username,
-		&user.Activated,
+		&user.IsActivated,
 		&user.CreatedAt,
 	)
 	if err != nil {
@@ -206,7 +206,7 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	`
 
 	err := s.db.QueryRow(query, userID).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.LastLogin,
+		&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description, &role.CreatedAt,
 	)
 
@@ -236,7 +236,7 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	`
 
 	err := s.db.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.LastLogin,
+		&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description,
 	)
 
@@ -266,7 +266,7 @@ func (s UserService) GetUserByUsername(username string) (*data.User, error) {
 	`
 
 	err := s.db.QueryRow(query, username).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &user.LastLogin,
+		&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description,
 	)
 
@@ -386,7 +386,7 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 		var lastLogin sql.NullTime
 
 		err := rows.Scan(
-			&user.ID, &user.Email, &user.Username, &user.Activated, &user.CreatedAt, &lastLogin,
+			&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &lastLogin,
 			&role.ID, &role.Name,
 		)
 		if err != nil {
@@ -514,7 +514,7 @@ func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext stri
 		&user.Username,
 		&user.Email,
 		&user.Password.Hash,
-		&user.Activated,
+		&user.IsActivated,
 	)
 
 	if err != nil {

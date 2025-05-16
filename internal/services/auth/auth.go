@@ -66,7 +66,7 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 	`
 
 	err = tx.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Password.Hash, &user.Activated,
+		&user.ID, &user.Email, &user.Username, &user.Password.Hash, &user.IsActivated,
 		&role.ID, &role.Name, &role.Description,
 	)
 
@@ -83,7 +83,7 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 		return "", nil, services.ErrInvalidCredentials
 	}
 
-	if !user.Activated {
+	if !user.IsActivated {
 		return "", nil, services.ErrInactiveAccount
 	}
 

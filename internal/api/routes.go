@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"NodeTurtleAPI/internal/api/handlers"
-	customMiddleware "NodeTurtleAPI/internal/api/middleware"
+	m "NodeTurtleAPI/internal/api/middleware"
 	"NodeTurtleAPI/internal/config"
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services/auth"
@@ -67,7 +67,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
-	setupRoutes(e, &authHandler, &userHandler, &tokenHandler, &authService)
+	setupRoutes(e, &authHandler, &userHandler, &tokenHandler, &authService, &userService)
 
 	return &Server{
 		echo:   e,
@@ -76,7 +76,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	}
 }
 
-func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, tokenHandler *handlers.TokenHandler, authService *auth.AuthService) {
+func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, tokenHandler *handlers.TokenHandler, authService *auth.AuthService, userService *users.UserService) {
 
 	// Public routes
 	e.POST("/api/login", authHandler.Login)
@@ -91,8 +91,8 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 
 	// Protected routes - requires authentication
 	api := e.Group("/api")
-	api.Use(customMiddleware.JWT(authService))
-
+	api.Use(m.JWT(authService, userService))
+	api.Use(m.CheckBan)
 	// User routes
 	api.POST("/auth/logout", authHandler.Logout)
 	api.GET("/users/me", userHandler.GetCurrentUser)
@@ -101,7 +101,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 
 	// Role-specific routes
 	admin := api.Group("/admin")
-	admin.Use(customMiddleware.RequireRole(data.RoleAdmin.String()))
+	admin.Use(m.RequireRole(data.RoleAdmin.String()))
 	admin.GET("/users", userHandler.ListUsers)
 	admin.GET("/users/:id", userHandler.GetUser)
 	admin.PUT("/users/:id", userHandler.UpdateUser)

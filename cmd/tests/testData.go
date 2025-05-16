@@ -3,6 +3,7 @@ package tests
 import (
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services/tokens"
+	"NodeTurtleAPI/internal/utils"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,6 +21,7 @@ type TestUser struct {
 	Password  string
 	Role      data.RoleType
 	Activated bool
+	Ban       *data.Ban
 }
 
 func createTestData() TestData {
@@ -47,6 +49,28 @@ func createTestData() TestData {
 			Password:  "password1234",
 			Role:      data.RolePremium,
 			Activated: false,
+		},
+		{
+			ID:        uuid.New(),
+			Email:     "chris@example.com",
+			Username:  "chris",
+			Password:  "password1234",
+			Role:      data.RoleModerator,
+			Activated: true,
+		},
+		{
+			ID:        uuid.New(),
+			Email:     "tom@example.com",
+			Username:  "tom",
+			Password:  "password1234",
+			Role:      data.RolePremium,
+			Activated: false,
+			Ban: utils.Ptr(data.Ban{
+				BannedBy:  nil,
+				Reason:    "Self-deactivated",
+				BannedAt:  time.Now(),
+				ExpiresAt: time.Now().Add(-24 * time.Hour),
+			}),
 		},
 	}
 

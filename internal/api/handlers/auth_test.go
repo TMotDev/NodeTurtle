@@ -166,10 +166,10 @@ func TestLogin(t *testing.T) {
 	mockMailerService := mocks.MockMailService{}
 
 	validUser := &data.User{
-		ID:        uuid.New(),
-		Email:     "test@test.test",
-		Username:  "testuser",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "test@test.test",
+		Username:    "testuser",
+		IsActivated: true,
 	}
 
 	mockAuthService.On("Login", "test@test.test", "TestPassword123").Return("mocktoken", validUser, nil)
@@ -265,7 +265,7 @@ func TestRefreshToken(t *testing.T) {
 	mockMailerService := mocks.MockMailService{}
 
 	userID := uuid.New()
-	validUser := &data.User{ID: userID, Email: "test@test.test", Username: "testuser", Activated: true}
+	validUser := &data.User{ID: userID, Email: "test@test.test", Username: "testuser", IsActivated: true}
 	refreshToken := "valid-refresh-token"
 	newAccessToken := "new-access-token"
 	newRefreshToken := &data.Token{Plaintext: "new-refresh-token", Scope: data.ScopeRefresh}
@@ -368,7 +368,7 @@ func TestLogout(t *testing.T) {
 	mockMailerService := mocks.MockMailService{}
 
 	userID := uuid.New()
-	validUser := &data.User{ID: userID, Email: "test@test.test", Username: "testuser", Activated: true}
+	validUser := &data.User{ID: userID, Email: "test@test.test", Username: "testuser", IsActivated: true}
 
 	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, userID).Return(nil)
 

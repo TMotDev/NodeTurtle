@@ -27,17 +27,17 @@ func TestGetCurrentUser(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 
 	validUser := &data.User{
-		ID:        uuid.New(),
-		Email:     "validuser@test.com",
-		Username:  "validuser",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "validuser@test.com",
+		Username:    "validuser",
+		IsActivated: true,
 	}
 
 	notFoundUser := &data.User{
-		ID:        uuid.New(),
-		Email:     "unauthorized@test.com",
-		Username:  "unauthorized",
-		Activated: false,
+		ID:          uuid.New(),
+		Email:       "unauthorized@test.com",
+		Username:    "unauthorized",
+		IsActivated: false,
 	}
 
 	mockUserService.On("GetUserByID", validUser.ID).Return(validUser, nil)
@@ -105,34 +105,34 @@ func TestUpdateCurrentUser(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 
 	validUser := &data.User{
-		ID:        uuid.New(),
-		Email:     "validuser@test.com",
-		Username:  "validuser",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "validuser@test.com",
+		Username:    "validuser",
+		IsActivated: true,
 	}
 	_ = validUser.Password.Set("testpass")
 
 	validUser2 := &data.User{
-		ID:        uuid.New(),
-		Email:     "validuser2@test.com",
-		Username:  "validuser2",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "validuser2@test.com",
+		Username:    "validuser2",
+		IsActivated: true,
 	}
 	_ = validUser2.Password.Set("testpass")
 
 	notFoundUser := &data.User{
-		ID:        uuid.New(),
-		Email:     "notfound@test.com",
-		Username:  "notfounduser",
-		Activated: false,
+		ID:          uuid.New(),
+		Email:       "notfound@test.com",
+		Username:    "notfounduser",
+		IsActivated: false,
 	}
 	_ = notFoundUser.Password.Set("testpass")
 
 	inactiveUser := &data.User{
-		ID:        uuid.New(),
-		Email:     "inactive@test.com",
-		Username:  "inactive",
-		Activated: false,
+		ID:          uuid.New(),
+		Email:       "inactive@test.com",
+		Username:    "inactive",
+		IsActivated: false,
 	}
 	_ = inactiveUser.Password.Set("testpass")
 
@@ -271,23 +271,23 @@ func TestChangePassword(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 
 	validUser := data.User{
-		ID:        uuid.New(),
-		Email:     "test@test.test",
-		Username:  "testuser",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "test@test.test",
+		Username:    "testuser",
+		IsActivated: true,
 	}
 	notFoundUser := data.User{
-		ID:        uuid.New(),
-		Email:     "notfound@test.test",
-		Username:  "testuser",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "notfound@test.test",
+		Username:    "testuser",
+		IsActivated: true,
 	}
 
 	inactiveUser := data.User{
-		ID:        uuid.New(),
-		Email:     "inactive@test.com",
-		Username:  "inactive",
-		Activated: false,
+		ID:          uuid.New(),
+		Email:       "inactive@test.com",
+		Username:    "inactive",
+		IsActivated: false,
 	}
 
 	mockUserService.On("GetUserByID", validUser.ID).Return(&validUser, nil)
@@ -396,16 +396,16 @@ func TestListUsers(t *testing.T) {
 	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
 
 	user1 := data.User{
-		ID:        uuid.New(),
-		Email:     "test1@test.test",
-		Username:  "testuser1",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "test1@test.test",
+		Username:    "testuser1",
+		IsActivated: true,
 	}
 	user2 := data.User{
-		ID:        uuid.New(),
-		Email:     "test2@test.test",
-		Username:  "testuser2",
-		Activated: false,
+		ID:          uuid.New(),
+		Email:       "test2@test.test",
+		Username:    "testuser2",
+		IsActivated: false,
 	}
 
 	mockUserService.On("ListUsers", mock.Anything, mock.Anything).Return([]data.User{user1, user2}, 2, nil)
@@ -495,10 +495,10 @@ func TestGetUserByID(t *testing.T) {
 	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
 
 	user := &data.User{
-		ID:        uuid.New(),
-		Email:     "test1@test.test",
-		Username:  "testuser1",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "test1@test.test",
+		Username:    "testuser1",
+		IsActivated: true,
 	}
 	missingUserID := uuid.New()
 
@@ -569,17 +569,17 @@ func TestUpdateUser(t *testing.T) {
 	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
 
 	validUser := data.User{
-		ID:        uuid.New(),
-		Email:     "test1@test.test",
-		Username:  "testuser1",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "test1@test.test",
+		Username:    "testuser1",
+		IsActivated: true,
 	}
 
 	validUser2 := &data.User{
-		ID:        uuid.New(),
-		Email:     "validuser2@test.com",
-		Username:  "validuser2",
-		Activated: true,
+		ID:          uuid.New(),
+		Email:       "validuser2@test.com",
+		Username:    "validuser2",
+		IsActivated: true,
 	}
 
 	missingUserID := uuid.New()

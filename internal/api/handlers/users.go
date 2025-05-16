@@ -108,7 +108,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
-	if !user.Activated {
+	if !user.IsActivated {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
@@ -192,7 +192,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
-	if !user.Activated {
+	if !user.IsActivated {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
