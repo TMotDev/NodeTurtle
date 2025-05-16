@@ -49,8 +49,11 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	user, err := h.userService.CreateUser(registration)
 	if err != nil {
-		if err == services.ErrUserExists {
-			return echo.NewHTTPError(http.StatusConflict, "User with this email already exists")
+		if err == services.ErrDuplicateEmail {
+			return echo.NewHTTPError(http.StatusConflict, "Email is already taken")
+		}
+		if err == services.ErrDuplicateUsername {
+			return echo.NewHTTPError(http.StatusConflict, "Username is already taken")
 		}
 		c.Logger().Errorf("Internal user creation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create user")

@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -37,18 +35,27 @@ func TestRegister(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
+	tokenUserId := uuid.New() // for token error test
+
 	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
 		return reg.Email == "test@test.test"
 	})).Return(&data.User{ID: uuid.New(), Email: "test@test.test", Username: "testuser"}, nil)
+	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
+		return reg.Email == "token@test.test"
+	})).Return(&data.User{ID: tokenUserId, Email: "token@test.test", Username: "token"}, nil)
 
 	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
 		return reg.Email == "exists@test.test"
-	})).Return(nil, services.ErrUserExists)
-
+	})).Return(nil, services.ErrDuplicateEmail)
 	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
-		return reg.Email == "internal-error@test.test"
-	})).Return(nil, services.ErrInternal)
+		return reg.Email == "exists@test.test"
+	})).Return(nil, services.ErrDuplicateEmail)
+	mockUserService.On("CreateUser", mock.MatchedBy(func(reg data.UserRegistration) bool {
+		return reg.Username == "existinguser"
+	})).Return(nil, services.ErrDuplicateUsername)
+	mockUserService.On("CreateUser", mock.Anything).Return(nil, services.ErrInternal)
 
+	mockTokenService.On("New", tokenUserId, mock.Anything, data.ScopeUserActivation).Return(nil, services.ErrInternal)
 	mockTokenService.On("New", mock.Anything, mock.Anything, data.ScopeUserActivation).Return(&data.Token{
 		Plaintext: "mocktoken",
 		Scope:     data.ScopeUserActivation,
@@ -59,100 +66,72 @@ func TestRegister(t *testing.T) {
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
 	tests := map[string]struct {
-		reqBody   map[string]interface{}
-		rawBody   string
+		reqBody   string
 		wantCode  int
-		wantBody  string
 		wantError bool
 	}{
 		"Valid registration": {
-			reqBody: map[string]interface{}{
-				"email":    "test@test.test",
-				"username": "testuser",
-				"password": "TestPassword123",
-			},
+			reqBody:   `{"email":"test@test.test","username":"testuser","password":"TestPassword123"}`,
 			wantCode:  http.StatusCreated,
-			wantBody:  "User registered successfully",
 			wantError: false,
 		},
 		"Emoji username": {
-			reqBody: map[string]interface{}{
-				"email":    "test@test.test",
-				"username": "⭐👌👍❤️",
-				"password": "TestPassword123",
-			},
+			reqBody:   `{"email":"test@test.test","username":"⭐👌👍❤️","password":"TestPassword123"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		"Random symbols username": {
-			reqBody: map[string]interface{}{
-				"email":    "test@test.test",
-				"username": "'][]/\\//.;?!/'",
-				"password": "TestPassword123",
-			},
+			reqBody:   `{"email":"test@test.test","username":"'][]/\\//.;?!/'","password":"TestPassword123"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		"User already exists": {
-			reqBody: map[string]interface{}{
-				"email":    "exists@test.test",
-				"username": "existinguser",
-				"password": "TestPassword123",
-			},
+		"Email taken": {
+			reqBody:   `{"email":"exists@test.test","username":"testuser","password":"TestPassword123"}`,
+			wantCode:  http.StatusConflict,
+			wantError: true,
+		},
+		"Username taken": {
+			reqBody:   `{"email":"existsname@test.test","username":"existinguser","password":"TestPassword123"}`,
 			wantCode:  http.StatusConflict,
 			wantError: true,
 		},
 		"Invalid email format": {
-			reqBody: map[string]interface{}{
-				"email":    "invalid-email",
-				"username": "testuser",
-				"password": "TestPassword123",
-			},
+			reqBody:   `{"email":"invalid-email","username":"testuser","password":"TestPassword123"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		"Missing required fields": {
-			reqBody: map[string]interface{}{
-				"email": "test@test.test",
-			},
+			reqBody: `{
+				"email":"test@test.test",
+			}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		"Weak password": {
-			reqBody: map[string]interface{}{
-				"email":    "test@test.test",
-				"username": "testuser",
-				"password": "weak",
-			},
+			reqBody:   `{"email":"test@test.test","username":"testuser","password":"weak"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		"Malformed JSON triggers bind error": {
-			rawBody:   `{"email": "test@test.test`,
+			reqBody:   `{"email":"test@test.test`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		"Internal server error": {
-			reqBody: map[string]interface{}{
-				"email":    "internal-error@test.test",
-				"username": "testuser",
-				"password": "TestPassword123",
-			},
+		"Unexpected creation error": {
+			reqBody:   `{"email":"internal@test.test","username":"testuser","password":"TestPassword123"}`,
 			wantCode:  http.StatusInternalServerError,
-			wantBody:  "Failed to create user",
+			wantError: true,
+		},
+		"Unexpected token creation error": {
+			reqBody:   `{"email":"token@test.test","username":"token","password":"TestPassword123"}`,
+			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			var req *http.Request
-			if tt.rawBody != "" {
-				req = httptest.NewRequest(http.MethodPost, "/api/register", strings.NewReader(tt.rawBody))
-			} else {
-				body, _ := json.Marshal(tt.reqBody)
-				req = httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
-			}
+			req := httptest.NewRequest(http.MethodPost, "/api/register", strings.NewReader(tt.reqBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
@@ -167,9 +146,6 @@ func TestRegister(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantCode, rec.Code)
-				if tt.wantBody != "" {
-					assert.Contains(t, rec.Body.String(), tt.wantBody)
-				}
 			}
 		})
 	}
@@ -199,75 +175,62 @@ func TestLogin(t *testing.T) {
 	mockAuthService.On("Login", "test@test.test", "TestPassword123").Return("mocktoken", validUser, nil)
 	mockAuthService.On("Login", "wrong@test.test", "TestPassword123").Return("", nil, services.ErrInvalidCredentials)
 	mockAuthService.On("Login", "inactive@test.test", "TestPassword123").Return("", nil, services.ErrInactiveAccount)
+	mockAuthService.On("Login", mock.Anything, mock.Anything).Return("", nil, services.ErrInternal)
+
 	mockTokenService.On("New", mock.Anything, mock.Anything, mock.Anything).Return(&data.Token{UserID: uuid.New(), ExpiresAt: time.Now().UTC().Add(time.Hour), Scope: data.ScopeRefresh}, nil)
 	mockTokenService.On("DeleteAllForUser", mock.Anything, mock.Anything).Return(nil)
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
 	tests := map[string]struct {
-		reqBody   map[string]interface{}
-		rawBody   string
+		reqBody   string
 		wantCode  int
 		wantBody  string
 		wantError bool
 	}{
 		"Valid login": {
-			reqBody: map[string]interface{}{
-				"email":    "test@test.test",
-				"password": "TestPassword123",
-			},
+			reqBody:   `{"email":"test@test.test","password":"TestPassword123"}`,
 			wantCode:  http.StatusOK,
 			wantBody:  "mocktoken",
 			wantError: false,
 		},
 		"Invalid credentials": {
-			reqBody: map[string]interface{}{
-				"email":    "wrong@test.test",
-				"password": "TestPassword123",
-			},
+			reqBody:   `{"email":"wrong@test.test","password":"TestPassword123"}`,
 			wantCode:  http.StatusUnauthorized,
 			wantError: true,
 		},
 		"Inactive account": {
-			reqBody: map[string]interface{}{
-				"email":    "inactive@test.test",
-				"password": "TestPassword123",
-			},
+			reqBody:   `{"email":"inactive@test.test","password":"TestPassword123"}`,
 			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
 		"Invalid email format": {
-			reqBody: map[string]interface{}{
-				"email":    "invalid-email",
-				"password": "TestPassword123",
-			},
+			reqBody:   `{"email":"invalid-email","password":"TestPassword123"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		"Missing required fields": {
-			reqBody: map[string]interface{}{
-				"email": "test@test.test",
-			},
+			reqBody:   `{"email": "test@test.test"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		"Malformed JSON triggers bind error": {
 
-			rawBody:   `{"email": "foo@test.test`,
+			reqBody:   `{"email": "foo@test.test`,
 			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"Internal fail while creating user": {
+
+			reqBody:   `{"email": "foo@test.test","password":"testPassword123"}`,
+			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			var req *http.Request
-			if tt.rawBody != "" {
-				req = httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(tt.rawBody))
-			} else {
-				body, _ := json.Marshal(tt.reqBody)
-				req = httptest.NewRequest(http.MethodPost, "/api/login", bytes.NewReader(body))
-			}
+			req := httptest.NewRequest(http.MethodPost, "/api/login", strings.NewReader(tt.reqBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)

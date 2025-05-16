@@ -4,7 +4,6 @@ package users
 import (
 	"crypto/sha256"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -531,7 +530,7 @@ func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext stri
 func (s UserService) EmailExists(email string) (bool, error) {
 	var exists bool
 	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", email).Scan(&exists)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err != nil {
 		return false, services.ErrRecordNotFound
 	}
 	return exists, nil
@@ -540,7 +539,7 @@ func (s UserService) EmailExists(email string) (bool, error) {
 func (s UserService) UsernameExists(username string) (bool, error) {
 	var exists bool
 	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", username).Scan(&exists)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err != nil {
 		return false, services.ErrRecordNotFound
 	}
 	return exists, nil
