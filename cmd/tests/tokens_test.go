@@ -1,9 +1,7 @@
 package tests
 
 import (
-	"NodeTurtleAPI/internal/config"
 	"NodeTurtleAPI/internal/data"
-	"NodeTurtleAPI/internal/database"
 	"NodeTurtleAPI/internal/services/tokens"
 	"database/sql"
 	"log"
@@ -14,51 +12,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupTokenService(t *testing.T) (tokens.ITokenService, TestData, *sql.DB, func()) {
-	testData := createTestData() // Using the existing function from testData.go
+func setupTokenService() (tokens.ITokenService, TestData, *sql.DB, func()) {
+	testData, db, err := createTestData()
 
-	config := config.DatabaseConfig{
-		Host:     config.GetEnv("TEST_DB_HOST", "localhost"),
-		Port:     config.GetEnvAsInt("TEST_DB_PORT", 5432),
-		User:     config.GetEnv("TEST_DB_USER", "postgres"),
-		Password: config.GetEnv("TEST_DB_PASSWORD", "admin"),
-		Name:     config.GetEnv("TEST_DB_NAME", "NodeTurtle_Test"),
-		SSLMode:  config.GetEnv("TEST_DB_SSLMODE", "disable"),
-	}
-
-	db, err := database.Connect(config)
 	if err != nil {
-		log.Fatalf("Failed to connect to test database: %v", err)
+		log.Fatalf("Failed setup test data: %v", err)
 	}
 
-	_, err = db.Exec(`TRUNCATE tokens, users RESTART IDENTITY CASCADE;`)
-	if err != nil {
-		log.Fatalf("Failed to erase test database: %v", err)
-	}
-
-	// insert users
-	for _, u := range testData.Users {
-		var pwd data.Password
-		err := pwd.Set(u.Password)
-		assert.NoError(t, err)
-
-		_, err = db.Exec(`
-            INSERT INTO users (id, email, username, password, role_id, activated, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, NOW())
-        `, u.ID, u.Email, u.Username, pwd.Hash, u.Role, u.Activated)
-		assert.NoError(t, err)
-	}
-
-	// insert tokens
-	for _, tk := range testData.Tokens {
-		_, err = db.Exec(`
-            INSERT INTO tokens (hash, user_id, scope, created_at, expires_at)
-            VALUES ($1, $2, $3, NOW(), $4)
-        `, tk.Hash, tk.UserID, tk.Scope, tk.ExpiresAt)
-		assert.NoError(t, err)
-	}
-
-	return tokens.NewTokenService(db), testData, db, func() { db.Close() }
+	return tokens.NewTokenService(db), *testData, db, func() { db.Close() }
 }
 
 func TestGenerateToken(t *testing.T) {
@@ -78,7 +39,7 @@ func TestGenerateToken(t *testing.T) {
 }
 
 func TestTokenService_New(t *testing.T) {
-	s, td, db, close := setupTokenService(t)
+	s, td, db, close := setupTokenService()
 	defer close()
 
 	userID := td.Users[0].ID
@@ -103,7 +64,7 @@ func TestTokenService_New(t *testing.T) {
 }
 
 func TestTokenService_DeleteAllForUser(t *testing.T) {
-	s, td, db, close := setupTokenService(t)
+	s, td, db, close := setupTokenService()
 	defer close()
 
 	// Test Case 1: Delete existing tokens (John's activation token)

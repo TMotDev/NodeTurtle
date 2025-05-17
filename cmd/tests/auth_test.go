@@ -6,7 +6,6 @@ import (
 
 	"NodeTurtleAPI/internal/config"
 	"NodeTurtleAPI/internal/data"
-	"NodeTurtleAPI/internal/database"
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
 
@@ -15,48 +14,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func setupAuthService(t *testing.T) (auth.IAuthService, TestData, func()) {
-	testData := createTestData()
+func setupAuthService() (auth.IAuthService, TestData, func()) {
+	testData, db, err := createTestData()
 
-	dbConfig := config.DatabaseConfig{
-		Host:     config.GetEnv("TEST_DB_HOST", "localhost"),
-		Port:     config.GetEnvAsInt("TEST_DB_PORT", 5432),
-		User:     config.GetEnv("TEST_DB_USER", "postgres"),
-		Password: config.GetEnv("TEST_DB_PASSWORD", "admin"),
-		Name:     config.GetEnv("TEST_DB_NAME", "NodeTurtle_Test"),
-		SSLMode:  config.GetEnv("TEST_DB_SSLMODE", "disable"),
-	}
-
-	db, err := database.Connect(dbConfig)
 	if err != nil {
-		log.Fatalf("Failed to connect to test database: %v", err)
-	}
-
-	_, err = db.Exec(`TRUNCATE tokens, users RESTART IDENTITY CASCADE;`)
-	if err != nil {
-		log.Fatalf("Failed to erase test database: %v", err)
-	}
-
-	// Insert test users
-	for _, u := range testData.Users {
-		var pwd data.Password
-		err := pwd.Set(u.Password)
-		assert.NoError(t, err)
-
-		_, err = db.Exec(`
-			INSERT INTO users (id, email, username, password, role_id, activated, created_at)
-			VALUES ($1, $2, $3, $4, $5, $6, NOW())
-		`, u.ID, u.Email, u.Username, pwd.Hash, u.Role, u.Activated)
-		assert.NoError(t, err)
-	}
-
-	// Insert tokens
-	for _, tk := range testData.Tokens {
-		_, err = db.Exec(`
-			INSERT INTO tokens (hash, user_id, scope, created_at, expires_at)
-			VALUES ($1, $2, $3, NOW(), $4)
-		`, tk.Hash, tk.UserID, tk.Scope, tk.ExpiresAt)
-		assert.NoError(t, err)
+		log.Fatalf("Failed setup test data: %v", err)
 	}
 
 	jwtConfig := config.JWTConfig{
@@ -64,11 +26,11 @@ func setupAuthService(t *testing.T) (auth.IAuthService, TestData, func()) {
 		ExpireTime: 24,
 	}
 
-	return auth.NewService(db, jwtConfig), testData, func() { db.Close() }
+	return auth.NewService(db, jwtConfig), *testData, func() { db.Close() }
 }
 
 func TestLogin(t *testing.T) {
-	s, td, close := setupAuthService(t)
+	s, td, close := setupAuthService()
 	defer close()
 
 	tests := map[string]struct {
@@ -96,6 +58,11 @@ func TestLogin(t *testing.T) {
 			password: td.Users[2].Password,
 			err:      services.ErrInactiveAccount,
 		},
+		"Suspended account": {
+			email:    td.Users[4].Email,
+			password: td.Users[4].Password,
+			err:      services.ErrAccountSuspended,
+		},
 	}
 
 	for name, tt := range tests {
@@ -118,7 +85,7 @@ func TestLogin(t *testing.T) {
 }
 
 func TestCreateJWTToken(t *testing.T) {
-	s, td, close := setupAuthService(t)
+	s, td, close := setupAuthService()
 	defer close()
 
 	tests := map[string]struct {
@@ -153,7 +120,7 @@ func TestCreateJWTToken(t *testing.T) {
 }
 
 func TestVerifyToken(t *testing.T) {
-	s, td, close := setupAuthService(t)
+	s, td, close := setupAuthService()
 	defer close()
 
 	user := data.User{

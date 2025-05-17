@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -98,11 +99,14 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	token, user, err := h.authService.Login(login.Email, login.Password)
 	if err != nil {
-		if err == services.ErrInvalidCredentials {
+		if errors.Is(err, services.ErrInvalidCredentials) {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 		}
-		if err == services.ErrInactiveAccount {
+		if errors.Is(err, services.ErrInactiveAccount) {
 			return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
+		}
+		if errors.Is(err, services.ErrAccountSuspended) {
+			return echo.NewHTTPError(http.StatusForbidden, "Account is suspended, reason: ")
 		}
 		c.Logger().Errorf("Internal login error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to login")

@@ -4,6 +4,7 @@ import "errors"
 
 var (
 	ErrInactiveAccount    = errors.New("account is not activated")
+	ErrAccountSuspended   = errors.New("account is suspended")
 	ErrUserExists         = errors.New("user already exists")
 	ErrUserNotFound       = errors.New("user not found")
 	ErrDuplicateEmail     = errors.New("email already in use")

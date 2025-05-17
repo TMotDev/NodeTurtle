@@ -5,9 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"NodeTurtleAPI/internal/config"
 	"NodeTurtleAPI/internal/data"
-	"NodeTurtleAPI/internal/database"
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/users"
 	"NodeTurtleAPI/internal/utils"
@@ -16,55 +14,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupUserService(t *testing.T) (users.IUserService, TestData, func()) {
-	testData := createTestData()
+func setupUserService() (users.IUserService, TestData, func()) {
+	testData, db, err := createTestData()
 
-	config := config.DatabaseConfig{
-		Host:     config.GetEnv("TEST_DB_HOST", "localhost"),
-		Port:     config.GetEnvAsInt("TEST_DB_PORT", 5432),
-		User:     config.GetEnv("TEST_DB_USER", "postgres"),
-		Password: config.GetEnv("TEST_DB_PASSWORD", "admin"),
-		Name:     config.GetEnv("TEST_DB_NAME", "NodeTurtle_Test"),
-		SSLMode:  config.GetEnv("TEST_DB_SSLMODE", "disable"),
-	}
-
-	db, err := database.Connect(config)
 	if err != nil {
-		log.Fatalf("Failed to connect to test database: %v", err)
+		log.Fatalf("Failed setup test data: %v", err)
 	}
 
-	_, err = db.Exec(`TRUNCATE tokens, users RESTART IDENTITY CASCADE;`)
-	if err != nil {
-		log.Fatalf("Failed to erase test database: %v", err)
-	}
-
-	// insert users
-	for _, u := range testData.Users {
-		var pwd data.Password
-		err := pwd.Set(u.Password)
-		assert.NoError(t, err)
-
-		_, err = db.Exec(`
-            INSERT INTO users (id, email, username, password, role_id, activated, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, NOW())
-        `, u.ID, u.Email, u.Username, pwd.Hash, u.Role, u.Activated)
-		assert.NoError(t, err)
-	}
-
-	// insert tokens
-	for _, tk := range testData.Tokens {
-		_, err = db.Exec(`
-            INSERT INTO tokens (hash, user_id, scope, created_at, expires_at)
-            VALUES ($1, $2, $3, NOW(), $4)
-        `, tk.Hash, tk.UserID, tk.Scope, tk.ExpiresAt)
-		assert.NoError(t, err)
-	}
-
-	return users.NewUserService(db), testData, func() { db.Close() }
+	return users.NewUserService(db), *testData, func() { db.Close() }
 }
 
 func TestCreateUser(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -115,7 +76,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestResetPassword(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -157,7 +118,7 @@ func TestResetPassword(t *testing.T) {
 }
 
 func TestChangePassword(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -203,7 +164,7 @@ func TestChangePassword(t *testing.T) {
 }
 
 func TestGetUserById(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -237,7 +198,7 @@ func TestGetUserById(t *testing.T) {
 }
 
 func TestGetUserByEmail(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -271,7 +232,7 @@ func TestGetUserByEmail(t *testing.T) {
 }
 
 func TestGetUserByUsername(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -305,7 +266,7 @@ func TestGetUserByUsername(t *testing.T) {
 }
 
 func TestListUsers(t *testing.T) {
-	s, _, close := setupUserService(t)
+	s, _, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -383,7 +344,7 @@ func TestListUsers(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -435,7 +396,7 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -469,7 +430,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestGetForToken(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -511,7 +472,7 @@ func TestGetForToken(t *testing.T) {
 }
 
 func TestEmailExists(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {
@@ -539,7 +500,7 @@ func TestEmailExists(t *testing.T) {
 	}
 }
 func TestUsernameExists(t *testing.T) {
-	s, td, close := setupUserService(t)
+	s, td, close := setupUserService()
 	defer close()
 
 	tests := map[string]struct {

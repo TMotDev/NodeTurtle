@@ -175,6 +175,7 @@ func TestLogin(t *testing.T) {
 	mockAuthService.On("Login", "test@test.test", "TestPassword123").Return("mocktoken", validUser, nil)
 	mockAuthService.On("Login", "wrong@test.test", "TestPassword123").Return("", nil, services.ErrInvalidCredentials)
 	mockAuthService.On("Login", "inactive@test.test", "TestPassword123").Return("", nil, services.ErrInactiveAccount)
+	mockAuthService.On("Login", "banned@test.test", "TestPassword123").Return("", nil, services.ErrAccountSuspended)
 	mockAuthService.On("Login", mock.Anything, mock.Anything).Return("", nil, services.ErrInternal)
 
 	mockTokenService.On("New", mock.Anything, mock.Anything, mock.Anything).Return(&data.Token{UserID: uuid.New(), ExpiresAt: time.Now().UTC().Add(time.Hour), Scope: data.ScopeRefresh}, nil)
@@ -204,6 +205,11 @@ func TestLogin(t *testing.T) {
 			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
+		"Suspended account": {
+			reqBody:   `{"email":"banned@test.test","password":"TestPassword123"}`,
+			wantCode:  http.StatusForbidden,
+			wantError: true,
+		},
 		"Invalid email format": {
 			reqBody:   `{"email":"invalid-email","password":"TestPassword123"}`,
 			wantCode:  http.StatusBadRequest,
@@ -215,13 +221,11 @@ func TestLogin(t *testing.T) {
 			wantError: true,
 		},
 		"Malformed JSON triggers bind error": {
-
 			reqBody:   `{"email": "foo@test.test`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		"Internal fail while creating user": {
-
 			reqBody:   `{"email": "foo@test.test","password":"testPassword123"}`,
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,

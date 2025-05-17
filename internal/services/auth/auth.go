@@ -57,17 +57,21 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 	var user data.User
 	var role data.Role
 
+	var expiresAt sql.NullTime
+	var reason sql.NullString
+
 	query := `
 		SELECT u.id, u.email, u.username, u.password, u.activated,
-		       r.id, r.name, r.description
+		       r.id, r.name, r.description, bu.expires_at, bu.reason
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
+		LEFT JOIN banned_users bu ON u.id = bu.user_id
 		WHERE u.email = $1
 	`
 
 	err = tx.QueryRow(query, email).Scan(
 		&user.ID, &user.Email, &user.Username, &user.Password.Hash, &user.IsActivated,
-		&role.ID, &role.Name, &role.Description,
+		&role.ID, &role.Name, &role.Description, &expiresAt, &reason,
 	)
 
 	if err != nil {
@@ -85,6 +89,19 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 
 	if !user.IsActivated {
 		return "", nil, services.ErrInactiveAccount
+	}
+
+	if expiresAt.Valid && reason.Valid {
+		user.Ban = &data.Ban{
+			ExpiresAt: expiresAt.Time,
+			Reason:    reason.String,
+		}
+	} else {
+		user.Ban = nil
+	}
+
+	if user.Ban != nil && user.Ban.ExpiresAt.After(time.Now().UTC()) {
+		return "", nil, services.ErrAccountSuspended
 	}
 
 	// Update last login time
