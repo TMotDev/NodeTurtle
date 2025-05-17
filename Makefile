@@ -1,4 +1,3 @@
-# //TODO: cleanup
 
 # Database connection info
 DB_HOST 	?=
@@ -55,9 +54,9 @@ clean:
 	@rm -rf $(BUILD_DIR)
 
 # Run the application
-run: build
+run:
 	@echo "Running application..."
-	@$(BUILD_DIR)/$(APP_NAME)
+	go run ./cmd/server/main.go
 
 ## db/migrations/new name=$1: create a new database migration
 db/migrations/new:
@@ -93,7 +92,7 @@ db/drop:
 	@PGPASSWORD=$(DB_PASSWORD) dropdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) --if-exists $(DB_NAME)
 
 # Reset database (drop, create, migrate)
-db/reset: db-drop db-create migrate-up
+db/reset: db/drop db/create db/mibrations/up
 	@echo "Database reset complete"
 
 # Run tests
