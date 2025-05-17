@@ -50,10 +50,10 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	user, err := h.userService.CreateUser(registration)
 	if err != nil {
-		if err == services.ErrDuplicateEmail {
+		if errors.Is(err, services.ErrDuplicateEmail) {
 			return echo.NewHTTPError(http.StatusConflict, "Email is already taken")
 		}
-		if err == services.ErrDuplicateUsername {
+		if errors.Is(err, services.ErrDuplicateUsername) {
 			return echo.NewHTTPError(http.StatusConflict, "Username is already taken")
 		}
 		c.Logger().Errorf("Internal user creation error %v", err)
@@ -106,7 +106,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 		}
 		if errors.Is(err, services.ErrAccountSuspended) {
-			return echo.NewHTTPError(http.StatusForbidden, "Account is suspended, reason: ")
+			return echo.NewHTTPError(http.StatusForbidden, err)
 		}
 		c.Logger().Errorf("Internal login error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to login")
@@ -149,6 +149,9 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 
 	user, err := h.userService.GetForToken(data.ScopeRefresh, payload.RefreshToken)
 	if err != nil {
+		if errors.Is(err, services.ErrAccountSuspended) {
+			return echo.NewHTTPError(http.StatusForbidden, err)
+		}
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid or expired refresh token")
 	}
 
@@ -157,8 +160,6 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 	}
 
 	h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID)
-
-	//TODO check if user is banned
 
 	token, err := h.authService.CreateAccessToken(*user)
 	if err != nil {

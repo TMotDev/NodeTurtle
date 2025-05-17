@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"testing"
@@ -448,6 +449,11 @@ func TestGetForToken(t *testing.T) {
 			tokenPlaintext: "asdf",
 			err:            services.ErrRecordNotFound,
 		},
+		"Account suspended": {
+			tokenScope:     data.ScopePasswordReset,
+			tokenPlaintext: td.Tokens["tom_account_suspended"].Plaintext,
+			err:            services.ErrAccountSuspended,
+		},
 		"Expired token": {
 			tokenScope:     data.ScopePasswordReset,
 			tokenPlaintext: td.Tokens["alice_expired_password_reset"].Plaintext,
@@ -462,7 +468,7 @@ func TestGetForToken(t *testing.T) {
 
 			if tt.err != nil {
 				assert.Error(t, err)
-				assert.Equal(t, tt.err, err)
+				assert.True(t, errors.Is(err, tt.err))
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, nil, err)

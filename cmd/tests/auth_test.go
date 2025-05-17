@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"errors"
 	"log"
 	"testing"
 
@@ -71,7 +72,7 @@ func TestLogin(t *testing.T) {
 
 			if tt.err != nil {
 				assert.Error(t, err)
-				assert.Equal(t, tt.err, err)
+				assert.True(t, errors.Is(err, tt.err))
 				assert.Empty(t, token)
 				assert.Nil(t, user)
 			} else {

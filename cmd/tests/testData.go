@@ -95,6 +95,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 	t1, _ := tokens.GenerateToken(testUsers[2].ID, time.Hour, data.ScopeUserActivation)
 	t2, _ := tokens.GenerateToken(testUsers[1].ID, time.Hour, data.ScopePasswordReset)
 	t3, _ := tokens.GenerateToken(testUsers[0].ID, time.Microsecond, data.ScopePasswordReset)
+	t4, _ := tokens.GenerateToken(testUsers[4].ID, time.Hour, data.ScopePasswordReset)
 
 	t3.ExpiresAt = time.Now().UTC().Add(-time.Hour)
 
@@ -102,6 +103,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 		"john_valid_activation":        t1,
 		"bob_valid_password_reset":     t2,
 		"alice_expired_password_reset": t3,
+		"tom_account_suspended":        t4,
 	}
 
 	config := config.DatabaseConfig{

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"NodeTurtleAPI/internal/data"
@@ -40,7 +41,7 @@ func (h *UserHandler) GetCurrentUser(c echo.Context) error {
 	user, err := h.userService.GetUserByID(contextUser.ID)
 
 	if err != nil {
-		if err == services.ErrUserNotFound {
+		if errors.Is(err, services.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		c.Logger().Errorf("Internal user creation error %v", err)
@@ -101,7 +102,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 
 	user, err := h.userService.GetUserByID(contextUser.ID)
 	if err != nil {
-		if err == services.ErrUserNotFound {
+		if errors.Is(err, services.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		c.Logger().Errorf("Internal user fetch error %v", err)
@@ -185,7 +186,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 
 	user, err := h.userService.GetUserByID(contextUser.ID)
 	if err != nil {
-		if err == services.ErrUserNotFound {
+		if errors.Is(err, services.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		c.Logger().Errorf("Internal user retrieval error %v", err)
@@ -210,7 +211,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 	}
 
 	if err := h.userService.ChangePassword(user.ID, payload.OldPassword, payload.NewPassword); err != nil {
-		if err == services.ErrInvalidCredentials {
+		if errors.Is(err, services.ErrInvalidCredentials) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Current password is incorrect")
 		}
 		c.Logger().Errorf("Internal password change error %v", err)
@@ -269,7 +270,7 @@ func (h *UserHandler) GetUser(c echo.Context) error {
 
 	user, err := h.userService.GetUserByID(id)
 	if err != nil {
-		if err == services.ErrUserNotFound {
+		if errors.Is(err, services.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		c.Logger().Errorf("Internal user retrieval error %v", err)
@@ -292,7 +293,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 
 	user, err := h.userService.GetUserByID(id)
 	if err != nil {
-		if err == services.ErrUserNotFound {
+		if errors.Is(err, services.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		c.Logger().Errorf("Internal user retrieval error %v", err)
@@ -357,7 +358,7 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 	}
 
 	if err := h.userService.DeleteUser(id); err != nil {
-		if err == services.ErrUserNotFound {
+		if errors.Is(err, services.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
 		c.Logger().Errorf("Internal user update error %v", err)

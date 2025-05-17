@@ -96,12 +96,10 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 			ExpiresAt: expiresAt.Time,
 			Reason:    reason.String,
 		}
-	} else {
-		user.Ban = nil
 	}
 
 	if user.Ban != nil && user.Ban.ExpiresAt.After(time.Now().UTC()) {
-		return "", nil, services.ErrAccountSuspended
+		return "", nil, fmt.Errorf("%w (reason: %v)", services.ErrAccountSuspended, user.Ban.Reason)
 	}
 
 	// Update last login time

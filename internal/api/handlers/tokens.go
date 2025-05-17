@@ -49,7 +49,7 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 
 	user, err := h.userService.GetUserByEmail(payload.Email)
 	if err != nil {
-		if err == services.ErrUserNotFound {
+		if errors.Is(err, services.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "No matching email address found")
 		}
 		c.Logger().Errorf("Internal user retrieval error %v", err)
@@ -101,7 +101,7 @@ func (h *TokenHandler) ActivateAccount(c echo.Context) error {
 	}
 
 	if err := h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)}); err != nil {
-		if err == services.ErrEditConflict {
+		if errors.Is(err, services.ErrEditConflict) {
 			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
 
 		}
@@ -138,7 +138,7 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 
 	user, err := h.userService.GetUserByEmail(payload.Email)
 	if err != nil {
-		if err == services.ErrUserNotFound {
+		if errors.Is(err, services.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid email address")
 		}
 		c.Logger().Errorf("Internal user retrieval error %v", err)
@@ -208,7 +208,7 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 	}
 
 	if err := h.userService.ResetPassword(token, payload.Password); err != nil {
-		if err == services.ErrEditConflict {
+		if errors.Is(err, services.ErrEditConflict) {
 			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
 		}
 		c.Logger().Errorf("Internal user update error %v", err)

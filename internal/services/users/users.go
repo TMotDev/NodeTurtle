@@ -492,14 +492,16 @@ func (s UserService) DeleteUser(userID uuid.UUID) error {
 // It verifies the token's scope and expiration before returning the user.
 // Returns ErrRecordNotFound if no valid token exists.
 func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error) {
-
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 
+	var expiresAt sql.NullTime
+	var reason sql.NullString
+
 	query := `
-        SELECT users.id, users.created_at, users.username, users.email, users.password, users.activated
+        SELECT users.id, users.created_at, users.username, users.email, users.password, users.activated, bu.expires_at, bu.reason
         FROM users
-        INNER JOIN tokens
-        ON users.id = tokens.user_id
+        INNER JOIN tokens ON users.id = tokens.user_id
+		LEFT JOIN banned_users bu ON users.id = bu.user_id
         WHERE tokens.hash = $1
         AND tokens.scope = $2
         AND tokens.expires_at > $3`
@@ -515,6 +517,8 @@ func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext stri
 		&user.Email,
 		&user.Password.Hash,
 		&user.IsActivated,
+		&expiresAt,
+		&reason,
 	)
 
 	if err != nil {
@@ -522,6 +526,17 @@ func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext stri
 			return nil, services.ErrRecordNotFound
 		}
 		return nil, err
+	}
+
+	if expiresAt.Valid && reason.Valid {
+		user.Ban = &data.Ban{
+			ExpiresAt: expiresAt.Time,
+			Reason:    reason.String,
+		}
+	}
+
+	if user.Ban != nil && user.Ban.ExpiresAt.After(time.Now().UTC()) {
+		return nil, fmt.Errorf("%w (reason: %v)", services.ErrAccountSuspended, user.Ban.Reason)
 	}
 
 	return &user, nil

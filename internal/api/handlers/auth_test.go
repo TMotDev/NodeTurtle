@@ -277,6 +277,7 @@ func TestRefreshToken(t *testing.T) {
 	mockUserService.On("GetForToken", data.ScopeRefresh, refreshToken).Return(validUser, nil)
 	mockUserService.On("GetForToken", data.ScopeRefresh, "wrongtoken").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", data.ScopeRefresh, "internalerror").Return(nil, services.ErrInternal)
+	mockUserService.On("GetForToken", data.ScopeRefresh, "banned").Return(nil, services.ErrAccountSuspended)
 	mockAuthService.On("CreateAccessToken", *validUser).Return(newAccessToken, nil)
 	mockTokenService.On("New", userID, mock.Anything, data.ScopeRefresh).Return(newRefreshToken, nil)
 	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, userID).Return(nil)
@@ -326,6 +327,12 @@ func TestRefreshToken(t *testing.T) {
 			contextUser: validUser,
 			body:        `{"refreshToken":"internalerror"}`,
 			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+		"Token owner is suspended": {
+			contextUser: validUser,
+			body:        `{"refreshToken":"banned"}`,
+			wantCode:    http.StatusForbidden,
 			wantError:   true,
 		},
 	}
