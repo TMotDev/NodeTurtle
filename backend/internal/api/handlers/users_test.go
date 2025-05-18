@@ -25,6 +25,7 @@ func TestGetCurrentUser(t *testing.T) {
 	mockUserService := mocks.MockUserService{}
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
 
 	validUser := &data.User{
 		ID:          uuid.New(),
@@ -44,7 +45,7 @@ func TestGetCurrentUser(t *testing.T) {
 	mockUserService.On("GetUserByID", notFoundUser.ID).Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByID", mock.Anything).Return(nil, services.ErrInternal)
 
-	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
 	tests := map[string]struct {
 		contextUser *data.User
@@ -103,6 +104,7 @@ func TestUpdateCurrentUser(t *testing.T) {
 	mockUserService := mocks.MockUserService{}
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
 
 	validUser := &data.User{
 		ID:          uuid.New(),
@@ -147,7 +149,7 @@ func TestUpdateCurrentUser(t *testing.T) {
 
 	mockUserService.On("UpdateUser", validUser.ID, mock.Anything).Return(nil)
 
-	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
 	tests := map[string]struct {
 		contextUser *data.User
@@ -269,6 +271,7 @@ func TestChangePassword(t *testing.T) {
 	mockUserService := mocks.MockUserService{}
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
 
 	validUser := data.User{
 		ID:          uuid.New(),
@@ -300,7 +303,7 @@ func TestChangePassword(t *testing.T) {
 
 	mockTokenService.On("DeleteAllForUser", mock.Anything, mock.Anything).Return(nil)
 
-	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
 	tests := map[string]struct {
 		contextUser *data.User
@@ -392,8 +395,9 @@ func TestListUsers(t *testing.T) {
 	mockUserService := mocks.MockUserService{}
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
 
-	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
 	user1 := data.User{
 		ID:          uuid.New(),
@@ -491,8 +495,9 @@ func TestGetUserByID(t *testing.T) {
 	mockUserService := mocks.MockUserService{}
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
 
-	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
 	user := &data.User{
 		ID:          uuid.New(),
@@ -565,8 +570,9 @@ func TestUpdateUser(t *testing.T) {
 	mockUserService := mocks.MockUserService{}
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
 
-	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
 	validUser := data.User{
 		ID:          uuid.New(),
@@ -704,8 +710,9 @@ func TestDeleteUser(t *testing.T) {
 	mockUserService := mocks.MockUserService{}
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
 
-	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
 	validUserID := uuid.New()
 
@@ -770,12 +777,13 @@ func TestCheckEmail(t *testing.T) {
 	mockUserService := mocks.MockUserService{}
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
 
 	mockUserService.On("EmailExists", "existing@test.com").Return(true, nil)
 	mockUserService.On("EmailExists", "new@test.com").Return(false, services.ErrUserNotFound)
 	mockUserService.On("EmailExists", "error@test.com").Return(false, services.ErrInternal)
 
-	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
 	tests := map[string]struct {
 		email     string
@@ -849,12 +857,13 @@ func TestCheckUsername(t *testing.T) {
 	mockUserService := mocks.MockUserService{}
 	mockAuthService := mocks.MockAuthService{}
 	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
 
 	mockUserService.On("UsernameExists", "existinguser").Return(true, nil)
 	mockUserService.On("UsernameExists", "newusername").Return(false, services.ErrUserNotFound)
 	mockUserService.On("UsernameExists", "erroruser").Return(false, services.ErrInternal)
 
-	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService)
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
 	tests := map[string]struct {
 		username  string

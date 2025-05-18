@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services"
@@ -19,14 +21,16 @@ type UserHandler struct {
 	userService  users.IUserService
 	authService  auth.IAuthService
 	tokenService tokens.ITokenService
+	banService   services.IBanService
 }
 
 // NewUserHandler creates a new UserHandler with the provided services.
-func NewUserHandler(userService users.IUserService, authService auth.IAuthService, tokenService tokens.ITokenService) UserHandler {
+func NewUserHandler(userService users.IUserService, authService auth.IAuthService, tokenService tokens.ITokenService, banService services.IBanService) UserHandler {
 	return UserHandler{
 		userService:  userService,
 		authService:  authService,
 		tokenService: tokenService,
+		banService:   banService,
 	}
 }
 
@@ -367,5 +371,58 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "User deleted successfully",
+	})
+}
+
+func (h *UserHandler) Ban(c echo.Context) error {
+	contextUser, ok := c.Get("user").(*data.User)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+
+	var payload struct {
+		Reason   string    `json:"reason" validate:"required"`
+		Duration time.Time `json:"duration" validate:"required"`
+		UserID   uuid.UUID `json:"user_id" validate:"required"`
+	}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	banIssuer, err := h.userService.GetUserByID(contextUser.ID)
+	if err != nil {
+		if errors.Is(err, services.ErrUserNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "User not found")
+		}
+		c.Logger().Errorf("Internal user retrieval error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
+	}
+
+	banReceiver, err := h.userService.GetUserByID(payload.UserID)
+
+	if err != nil {
+		if errors.Is(err, services.ErrUserNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "User not found")
+		}
+		c.Logger().Errorf("Internal user retrieval error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
+	}
+
+	ban, err := h.banService.Ban(banReceiver.ID, banIssuer.ID, payload.Duration, payload.Reason)
+
+	if err != nil {
+		c.Logger().Errorf("Internal user ban error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")
+	}
+
+	fmt.Println(ban)
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "User banned successfully",
 	})
 }

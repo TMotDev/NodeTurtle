@@ -10,6 +10,7 @@ import (
 	m "NodeTurtleAPI/internal/api/middleware"
 	"NodeTurtleAPI/internal/config"
 	"NodeTurtleAPI/internal/data"
+	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
 	"NodeTurtleAPI/internal/services/mail"
 	"NodeTurtleAPI/internal/services/tokens"
@@ -54,10 +55,11 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	authService := auth.NewService(db, cfg.JWT)
 	userService := users.NewUserService(db)
 	tokenService := tokens.NewTokenService(db)
+	banService := services.NewBanService(db)
 
 	// setup handlers
 	authHandler := handlers.NewAuthHandler(&authService, &userService, &tokenService, &mailService)
-	userHandler := handlers.NewUserHandler(&userService, &authService, &tokenService)
+	userHandler := handlers.NewUserHandler(&userService, &authService, &tokenService, &banService)
 	tokenHandler := handlers.NewTokenHandler(&userService, &tokenService, &mailService)
 
 	// setup middleware
@@ -79,11 +81,12 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, tokenHandler *handlers.TokenHandler, authService *auth.AuthService, userService *users.UserService) {
 
 	// Public routes
-	e.POST("/api/login", authHandler.Login)
 	e.POST("/api/register", authHandler.Register)
-	e.GET("/api/activate/:token", tokenHandler.ActivateAccount)
 	e.GET("/api/accounts/username/:username", userHandler.CheckUsername)
 	e.GET("/api/accounts/email/:email", userHandler.CheckEmail)
+	e.GET("/api/activate/:token", tokenHandler.ActivateAccount)
+	e.POST("/api/login", authHandler.Login)
+
 	e.POST("/api/activate", tokenHandler.RequestActivationToken)
 	e.POST("/api/password/reset", tokenHandler.RequestPasswordReset)
 	e.POST("/api/password/reset/:token", tokenHandler.ResetPassword)
@@ -106,6 +109,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	admin.GET("/users/:id", userHandler.GetUser)
 	admin.PUT("/users/:id", userHandler.UpdateUser)
 	admin.DELETE("/users/:id", userHandler.DeleteUser)
+	admin.POST("/ban", userHandler.Ban)
 }
 
 func (s *Server) Start() error {

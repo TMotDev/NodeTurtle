@@ -29,6 +29,8 @@ type TestUser struct {
 }
 
 func createTestData() (*TestData, *sql.DB, error) {
+
+	adminID := uuid.New()
 	testUsers := []TestUser{
 		{
 			ID:        uuid.New(),
@@ -55,7 +57,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Activated: false,
 		},
 		{
-			ID:        uuid.New(),
+			ID:        adminID,
 			Email:     "chris@example.com",
 			Username:  "chris",
 			Password:  "password1234",
@@ -70,7 +72,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Role:      data.RolePremium,
 			Activated: true,
 			Ban: utils.Ptr(data.Ban{
-				BannedBy:  nil,
+				BannedBy:  adminID,
 				Reason:    "Self-deactivated",
 				BannedAt:  time.Now().UTC(),
 				ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
@@ -84,7 +86,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Role:      data.RoleUser,
 			Activated: true,
 			Ban: utils.Ptr(data.Ban{
-				BannedBy:  nil,
+				BannedBy:  adminID,
 				Reason:    "Self-deactivated",
 				BannedAt:  time.Now().UTC(),
 				ExpiresAt: time.Now().UTC().Add(-24 * time.Hour), // expired ban

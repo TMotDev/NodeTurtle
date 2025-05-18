@@ -57,7 +57,7 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 	}
 
 	if user.IsActivated {
-		return echo.NewHTTPError(http.StatusConflict, "Account is already been activated")
+		return echo.NewHTTPError(http.StatusConflict, "Account is already activated")
 	}
 
 	activationToken, err := h.tokenService.New(user.ID, 24*time.Hour, data.ScopeUserActivation)
@@ -90,20 +90,21 @@ func (h *TokenHandler) ActivateAccount(c echo.Context) error {
 	user, err := h.userService.GetForToken(data.ScopeUserActivation, token)
 
 	if err != nil {
-		switch {
-		case errors.Is(err, services.ErrRecordNotFound):
+		if errors.Is(err, services.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
-
-		default:
-			c.Logger().Errorf("Internal user retrieval error %v", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 		}
+
+		if errors.Is(err, services.ErrAccountSuspended) {
+			return echo.NewHTTPError(http.StatusForbidden, err)
+		}
+
+		c.Logger().Errorf("Internal user retrieval error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 	}
 
 	if err := h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)}); err != nil {
 		if errors.Is(err, services.ErrEditConflict) {
 			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
-
 		}
 		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")

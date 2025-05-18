@@ -26,9 +26,10 @@ type User struct {
 }
 
 type Ban struct {
+	ID        int64     `json:"id"`
 	BannedAt  time.Time `json:"banned_at"`
 	Reason    string    `json:"reason"`
-	BannedBy  *User     `json:"banned_by,omitempty"`
+	BannedBy  uuid.UUID `json:"banned_by,omitempty"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
 

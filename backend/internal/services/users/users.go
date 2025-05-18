@@ -197,17 +197,27 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	var user data.User
 	var role data.Role
 
+	var ban struct {
+		expiresAt *time.Time
+		reason    *string
+		bannedAt  *time.Time
+		bannedBy  *uuid.UUID
+	}
+
 	query := `
 		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
-		       r.id, r.name, r.description, r.created_at
+		       r.id, r.name, r.description, r.created_at,
+			   bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
+		LEFT JOIN banned_users bu ON u.id = bu.user_id
 		WHERE u.id = $1
 	`
 
 	err := s.db.QueryRow(query, userID).Scan(
 		&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description, &role.CreatedAt,
+		&ban.expiresAt, &ban.bannedAt, &ban.reason, &ban.bannedBy,
 	)
 
 	if err != nil {
@@ -215,6 +225,15 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 			return nil, services.ErrUserNotFound
 		}
 		return nil, err
+	}
+
+	if ban.bannedAt != nil && ban.expiresAt != nil && ban.reason != nil && ban.bannedBy != nil {
+		user.Ban = &data.Ban{
+			ExpiresAt: *ban.expiresAt,
+			Reason:    *ban.reason,
+			BannedAt:  *ban.bannedAt,
+			BannedBy:  *ban.bannedBy,
+		}
 	}
 
 	user.Role = role
@@ -227,17 +246,27 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	var user data.User
 	var role data.Role
 
+	var ban struct {
+		expiresAt *time.Time
+		reason    *string
+		bannedAt  *time.Time
+		bannedBy  *uuid.UUID
+	}
+
 	query := `
 		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
-		       r.id, r.name, r.description
+               r.id, r.name, r.description,
+               bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
+		LEFT JOIN banned_users bu ON u.id = bu.user_id
 		WHERE u.email = $1
 	`
 
 	err := s.db.QueryRow(query, email).Scan(
 		&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description,
+		&ban.expiresAt, &ban.bannedAt, &ban.reason, &ban.bannedBy,
 	)
 
 	if err != nil {
@@ -245,6 +274,15 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 			return nil, services.ErrUserNotFound
 		}
 		return nil, err
+	}
+
+	if ban.bannedAt != nil && ban.expiresAt != nil && ban.reason != nil && ban.bannedBy != nil {
+		user.Ban = &data.Ban{
+			ExpiresAt: *ban.expiresAt,
+			Reason:    *ban.reason,
+			BannedAt:  *ban.bannedAt,
+			BannedBy:  *ban.bannedBy,
+		}
 	}
 
 	user.Role = role
