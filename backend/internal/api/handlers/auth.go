@@ -135,11 +135,6 @@ func (h *AuthHandler) Login(c echo.Context) error {
 // It validates the refresh token, creates a new JWT token, and issues a new refresh token.
 // Returns an error if the refresh token is invalid or expired, or if token creation fails.
 func (h *AuthHandler) RefreshToken(c echo.Context) error {
-	contextUser, ok := c.Get("user").(*data.User)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
-	}
-
 	var payload struct {
 		RefreshToken string `json:"refreshToken"`
 	}
@@ -155,8 +150,8 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid or expired refresh token")
 	}
 
-	if contextUser.ID != user.ID {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid refresh token")
+	if user.Ban != nil {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
 	}
 
 	h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID)

@@ -285,55 +285,36 @@ func TestRefreshToken(t *testing.T) {
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
 	tests := map[string]struct {
-		contextUser interface{}
-		body        string
-		setupMocks  func()
-		wantCode    int
-		wantBody    string
-		wantError   bool
+		body      string
+		wantCode  int
+		wantBody  string
+		wantError bool
 	}{
 		"Success": {
-			contextUser: validUser,
-			body:        `{"refreshToken":"valid-refresh-token"}`,
-			wantCode:    http.StatusCreated,
-			wantBody:    `"token":"new-access-token"`,
-			wantError:   false,
-		},
-		"User not in context": {
-			contextUser: nil,
-			body:        `{"refreshToken":"valid-refresh-token"}`,
-			wantCode:    http.StatusUnauthorized,
-			wantError:   true,
+			body:      `{"refreshToken":"valid-refresh-token"}`,
+			wantCode:  http.StatusCreated,
+			wantBody:  `"token":"new-access-token"`,
+			wantError: false,
 		},
 		"Invalid refresh token": {
-			contextUser: validUser,
-			body:        `{"refreshToken":"wrongtoken"}`,
-			wantCode:    http.StatusUnauthorized,
-			wantError:   true,
-		},
-		"Refresh token for different user": {
-			contextUser: &data.User{ID: uuid.New(), Email: "other@test.test"},
-			body:        `{"refreshToken":"valid-refresh-token"}`,
-			wantCode:    http.StatusUnauthorized,
-			wantError:   true,
+			body:      `{"refreshToken":"wrongtoken"}`,
+			wantCode:  http.StatusUnauthorized,
+			wantError: true,
 		},
 		"Malformed JSON": {
-			contextUser: validUser,
-			body:        `{"refreshToken":`,
-			wantCode:    http.StatusBadRequest,
-			wantError:   true,
+			body:      `{"refreshToken":`,
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
 		},
 		"Internal error on GetForToken": {
-			contextUser: validUser,
-			body:        `{"refreshToken":"internalerror"}`,
-			wantCode:    http.StatusUnauthorized,
-			wantError:   true,
+			body:      `{"refreshToken":"internalerror"}`,
+			wantCode:  http.StatusUnauthorized,
+			wantError: true,
 		},
 		"Token owner is suspended": {
-			contextUser: validUser,
-			body:        `{"refreshToken":"banned"}`,
-			wantCode:    http.StatusForbidden,
-			wantError:   true,
+			body:      `{"refreshToken":"banned"}`,
+			wantCode:  http.StatusForbidden,
+			wantError: true,
 		},
 	}
 
@@ -343,9 +324,6 @@ func TestRefreshToken(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			if tt.contextUser != nil {
-				c.Set("user", tt.contextUser)
-			}
 
 			err := handler.RefreshToken(c)
 

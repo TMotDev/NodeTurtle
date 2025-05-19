@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -42,17 +41,7 @@ func (h *UserHandler) GetCurrentUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 	}
 
-	user, err := h.userService.GetUserByID(contextUser.ID)
-
-	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, "User not found")
-		}
-		c.Logger().Errorf("Internal user creation error %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
-	}
-
-	return c.JSON(http.StatusOK, user)
+	return c.JSON(http.StatusOK, contextUser)
 }
 
 // CheckEmail handles checking if provided email is valid and is taken or not
@@ -104,16 +93,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 	}
 
-	user, err := h.userService.GetUserByID(contextUser.ID)
-	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, "User not found")
-		}
-		c.Logger().Errorf("Internal user fetch error %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
-	}
-
-	if !user.IsActivated {
+	if !contextUser.IsActivated {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
@@ -131,7 +111,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 	}
 
 	// Password revalidation
-	ok, err = user.Password.Matches(payload.Password)
+	ok, err := contextUser.Password.Matches(payload.Password)
 	if err != nil {
 		c.Logger().Errorf("Internal password matching error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to verify password")
@@ -151,7 +131,7 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 			c.Logger().Errorf("Internal user update error %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 		}
-		if existingUser != nil && existingUser.ID != user.ID {
+		if existingUser != nil && existingUser.ID != contextUser.ID {
 			return echo.NewHTTPError(http.StatusConflict, "Email already in use")
 		}
 	}
@@ -163,12 +143,12 @@ func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
 			c.Logger().Errorf("Internal user retrieval error %v", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 		}
-		if existingUser != nil && existingUser.ID != user.ID {
+		if existingUser != nil && existingUser.ID != contextUser.ID {
 			return echo.NewHTTPError(http.StatusConflict, "Username already in use")
 		}
 	}
 
-	if err := h.userService.UpdateUser(user.ID, payload.UserUpdate); err != nil {
+	if err := h.userService.UpdateUser(contextUser.ID, payload.UserUpdate); err != nil {
 		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
@@ -188,16 +168,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 	}
 
-	user, err := h.userService.GetUserByID(contextUser.ID)
-	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, "User not found")
-		}
-		c.Logger().Errorf("Internal user retrieval error %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
-	}
-
-	if !user.IsActivated {
+	if !contextUser.IsActivated {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
 
@@ -214,7 +185,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := h.userService.ChangePassword(user.ID, payload.OldPassword, payload.NewPassword); err != nil {
+	if err := h.userService.ChangePassword(contextUser.ID, payload.OldPassword, payload.NewPassword); err != nil {
 		if errors.Is(err, services.ErrInvalidCredentials) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Current password is incorrect")
 		}
@@ -389,22 +360,12 @@ func (h *UserHandler) Ban(c echo.Context) error {
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
-
 	if err := c.Validate(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	banIssuer, err := h.userService.GetUserByID(contextUser.ID)
-	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return echo.NewHTTPError(http.StatusNotFound, "User not found")
-		}
-		c.Logger().Errorf("Internal user retrieval error %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
-	}
-
+	// verify ban receiver exists
 	banReceiver, err := h.userService.GetUserByID(payload.UserID)
-
 	if err != nil {
 		if errors.Is(err, services.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
@@ -413,14 +374,17 @@ func (h *UserHandler) Ban(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
-	ban, err := h.banService.Ban(banReceiver.ID, banIssuer.ID, payload.Duration, payload.Reason)
-
+	_, err = h.banService.Ban(banReceiver.ID, contextUser.ID, payload.Duration, payload.Reason)
 	if err != nil {
 		c.Logger().Errorf("Internal user ban error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")
 	}
 
-	fmt.Println(ban)
+	// invalidate all refresh tokens for banned user
+	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, banReceiver.ID); err != nil {
+		c.Logger().Errorf("Internal token deletion error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")
+	}
 
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "User banned successfully",

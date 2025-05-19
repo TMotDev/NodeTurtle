@@ -13,7 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func JWT(authService *auth.AuthService, userService *users.UserService) echo.MiddlewareFunc {
+func JWT(authService auth.IAuthService, userService users.IUserService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Get token from Authorization header
@@ -24,7 +24,7 @@ func JWT(authService *auth.AuthService, userService *users.UserService) echo.Mid
 
 			// Bearer token format
 			parts := strings.Split(authHeader, " ")
-			if len(parts) != 2 || parts[0] != "Bearer" {
+			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid authorization format")
 			}
 
