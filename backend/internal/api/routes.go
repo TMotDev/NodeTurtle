@@ -109,7 +109,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	admin.GET("/users/:id", userHandler.GetUser)
 	admin.PUT("/users/:id", userHandler.UpdateUser)
 	admin.DELETE("/users/:id", userHandler.DeleteUser)
-	admin.POST("/ban", userHandler.Ban)
+	admin.POST("/ban", userHandler.BanUser)
 }
 
 func (s *Server) Start() error {

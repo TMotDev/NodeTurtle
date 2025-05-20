@@ -61,7 +61,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Email:     "chris@example.com",
 			Username:  "chris",
 			Password:  "password1234",
-			Role:      data.RoleModerator,
+			Role:      data.RoleAdmin,
 			Activated: true,
 		},
 		{
@@ -159,9 +159,9 @@ func createTestData() (*TestData, *sql.DB, error) {
 	for _, tk := range testUsers {
 		if tk.Ban != nil {
 			_, err = db.Exec(`
-				INSERT INTO banned_users (user_id, banned_at, reason, expires_at)
-				VALUES ($1, $2, $3, $4)
-			`, tk.ID, tk.Ban.BannedAt, tk.Ban.Reason, tk.Ban.ExpiresAt)
+				INSERT INTO banned_users (user_id, banned_at, reason, banned_by, expires_at)
+				VALUES ($1, $2, $3, $4, $5)
+			`, tk.ID, tk.Ban.BannedAt, tk.Ban.Reason, tk.Ban.BannedBy, tk.Ban.ExpiresAt)
 			if err != nil {
 				return nil, nil, err
 			}

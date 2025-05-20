@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // IBanService defines the interface for user banning operations.
@@ -49,8 +50,9 @@ func (s BanService) Ban(userId uuid.UUID, bannedBy uuid.UUID, expires_at time.Ti
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, ErrInvalidCredentials
+		// Foreign key violation (user_id not found)
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23503" {
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}

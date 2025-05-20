@@ -883,3 +883,113 @@ func TestCheckUsername(t *testing.T) {
 
 	mockUserService.AssertExpectations(t)
 }
+
+func TestBanUser(t *testing.T) {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockUserService := mocks.MockUserService{}
+	mockAuthService := mocks.MockAuthService{}
+	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
+
+	adminUser := &data.User{ID: uuid.New(), Email: "admin@test.test", Username: "adminuser", IsActivated: true}
+	user := &data.User{ID: uuid.New(), Email: "test@test.test", Username: "testuser", IsActivated: true}
+
+	mockUserService.On("GetUserByID", user.ID).Return(user, nil)
+	mockUserService.On("GetUserByID", mock.Anything).Return(nil, services.ErrUserNotFound)
+	mockBanService.On("Ban", user.ID, adminUser.ID, mock.Anything, mock.Anything).Return(nil, nil)
+	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, user.ID).Return(nil)
+	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, mock.Anything).Return(services.ErrInternal)
+
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
+
+	tests := map[string]struct {
+		contextUser *data.User
+		body        string
+		wantCode    int
+		wantError   bool
+	}{
+		"Successful ban": {
+			contextUser: adminUser,
+			body:        fmt.Sprintf(`{"reason":"test","duration":24,"user_id":"%s"}`, user.ID),
+			wantCode:    http.StatusOK,
+			wantError:   false,
+		},
+		"Missing user in context": {
+			contextUser: nil,
+			body:        fmt.Sprintf(`{"reason":"test","duration":24,"user_id":"%s"}`, user.ID),
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+		"Invalid JSON": {
+			contextUser: adminUser,
+			body:        `{"reason":`,
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
+		"Missing required fields": {
+			contextUser: adminUser,
+			body:        `{}`,
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
+		"User to ban not found": {
+			contextUser: adminUser,
+			body:        fmt.Sprintf(`{"reason":"test","duration":24,"user_id":"%s"}`, uuid.New()),
+			wantCode:    http.StatusNotFound,
+			wantError:   true,
+		},
+		"Invalid user_id format": {
+			contextUser: adminUser,
+			body:        `{"reason":"test","duration":24,"user_id":"not-a-uuid"}`,
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
+		"Invalid duration (zero)": {
+			contextUser: adminUser,
+			body:        fmt.Sprintf(`{"reason":"test","duration":0,"user_id":"%s"}`, user.ID),
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
+		"Invalid duration (negative)": {
+			contextUser: adminUser,
+			body:        fmt.Sprintf(`{"reason":"test","duration":-5,"user_id":"%s"}`, user.ID),
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
+		"Invalid reason (empty)": {
+			contextUser: adminUser,
+			body:        fmt.Sprintf(`{"reason":"","duration":24,"user_id":"%s"}`, user.ID),
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			if tt.contextUser != nil {
+				c.Set("user", tt.contextUser)
+			}
+			err := handler.BanUser(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+			}
+		})
+	}
+
+	mockUserService.AssertExpectations(t)
+	mockTokenService.AssertExpectations(t)
+	mockBanService.AssertExpectations(t)
+}

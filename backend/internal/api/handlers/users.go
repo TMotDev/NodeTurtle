@@ -345,15 +345,15 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 	})
 }
 
-func (h *UserHandler) Ban(c echo.Context) error {
+func (h *UserHandler) BanUser(c echo.Context) error {
 	contextUser, ok := c.Get("user").(*data.User)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 	}
 
 	var payload struct {
-		Reason   string    `json:"reason" validate:"required"`
-		Duration time.Time `json:"duration" validate:"required"`
+		Reason   string    `json:"reason" validate:"required,min=1"`
+		Duration int       `json:"duration" validate:"required,min=1"`
 		UserID   uuid.UUID `json:"user_id" validate:"required"`
 	}
 
@@ -374,7 +374,7 @@ func (h *UserHandler) Ban(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
-	_, err = h.banService.Ban(banReceiver.ID, contextUser.ID, payload.Duration, payload.Reason)
+	_, err = h.banService.Ban(banReceiver.ID, contextUser.ID, time.Now().Add(time.Duration(payload.Duration)*time.Hour), payload.Reason)
 	if err != nil {
 		c.Logger().Errorf("Internal user ban error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")

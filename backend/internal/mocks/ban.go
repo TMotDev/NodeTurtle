@@ -20,5 +20,5 @@ func (m *MockBanService) Ban(userId uuid.UUID, bannedBy uuid.UUID, expires_at ti
 		user = args.Get(0).(*data.Ban)
 	}
 
-	return user, args.Error(2)
+	return user, args.Error(1)
 }
