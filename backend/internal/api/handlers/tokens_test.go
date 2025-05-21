@@ -395,4 +395,5 @@ func TestResetPassword(t *testing.T) {
 
 	mockUserService.AssertExpectations(t)
 	mockTokenService.AssertExpectations(t)
+	mockMailerService.AssertExpectations(t)
 }

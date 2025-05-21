@@ -38,6 +38,13 @@ func TestBan(t *testing.T) {
 			reason:     "test ban",
 			err:        nil,
 		},
+		"Self ban (self account deactivation)": {
+			userId:     td.Users[0].ID,
+			bannedBy:   td.Users[0].ID,
+			expires_at: time.Now().Add(time.Hour),
+			reason:     "test self ban",
+			err:        nil,
+		},
 		"Ban receiver ID not found": {
 			userId:     uuid.New(),
 			bannedBy:   td.Users[3].ID,

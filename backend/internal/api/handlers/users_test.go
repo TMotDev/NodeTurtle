@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -64,7 +63,7 @@ func TestGetCurrentUser(t *testing.T) {
 				c.Set("user", tt.contextUser)
 			}
 
-			err := handler.GetCurrentUser(c)
+			err := handler.GetCurrent(c)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -118,7 +117,6 @@ func TestUpdateCurrentUser(t *testing.T) {
 	mockUserService.On("GetUserByEmail", mock.Anything).Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByUsername", validUser2.Username).Return(validUser2, nil)
 	mockUserService.On("GetUserByUsername", mock.Anything).Return(nil, services.ErrUserNotFound)
-
 	mockUserService.On("UpdateUser", validUser.ID, mock.Anything).Return(nil)
 
 	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
@@ -210,7 +208,7 @@ func TestUpdateCurrentUser(t *testing.T) {
 				c.Set("user", tt.contextUser)
 			}
 
-			err := handler.UpdateCurrentUser(c)
+			err := handler.UpdateCurrent(c)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -255,7 +253,6 @@ func TestChangePassword(t *testing.T) {
 
 	mockUserService.On("ChangePassword", validUser.ID, "WrongPassword", "NewPassword123").Return(services.ErrInvalidCredentials)
 	mockUserService.On("ChangePassword", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-
 	mockTokenService.On("DeleteAllForUser", mock.Anything, mock.Anything).Return(nil)
 
 	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
@@ -364,62 +361,41 @@ func TestListUsers(t *testing.T) {
 	mockUserService.On("ListUsers", mock.Anything, mock.Anything).Return([]data.User{user1, user2}, 2, nil)
 
 	tests := map[string]struct {
-		filters   data.UserFilter
+		query     string
 		wantCode  int
 		wantError bool
 	}{
 		"Successful request": {
-			filters: data.UserFilter{
-				Page:      1,
-				Limit:     10,
-				SortField: "created_at",
-				SortOrder: "desc",
-			},
+			query:     "?page=1&limit=10&sort_field=created_at&sort_order=desc",
 			wantCode:  http.StatusOK,
 			wantError: false,
 		},
-		"Invalid params": {
-			filters: data.UserFilter{
-				Page:      -1,
-				Limit:     -10,
-				SortField: "height",
-				SortOrder: "random",
-			},
+		"Invalid query param values (validation fails)": {
+			query:     "?page=-1&limit=-10&sort_field=height&sort_order=random",
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
+		},
+		"Invalid query param names (default filter takes over)": {
+			query:     "?page=1&limitS=-10&sort_fieldS=height&sort_orderS=random",
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
+		"No params": {
+			query:     "?wwwaaaaaaah?!?+",
+			wantCode:  http.StatusOK,
+			wantError: false,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			q := make([]string, 0)
-			if tt.filters.Page != 0 {
-				q = append(q, "page="+strconv.Itoa(tt.filters.Page))
-			}
-			if tt.filters.Limit != 0 {
-				q = append(q, "limit="+strconv.Itoa(tt.filters.Limit))
-			}
-			if tt.filters.SortField != "" {
-				q = append(q, "sort_field="+tt.filters.SortField)
-			}
-			if tt.filters.SortOrder != "" {
-				q = append(q, "sort_order="+tt.filters.SortOrder)
-			}
 
-			query := ""
-
-			if len(q) > 0 {
-				query = "?" + strings.Join(q, "&")
-			}
-
-			fmt.Println(query)
-
-			req := httptest.NewRequest(http.MethodGet, "/api/admin/users"+query, nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/admin/users"+tt.query, nil)
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			err := handler.ListUsers(c)
+			err := handler.List(c)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -493,7 +469,7 @@ func TestGetUserByID(t *testing.T) {
 			c.SetParamNames("id")
 			c.SetParamValues(tt.userID)
 
-			err := handler.GetUser(c)
+			err := handler.Get(c)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -633,7 +609,7 @@ func TestUpdateUser(t *testing.T) {
 			c.SetParamNames("id")
 			c.SetParamValues(tt.userID)
 
-			err := handler.UpdateUser(c)
+			err := handler.Update(c)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -702,7 +678,7 @@ func TestDeleteUser(t *testing.T) {
 			c.SetParamNames("id")
 			c.SetParamValues(tt.userID)
 
-			err := handler.DeleteUser(c)
+			err := handler.Delete(c)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -975,7 +951,7 @@ func TestBanUser(t *testing.T) {
 			if tt.contextUser != nil {
 				c.Set("user", tt.contextUser)
 			}
-			err := handler.BanUser(c)
+			err := handler.Ban(c)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -992,4 +968,85 @@ func TestBanUser(t *testing.T) {
 	mockUserService.AssertExpectations(t)
 	mockTokenService.AssertExpectations(t)
 	mockBanService.AssertExpectations(t)
+}
+
+func TestBanCurrent(t *testing.T) {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockUserService := new(mocks.MockUserService) // Use new for pointer type mocks
+	mockAuthService := new(mocks.MockAuthService)
+	mockTokenService := new(mocks.MockTokenService)
+	mockBanService := new(mocks.MockBanService)
+
+	handler := NewUserHandler(mockUserService, mockAuthService, mockTokenService, mockBanService)
+
+	userToBan := &data.User{ID: uuid.New(), Email: "test@test.test", Username: "testuser", IsActivated: true}
+	userInternalFail := &data.User{ID: uuid.New(), Email: "test2@test.test", Username: "testuser2", IsActivated: true}
+	userTokenServiceFail := &data.User{ID: uuid.New(), Email: "test2@test.test", Username: "testuser2", IsActivated: true}
+
+	mockBanService.On("Ban", userToBan.ID, userToBan.ID, mock.Anything, "Self-deactivation").Return(nil, nil)
+	mockBanService.On("Ban", mock.Anything, mock.Anything, mock.Anything, "Self-deactivation").Return(nil, services.ErrInternal)
+
+	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, userToBan.ID).Return(nil)
+	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, mock.Anything).Return(services.ErrInternal)
+
+	tests := map[string]struct {
+		contextUser *data.User
+		wantCode    int
+		wantError   bool
+	}{
+		"Successful self-ban": {
+			contextUser: userToBan,
+			wantCode:    http.StatusOK,
+			wantError:   false,
+		},
+		"User not authenticated": {
+			contextUser: nil,
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+		"Ban service fails": {
+			contextUser: userInternalFail,
+			wantCode:    http.StatusInternalServerError,
+			wantError:   true,
+		},
+		"Token service fails after successful ban": {
+			contextUser: userTokenServiceFail,
+			wantCode:    http.StatusInternalServerError,
+			wantError:   true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			handler = NewUserHandler(mockUserService, mockAuthService, mockTokenService, mockBanService)
+
+			req := httptest.NewRequest(http.MethodPost, "/users/current/ban", strings.NewReader("")) // Body not used by BanCurrent
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			if tt.contextUser != nil {
+				c.Set("user", tt.contextUser)
+			}
+
+			err := handler.BanCurrent(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+				} else {
+					assert.NotNil(t, err, "Expected an error but got nil")
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+			}
+
+		})
+	}
+	mockBanService.AssertExpectations(t)
+	mockTokenService.AssertExpectations(t)
 }

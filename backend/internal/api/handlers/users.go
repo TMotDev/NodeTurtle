@@ -33,9 +33,9 @@ func NewUserHandler(userService users.IUserService, authService auth.IAuthServic
 	}
 }
 
-// GetCurrentUser handles the request to fetch the currently authenticated user's information.
+// GetCurrent handles the request to fetch the currently authenticated user's information.
 // It returns the user data or an error if the user is not authenticated or not found.
-func (h *UserHandler) GetCurrentUser(c echo.Context) error {
+func (h *UserHandler) GetCurrent(c echo.Context) error {
 	contextUser, ok := c.Get("user").(*data.User)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
@@ -84,10 +84,10 @@ func (h *UserHandler) CheckUsername(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
 }
 
-// UpdateCurrentUser handles the request to update the currently authenticated user's information.
+// UpdateCurrent handles the request to update the currently authenticated user's information.
 // It validates the updates, ensures the user is activated, and applies the changes.
 // Returns an error if the user is not authenticated, not found, not activated, or if the update fails.
-func (h *UserHandler) UpdateCurrentUser(c echo.Context) error {
+func (h *UserHandler) UpdateCurrent(c echo.Context) error {
 	contextUser, ok := c.Get("user").(*data.User)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
@@ -203,10 +203,10 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 	})
 }
 
-// ListUsers handles the request to retrieve a paginated list of all users.
+// List handles the request to retrieve a paginated list of all users.
 //
 // uses data.UserFilter for filtering options
-func (h *UserHandler) ListUsers(c echo.Context) error {
+func (h *UserHandler) List(c echo.Context) error {
 	filters := data.DefaultUserFilter()
 
 	if err := c.Bind(&filters); err != nil {
@@ -233,10 +233,10 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 	})
 }
 
-// GetUser handles the request to fetch a specific user by ID.
+// Get handles the request to fetch a specific user by ID.
 // It parses the user ID from the URL parameter and returns the user data.
 // Returns an error if the ID is invalid or if the user is not found.
-func (h *UserHandler) GetUser(c echo.Context) error {
+func (h *UserHandler) Get(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -255,11 +255,11 @@ func (h *UserHandler) GetUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-// UpdateUser handles the request to update a specific user's information.
+// Update handles the request to update a specific user's information.
 // It validates the provided updates and applies them to the specified user.
 // Returns an error if the user ID is invalid, if the user is not found,
 // if no valid updates are provided, or if the update fails.
-func (h *UserHandler) UpdateUser(c echo.Context) error {
+func (h *UserHandler) Update(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -321,11 +321,11 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	})
 }
 
-// DeleteUser handles the request to remove a user from the system.
+// Delete handles the request to remove a user from the system.
 // It deletes the user identified by the ID in the URL parameter.
 // Returns an error if the user ID is invalid, if the user is not found,
 // or if the deletion fails.
-func (h *UserHandler) DeleteUser(c echo.Context) error {
+func (h *UserHandler) Delete(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -345,7 +345,11 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 	})
 }
 
-func (h *UserHandler) BanUser(c echo.Context) error {
+// Ban handles the request to ban/deactivate specific user account.
+// It bans the user identified by the ID for N amount of time (in hours).
+// Returns an error if the user ID is invalid, if the user is not found,
+// or if the ban fails.
+func (h *UserHandler) Ban(c echo.Context) error {
 	contextUser, ok := c.Get("user").(*data.User)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
@@ -388,5 +392,29 @@ func (h *UserHandler) BanUser(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "User banned successfully",
+	})
+}
+
+// BanCurrent handles the request to self deactivate user account.
+// It bans the user identified by the ID in context.
+func (h *UserHandler) BanCurrent(c echo.Context) error {
+	contextUser, ok := c.Get("user").(*data.User)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+
+	_, err := h.banService.Ban(contextUser.ID, contextUser.ID, time.Now().Add(87600*time.Hour), "Self-deactivation")
+	if err != nil {
+		c.Logger().Errorf("Internal self-deactivation error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deactivate account")
+	}
+
+	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID); err != nil {
+		c.Logger().Errorf("Internal token deletion error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deactivate account")
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Account deactivated successfully",
 	})
 }

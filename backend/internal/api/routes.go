@@ -98,18 +98,19 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	api.Use(m.CheckBan)
 	// User routes
 	api.POST("/auth/logout", authHandler.Logout)
-	api.GET("/users/me", userHandler.GetCurrentUser)
-	api.PUT("/users/me", userHandler.UpdateCurrentUser)
+	api.GET("/users/me", userHandler.GetCurrent)
+	api.PUT("/users/me", userHandler.UpdateCurrent)
 	api.POST("/users/me/password", userHandler.ChangePassword)
+	api.POST("/users/me/deactivate", userHandler.BanCurrent)
 
 	// Role-specific routes
 	admin := api.Group("/admin")
 	admin.Use(m.RequireRole(data.RoleAdmin.String()))
-	admin.GET("/users", userHandler.ListUsers)
-	admin.GET("/users/:id", userHandler.GetUser)
-	admin.PUT("/users/:id", userHandler.UpdateUser)
-	admin.DELETE("/users/:id", userHandler.DeleteUser)
-	admin.POST("/ban", userHandler.BanUser)
+	admin.GET("/users", userHandler.List)
+	admin.GET("/users/:id", userHandler.Get)
+	admin.PUT("/users/:id", userHandler.Update)
+	admin.DELETE("/users/:id", userHandler.Delete)
+	admin.POST("/ban", userHandler.Ban)
 }
 
 func (s *Server) Start() error {
