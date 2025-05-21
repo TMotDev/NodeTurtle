@@ -98,8 +98,9 @@ func (h *UserHandler) UpdateCurrent(c echo.Context) error {
 	}
 
 	var payload struct {
-		data.UserUpdate
-		Password string `json:"password" validate:"required"`
+		Username *string `json:"username,omitempty" validate:"omitempty,min=3,max=20,alphanum"`
+		Email    *string `json:"email,omitempty" validate:"omitempty,email"`
+		Password string  `json:"password" validate:"required"`
 	}
 
 	if err := c.Bind(&payload); err != nil {
@@ -124,6 +125,8 @@ func (h *UserHandler) UpdateCurrent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "No updates provided")
 	}
 
+	var updates data.UserUpdate
+
 	// Check if email is taken
 	if payload.Email != nil {
 		existingUser, err := h.userService.GetUserByEmail(*payload.Email)
@@ -134,6 +137,7 @@ func (h *UserHandler) UpdateCurrent(c echo.Context) error {
 		if existingUser != nil && existingUser.ID != contextUser.ID {
 			return echo.NewHTTPError(http.StatusConflict, "Email already in use")
 		}
+		updates.Email = payload.Email
 	}
 
 	// Check if username is taken
@@ -146,9 +150,10 @@ func (h *UserHandler) UpdateCurrent(c echo.Context) error {
 		if existingUser != nil && existingUser.ID != contextUser.ID {
 			return echo.NewHTTPError(http.StatusConflict, "Username already in use")
 		}
+		updates.Username = payload.Username
 	}
 
-	if err := h.userService.UpdateUser(contextUser.ID, payload.UserUpdate); err != nil {
+	if err := h.userService.UpdateUser(contextUser.ID, updates); err != nil {
 		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}

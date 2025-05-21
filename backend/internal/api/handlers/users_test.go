@@ -183,15 +183,21 @@ func TestUpdateCurrentUser(t *testing.T) {
 			wantCode:    http.StatusBadRequest,
 			wantError:   true,
 		},
-		"Valid email": {
+		"Non-existing body values": {
 			contextUser: validUser,
-			reqBody:     `{"email":"email@email.com","password":"testpass"}`,
+			reqBody:     `{"premium":true,"password":"testpass"}`,
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
+		"Mixed body values (valid and invalid)": {
+			contextUser: validUser,
+			reqBody:     `{"email":"email@email.com","premium":true,"password":"testpass"}`,
 			wantCode:    http.StatusOK,
 			wantError:   false,
 		},
-		"Invalid body": {
+		"Self assigned role": {
 			contextUser: validUser,
-			reqBody:     `{"email":"email@email.com","premium":true}`,
+			reqBody:     `{"role":"admin","password":"testpass"}`,
 			wantCode:    http.StatusBadRequest,
 			wantError:   true,
 		},
