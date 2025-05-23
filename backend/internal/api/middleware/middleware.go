@@ -69,7 +69,7 @@ func CheckBan(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 		}
 		if user.Ban != nil && user.Ban.ExpiresAt.After(time.Now().UTC()) {
-			return echo.NewHTTPError(http.StatusForbidden, "User is banned")
+			return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
 		}
 		return next(c)
 	}

@@ -399,26 +399,28 @@ func (h *UserHandler) Ban(c echo.Context) error {
 	})
 }
 
-// BanCurrent handles the request to self deactivate user account.
-// It bans the user identified by the ID in context.
-func (h *UserHandler) BanCurrent(c echo.Context) error {
-	contextUser, ok := c.Get("user").(*data.User)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+func (h *UserHandler) Deactivate(c echo.Context) error {
+
+	token := c.Param("token")
+	if token == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid reset token")
 	}
 
-	_, err := h.banService.Ban(contextUser.ID, contextUser.ID, time.Now().Add(87600*time.Hour), "Self-deactivation")
+	user, err := h.userService.GetForToken(data.ScopeDeactivate, token)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid or expired token")
+	}
+
+	_, err = h.banService.Ban(user.ID, user.ID, time.Now().Add(87600*time.Hour), "Self-deactivation")
 	if err != nil {
 		c.Logger().Errorf("Internal self-deactivation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deactivate account")
 	}
 
-	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID); err != nil {
+	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID); err != nil {
 		c.Logger().Errorf("Internal token deletion error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deactivate account")
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Account deactivated successfully",
-	})
+	return c.NoContent(http.StatusOK)
 }

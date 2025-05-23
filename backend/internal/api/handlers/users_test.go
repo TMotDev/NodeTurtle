@@ -981,83 +981,81 @@ func TestBanUser(t *testing.T) {
 	mockBanService.AssertExpectations(t)
 }
 
-func TestBanCurrent(t *testing.T) {
+func TestDeactivate(t *testing.T) {
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
 
-	mockUserService := new(mocks.MockUserService) // Use new for pointer type mocks
+	mockUserService := new(mocks.MockUserService)
 	mockAuthService := new(mocks.MockAuthService)
 	mockTokenService := new(mocks.MockTokenService)
 	mockBanService := new(mocks.MockBanService)
 
+	userID1 := uuid.New()
+	userIDErr := uuid.New()
+
+	mockUserService.On("GetForToken", mock.Anything, "token").Return(&data.User{ID: userID1, Email: "test@test.test", Username: "testuser"}, nil)
+	mockUserService.On("GetForToken", mock.Anything, "updateUserFail").Return(&data.User{ID: userIDErr, Email: "update@test.test", Username: "updateErrorUser"}, nil)
+	mockUserService.On("GetForToken", mock.Anything, "-").Return(nil, services.ErrRecordNotFound)
+
+	mockBanService.On("Ban", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&data.Ban{}, nil)
+
+	mockTokenService.On("DeleteAllForUser", mock.Anything, userIDErr).Return(services.ErrInternal)
+	mockTokenService.On("DeleteAllForUser", mock.Anything, mock.Anything).Return(nil)
+
 	handler := NewUserHandler(mockUserService, mockAuthService, mockTokenService, mockBanService)
 
-	userToBan := &data.User{ID: uuid.New(), Email: "test@test.test", Username: "testuser", IsActivated: true}
-	userInternalFail := &data.User{ID: uuid.New(), Email: "test2@test.test", Username: "testuser2", IsActivated: true}
-	userTokenServiceFail := &data.User{ID: uuid.New(), Email: "test2@test.test", Username: "testuser2", IsActivated: true}
-
-	mockBanService.On("Ban", userToBan.ID, userToBan.ID, mock.Anything, "Self-deactivation").Return(nil, nil)
-	mockBanService.On("Ban", mock.Anything, mock.Anything, mock.Anything, "Self-deactivation").Return(nil, services.ErrInternal)
-
-	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, userToBan.ID).Return(nil)
-	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, mock.Anything).Return(services.ErrInternal)
-
 	tests := map[string]struct {
-		contextUser *data.User
-		wantCode    int
-		wantError   bool
+		token     string
+		wantCode  int
+		wantError bool
 	}{
-		"Successful self-ban": {
-			contextUser: userToBan,
-			wantCode:    http.StatusOK,
-			wantError:   false,
+		"Valid token": {
+			token:     "token",
+			wantCode:  http.StatusOK,
+			wantError: false,
 		},
-		"User not authenticated": {
-			contextUser: nil,
-			wantCode:    http.StatusUnauthorized,
-			wantError:   true,
+		"Invalid token": {
+			token:     "",
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
 		},
-		"Ban service fails": {
-			contextUser: userInternalFail,
-			wantCode:    http.StatusInternalServerError,
-			wantError:   true,
+		"user with token not found": {
+			token:     "-",
+			wantCode:  http.StatusUnauthorized,
+			wantError: true,
 		},
-		"Token service fails after successful ban": {
-			contextUser: userTokenServiceFail,
-			wantCode:    http.StatusInternalServerError,
-			wantError:   true,
+		"Failed to activate user": {
+			token:     "updateUserFail",
+			wantCode:  http.StatusInternalServerError,
+			wantError: true,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			handler = NewUserHandler(mockUserService, mockAuthService, mockTokenService, mockBanService)
-
-			req := httptest.NewRequest(http.MethodPost, "/users/current/ban", strings.NewReader("")) // Body not used by BanCurrent
-			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			req := httptest.NewRequest(http.MethodPost, "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
+			c.SetPath("/api/deactivate/:token")
+			c.SetParamNames("token")
+			c.SetParamValues(tt.token)
 
-			if tt.contextUser != nil {
-				c.Set("user", tt.contextUser)
-			}
-
-			err := handler.BanCurrent(c)
+			err := handler.Deactivate(c)
 
 			if tt.wantError {
 				assert.Error(t, err)
 				if he, ok := err.(*echo.HTTPError); ok {
 					assert.Equal(t, tt.wantCode, he.Code)
-				} else {
-					assert.NotNil(t, err, "Expected an error but got nil")
 				}
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantCode, rec.Code)
 			}
-
 		})
 	}
-	mockBanService.AssertExpectations(t)
+
+	mockUserService.AssertExpectations(t)
 	mockTokenService.AssertExpectations(t)
+	mockBanService.AssertExpectations(t)
+
 }

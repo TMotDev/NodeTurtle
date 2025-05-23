@@ -397,3 +397,79 @@ func TestResetPassword(t *testing.T) {
 	mockTokenService.AssertExpectations(t)
 	mockMailerService.AssertExpectations(t)
 }
+
+func TestRequestDeactivationToken(t *testing.T) {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockUserService := mocks.MockUserService{}
+	mockTokenService := mocks.MockTokenService{}
+	mockMailerService := mocks.MockMailService{}
+
+	inactiveUser := data.User{
+		ID:          uuid.New(),
+		Email:       "inactive@test.com",
+		Username:    "inactive",
+		IsActivated: false,
+	}
+	validUser := data.User{
+		ID:          uuid.New(),
+		Email:       "vlid@test.com",
+		Username:    "valid",
+		IsActivated: true,
+	}
+	newDeactivationToken := data.Token{Plaintext: "new-token", Scope: data.ScopeDeactivate}
+
+	handler := NewTokenHandler(&mockUserService, &mockTokenService, &mockMailerService)
+
+	mockTokenService.On("New", mock.Anything, mock.Anything, mock.Anything).Return(&newDeactivationToken, nil)
+	mockMailerService.On("SendEmail", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	tests := map[string]struct {
+		contextUser *data.User
+		wantCode    int
+		wantError   bool
+	}{
+		"Successful request": {
+			contextUser: &validUser,
+			wantCode:    http.StatusOK,
+			wantError:   false,
+		},
+		"User not activated": {
+			contextUser: &inactiveUser,
+			wantCode:    http.StatusForbidden,
+			wantError:   true,
+		},
+		"No user in context": {
+			contextUser: nil,
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/users/me/deactivate", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			if tt.contextUser != nil {
+				c.Set("user", tt.contextUser)
+			}
+
+			err := handler.RequestDeactivationToken(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+			}
+		})
+	}
+
+	mockTokenService.AssertExpectations(t)
+}

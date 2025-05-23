@@ -226,3 +226,30 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 		"message": "Password has been reset successfully. You can now login with your new password.",
 	})
 }
+
+// RequestDeactivationToken handles the HTTP request for sending an account deactivation token to a user's email address.
+func (h *TokenHandler) RequestDeactivationToken(c echo.Context) error {
+	contextUser, ok := c.Get("user").(*data.User)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+
+	if !contextUser.IsActivated {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
+	}
+
+	dt, err := h.tokenService.New(contextUser.ID, 24*time.Hour, data.ScopeDeactivate)
+	if err != nil {
+		c.Logger().Errorf("Internal deactivation token creation error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create Deactivation token")
+	}
+
+	link := fmt.Sprintf("http://website.com/deactivate/%s", dt.Plaintext)
+	emailData := map[string]interface{}{
+		"Username":         contextUser.Username,
+		"DeactivationLink": link,
+	}
+	go h.mailService.SendEmail(contextUser.Email, "Account deactivation", "deactivation", emailData)
+
+	return c.NoContent(http.StatusOK)
+}

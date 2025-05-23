@@ -88,6 +88,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	e.POST("/api/login", authHandler.Login)
 
 	e.POST("/api/activate", tokenHandler.RequestActivationToken)
+	e.POST("/api/deactivate/:token", userHandler.Deactivate)
 	e.POST("/api/password/reset", tokenHandler.RequestPasswordReset)
 	e.POST("/api/password/reset/:token", tokenHandler.ResetPassword)
 	e.POST("/api/refresh", authHandler.RefreshToken)
@@ -101,7 +102,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	api.GET("/users/me", userHandler.GetCurrent)
 	api.PUT("/users/me", userHandler.UpdateCurrent)
 	api.POST("/users/me/password", userHandler.ChangePassword)
-	api.POST("/users/me/deactivate", userHandler.BanCurrent)
+	api.POST("/users/me/deactivate", tokenHandler.RequestDeactivationToken)
 
 	// Role-specific routes
 	admin := api.Group("/admin")

@@ -30,4 +30,7 @@ const (
 
 	// ScopeRefresh is used for generating new JWT tokens without requiring re-authentication.
 	ScopeRefresh TokenScope = "refresh"
+
+	// ScopeDeactivate is used for user account deactivation process.
+	ScopeDeactivate TokenScope = "deactive"
 )
