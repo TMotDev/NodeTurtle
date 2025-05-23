@@ -128,6 +128,8 @@ type UserFilter struct {
 	CreatedAfter    *time.Time `query:"created_after" validate:"omitempty"`
 	LastLoginBefore *time.Time `query:"last_login_before" validate:"omitempty"`
 	LastLoginAfter  *time.Time `query:"last_login_after" validate:"omitempty"`
+	BannedBefore    *time.Time `query:"banned_before" validate:"omitempty"`
+	BannedAfter     *time.Time `query:"banned_after" validate:"omitempty"`
 
 	SortField string `query:"sort_field" validate:"omitempty,oneof=id email username activated created_at last_login"`
 	SortOrder string `query:"sort_order" validate:"omitempty,oneof=asc desc"`

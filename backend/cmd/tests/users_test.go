@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"testing"
+	"time"
 
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services"
@@ -323,7 +324,66 @@ func TestListUsers(t *testing.T) {
 			},
 			err: nil,
 		},
-		// TODO Test created_at, last_login times
+		"Filter by created_at before a specific time": {
+			filters: data.UserFilter{
+				Page:          1,
+				Limit:         10,
+				CreatedBefore: utils.Ptr(time.Now().Add(-24 * time.Hour)),
+				SortField:     "created_at",
+				SortOrder:     "desc",
+			},
+			err: nil,
+		},
+		"Filter by created_at after a specific time": {
+			filters: data.UserFilter{
+				Page:         1,
+				Limit:        10,
+				CreatedAfter: utils.Ptr(time.Now().Add(-7 * 24 * time.Hour)),
+				SortField:    "created_at",
+				SortOrder:    "asc",
+			},
+			err: nil,
+		},
+		"Filter by last_login before a specific time": {
+			filters: data.UserFilter{
+				Page:            1,
+				Limit:           10,
+				LastLoginBefore: utils.Ptr(time.Now().Add(-30 * 24 * time.Hour)),
+				SortField:       "last_login",
+				SortOrder:       "desc",
+			},
+			err: nil,
+		},
+		"Filter by last_login after a specific time": {
+			filters: data.UserFilter{
+				Page:           1,
+				Limit:          10,
+				LastLoginAfter: utils.Ptr(time.Now().Add(-1 * time.Hour)),
+				SortField:      "last_login",
+				SortOrder:      "asc",
+			},
+			err: nil,
+		},
+		"Filter by banned_before": {
+			filters: data.UserFilter{
+				Page:         1,
+				Limit:        10,
+				BannedBefore: utils.Ptr(time.Now().Add(-15 * 24 * time.Hour)),
+				SortField:    "created_at",
+				SortOrder:    "desc",
+			},
+			err: nil,
+		},
+		"Filter by banned_after": {
+			filters: data.UserFilter{
+				Page:        1,
+				Limit:       10,
+				BannedAfter: utils.Ptr(time.Now().Add(-10 * 24 * time.Hour)),
+				SortField:   "created_at",
+				SortOrder:   "asc",
+			},
+			err: nil,
+		},
 	}
 
 	for name, tt := range tests {

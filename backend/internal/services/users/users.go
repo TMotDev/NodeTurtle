@@ -327,59 +327,60 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 	// Build WHERE clause and args for filtering
 	whereClause := []string{}
 	args := []interface{}{}
-	argCount := 1
 
 	// Filter by activation status
 	if filters.ActivationStatus != nil {
-		whereClause = append(whereClause, "u.activated = $"+fmt.Sprint(argCount))
+		whereClause = append(whereClause, "u.activated = $"+fmt.Sprint(len(args)+1))
 		args = append(args, *filters.ActivationStatus)
-		argCount++
 	}
 
 	// Filter by role
 	if filters.Role != nil {
-		whereClause = append(whereClause, "u.role_id = $"+fmt.Sprint(argCount))
+		whereClause = append(whereClause, "u.role_id = $"+fmt.Sprint(len(args)+1))
 		roleId := filters.Role.ToID()
 		args = append(args, roleId)
-		argCount++
 	}
 
 	// Filter by username (partial match)
 	if filters.Username != nil && *filters.Username != "" {
-		whereClause = append(whereClause, "u.username ILIKE $"+fmt.Sprint(argCount))
+		whereClause = append(whereClause, "u.username ILIKE $"+fmt.Sprint(len(args)+1))
 		args = append(args, "%"+*filters.Username+"%")
-		argCount++
 	}
 
 	// Filter by email (partial match)
 	if filters.Email != nil && *filters.Email != "" {
-		whereClause = append(whereClause, "u.email ILIKE $"+fmt.Sprint(argCount))
+		whereClause = append(whereClause, "u.email ILIKE $"+fmt.Sprint(len(args)+1))
 		args = append(args, "%"+*filters.Email+"%")
-		argCount++
 	}
 
 	// Filter by creation time
-	if filters.CreatedAfter != nil {
-		whereClause = append(whereClause, "u.created_at >= $"+fmt.Sprint(argCount))
-		args = append(args, *filters.CreatedAfter)
-		argCount++
-	}
 	if filters.CreatedBefore != nil {
-		whereClause = append(whereClause, "u.created_at <= $"+fmt.Sprint(argCount))
+		whereClause = append(whereClause, "u.created_at <= $"+fmt.Sprint(len(args)+1))
 		args = append(args, *filters.CreatedBefore)
-		argCount++
+	}
+	if filters.CreatedAfter != nil {
+		whereClause = append(whereClause, "u.created_at >= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.CreatedAfter)
 	}
 
 	// Filter by last login time
-	if filters.LastLoginAfter != nil {
-		whereClause = append(whereClause, "u.last_login >= $"+fmt.Sprint(argCount))
-		args = append(args, *filters.LastLoginAfter)
-		argCount++
-	}
 	if filters.LastLoginBefore != nil {
-		whereClause = append(whereClause, "u.last_login <= $"+fmt.Sprint(argCount))
+		whereClause = append(whereClause, "u.last_login <= $"+fmt.Sprint(len(args)+1))
 		args = append(args, *filters.LastLoginBefore)
-		argCount++
+	}
+	if filters.LastLoginAfter != nil {
+		whereClause = append(whereClause, "u.last_login >= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.LastLoginAfter)
+	}
+
+	// Filter by banned time
+	if filters.BannedBefore != nil {
+		whereClause = append(whereClause, "bu.banned_at >= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.BannedBefore)
+	}
+	if filters.BannedAfter != nil {
+		whereClause = append(whereClause, "bu.banned_at <= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.BannedAfter)
 	}
 
 	// Construct the final WHERE clause
@@ -389,7 +390,7 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 	}
 
 	// Count total matching users
-	countQuery := "SELECT COUNT(*) FROM users u " + where
+	countQuery := "SELECT COUNT(*) FROM users u LEFT JOIN banned_users bu ON u.id = bu.user_id " + where
 	var total int
 	err := s.db.QueryRow(countQuery, args...).Scan(&total)
 	if err != nil {
@@ -399,12 +400,14 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 	// Build the SELECT query
 	query := `
 		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
-		       r.id, r.name
+		       r.id, r.name,
+			   bu.expires_at, bu.banned_at, bu.banned_by, bu.reason
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
+		LEFT JOIN banned_users bu ON u.id = bu.user_id
 		` + where + `
 		ORDER BY u.` + filters.SortField + ` ` + filters.SortOrder + `
-		LIMIT $` + fmt.Sprint(argCount) + ` OFFSET $` + fmt.Sprint(argCount+1)
+		LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 
 	// Add the limit and offset args
 	args = append(args, filters.Limit, offset)
@@ -421,11 +424,17 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 	for rows.Next() {
 		var user data.User
 		var role data.Role
+		var ban struct {
+			expiresAt *time.Time
+			reason    *string
+			bannedAt  *time.Time
+			bannedBy  *uuid.UUID
+		}
 		var lastLogin sql.NullTime
 
 		err := rows.Scan(
 			&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &lastLogin,
-			&role.ID, &role.Name,
+			&role.ID, &role.Name, &ban.expiresAt, &ban.bannedAt, &ban.bannedBy, &ban.reason,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -433,6 +442,16 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 
 		user.LastLogin = lastLogin
 		user.Role = role
+
+		if ban.expiresAt != nil && ban.bannedAt != nil && ban.bannedBy != nil && ban.reason != nil {
+			user.Ban = &data.Ban{
+				ExpiresAt: *ban.expiresAt,
+				Reason:    *ban.reason,
+				BannedAt:  *ban.bannedAt,
+				BannedBy:  *ban.bannedBy,
+			}
+		}
+
 		users = append(users, user)
 	}
 

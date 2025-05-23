@@ -209,8 +209,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 }
 
 // List handles the request to retrieve a paginated list of all users.
-//
-// uses data.UserFilter for filtering options
+// binds payload to data.UserFilter for filtering options
 func (h *UserHandler) List(c echo.Context) error {
 	filters := data.DefaultUserFilter()
 

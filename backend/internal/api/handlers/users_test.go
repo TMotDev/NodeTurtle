@@ -376,6 +376,11 @@ func TestListUsers(t *testing.T) {
 			wantCode:  http.StatusOK,
 			wantError: false,
 		},
+		"Time params request": {
+			query:     "?banned_after=2006-01-02T15:04:05Z",
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
 		"Invalid query param values (validation fails)": {
 			query:     "?page=-1&limit=-10&sort_field=height&sort_order=random",
 			wantCode:  http.StatusBadRequest,
