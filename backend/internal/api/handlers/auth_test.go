@@ -77,12 +77,12 @@ func TestRegister(t *testing.T) {
 		},
 		"Emoji username": {
 			reqBody:   `{"email":"test@test.test","username":"⭐👌👍❤️","password":"TestPassword123"}`,
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Random symbols username": {
 			reqBody:   `{"email":"test@test.test","username":"'][]/\\//.;?!/'","password":"TestPassword123"}`,
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Email taken": {
@@ -97,7 +97,7 @@ func TestRegister(t *testing.T) {
 		},
 		"Invalid email format": {
 			reqBody:   `{"email":"invalid-email","username":"testuser","password":"TestPassword123"}`,
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Missing required fields": {
@@ -109,7 +109,7 @@ func TestRegister(t *testing.T) {
 		},
 		"Weak password": {
 			reqBody:   `{"email":"test@test.test","username":"testuser","password":"weak"}`,
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Malformed JSON triggers bind error": {
@@ -212,12 +212,12 @@ func TestLogin(t *testing.T) {
 		},
 		"Invalid email format": {
 			reqBody:   `{"email":"invalid-email","password":"TestPassword123"}`,
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Missing required fields": {
 			reqBody:   `{"email": "test@test.test"}`,
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Malformed JSON triggers bind error": {
@@ -292,13 +292,13 @@ func TestRefreshToken(t *testing.T) {
 	}{
 		"Success": {
 			body:      `{"refreshToken":"valid-refresh-token"}`,
-			wantCode:  http.StatusCreated,
+			wantCode:  http.StatusOK,
 			wantBody:  `"token":"new-access-token"`,
 			wantError: false,
 		},
 		"Invalid refresh token": {
 			body:      `{"refreshToken":"wrongtoken"}`,
-			wantCode:  http.StatusUnauthorized,
+			wantCode:  http.StatusNotFound,
 			wantError: true,
 		},
 		"Malformed JSON": {
@@ -308,7 +308,7 @@ func TestRefreshToken(t *testing.T) {
 		},
 		"Internal error on GetForToken": {
 			body:      `{"refreshToken":"internalerror"}`,
-			wantCode:  http.StatusUnauthorized,
+			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
 		"Token owner is suspended": {
@@ -366,13 +366,11 @@ func TestLogout(t *testing.T) {
 	tests := map[string]struct {
 		contextUser interface{}
 		wantCode    int
-		wantBody    string
 		wantError   bool
 	}{
 		"Success": {
 			contextUser: validUser,
-			wantCode:    http.StatusOK,
-			wantBody:    `"message":"Logged out successfully."`,
+			wantCode:    http.StatusNoContent,
 			wantError:   false,
 		},
 		"User not in context": {
@@ -402,9 +400,6 @@ func TestLogout(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantCode, rec.Code)
-				if tt.wantBody != "" {
-					assert.Contains(t, rec.Body.String(), tt.wantBody)
-				}
 			}
 		})
 	}

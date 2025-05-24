@@ -45,7 +45,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	}
 
 	if err := c.Validate(&registration); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	user, err := h.userService.CreateUser(registration)
@@ -73,14 +73,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	}
 	go h.mailService.SendEmail(user.Email, "Activate Your Account", "activation", emailData)
 
-	return c.JSON(http.StatusCreated, map[string]interface{}{
-		"message": "User registered successfully. Please check your email to activate your account.",
-		"user": map[string]interface{}{
-			"id":       user.ID,
-			"email":    user.Email,
-			"username": user.Username,
-		},
-	})
+	return c.NoContent(http.StatusCreated)
 }
 
 // Login handles user authentication requests.
@@ -94,16 +87,16 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	}
 
 	if err := c.Validate(&login); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	token, user, err := h.authService.Login(login.Email, login.Password)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidCredentials) {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
+			return echo.NewHTTPError(http.StatusUnauthorized, err)
 		}
 		if errors.Is(err, services.ErrInactiveAccount) {
-			return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
+			return echo.NewHTTPError(http.StatusForbidden, err)
 		}
 		if errors.Is(err, services.ErrAccountSuspended) {
 			return echo.NewHTTPError(http.StatusForbidden, err)
@@ -128,6 +121,10 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token":        token,
 		"refreshToken": refreshToken.Plaintext,
+		"user": map[string]interface{}{
+			"username": user.Username,
+			"role":     user.Role.Name,
+		},
 	})
 }
 
@@ -147,7 +144,11 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 		if errors.Is(err, services.ErrAccountSuspended) {
 			return echo.NewHTTPError(http.StatusForbidden, err)
 		}
-		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid or expired refresh token")
+		if errors.Is(err, services.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, err)
+		}
+		c.Logger().Errorf("Internal user retrieval error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to refresh session")
 	}
 
 	if user.Ban != nil {
@@ -168,7 +169,7 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new refresh token")
 	}
 
-	return c.JSON(http.StatusCreated, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token":        token,
 		"refreshToekn": refreshToken.Plaintext,
 	})
@@ -189,7 +190,5 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 		c.Logger().Error("Failed to delete refresh tokens on user logout")
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Logged out successfully.",
-	})
+	return c.NoContent(http.StatusNoContent)
 }

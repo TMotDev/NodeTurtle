@@ -125,7 +125,6 @@ func TestUpdateCurrentUser(t *testing.T) {
 		contextUser *data.User
 		reqBody     string
 		wantCode    int
-		wantBody    string
 		wantError   bool
 	}{
 		"No user in context": {
@@ -138,7 +137,6 @@ func TestUpdateCurrentUser(t *testing.T) {
 			contextUser: validUser,
 			reqBody:     `{"username":"newusername","email":"new@test.test","password":"testpass"}`,
 			wantCode:    http.StatusOK,
-			wantBody:    `"message":"User updated successfully"`,
 			wantError:   false,
 		},
 		"Email already used": {
@@ -179,8 +177,8 @@ func TestUpdateCurrentUser(t *testing.T) {
 		},
 		"Invalid email": {
 			contextUser: validUser,
-			reqBody:     `{"email":"email@??\2","password":"testpass"}`,
-			wantCode:    http.StatusBadRequest,
+			reqBody:     `{"email":"email??2","password":"testpass"}`,
+			wantCode:    http.StatusUnprocessableEntity,
 			wantError:   true,
 		},
 		"Non-existing body values": {
@@ -224,9 +222,6 @@ func TestUpdateCurrentUser(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantCode, rec.Code)
-				if tt.wantBody != "" {
-					assert.Contains(t, rec.Body.String(), tt.wantBody)
-				}
 			}
 		})
 	}
@@ -267,7 +262,6 @@ func TestChangePassword(t *testing.T) {
 		contextUser *data.User
 		reqBody     string
 		wantCode    int
-		wantBody    string
 		wantError   bool
 	}{
 		"No user in context": {
@@ -279,8 +273,7 @@ func TestChangePassword(t *testing.T) {
 		"Valid password change": {
 			contextUser: &validUser,
 			reqBody:     `{"old_password":"OldPassword123","new_password":"NewPassword123"}`,
-			wantCode:    http.StatusOK,
-			wantBody:    `"message":"Password changed successfully"`,
+			wantCode:    http.StatusNoContent,
 			wantError:   false,
 		},
 		"Wrong old password": {
@@ -292,7 +285,7 @@ func TestChangePassword(t *testing.T) {
 		"Invalid new password": {
 			contextUser: &validUser,
 			reqBody:     `{"old_password":"WrongPassword","new_password":"123"}`,
-			wantCode:    http.StatusBadRequest,
+			wantCode:    http.StatusUnprocessableEntity,
 			wantError:   true,
 		},
 		"Invalid JSON": {
@@ -330,9 +323,6 @@ func TestChangePassword(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantCode, rec.Code)
-				if tt.wantBody != "" {
-					assert.Contains(t, rec.Body.String(), tt.wantBody)
-				}
 			}
 		})
 	}
@@ -383,7 +373,7 @@ func TestListUsers(t *testing.T) {
 		},
 		"Invalid query param values (validation fails)": {
 			query:     "?page=-1&limit=-10&sort_field=height&sort_order=random",
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Invalid query param names (default filter takes over)": {
@@ -553,10 +543,10 @@ func TestUpdateUser(t *testing.T) {
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
-		"Emoji username": {
+		"Non alphanumeric username": {
 			userID:    validUser.ID.String(),
 			reqBody:   `{"username":"❤️👌👍⭐","email":"new@test.test"}`,
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Duplicate username": {
@@ -730,13 +720,13 @@ func TestCheckEmail(t *testing.T) {
 		"Email exists": {
 			email:     "existing@test.com",
 			wantCode:  http.StatusOK,
-			wantBody:  `{"exists":true}`,
+			wantBody:  `{"available":false}`,
 			wantError: false,
 		},
 		"Email doesn't exist": {
 			email:     "new@test.com",
 			wantCode:  http.StatusOK,
-			wantBody:  `{"exists":false}`,
+			wantBody:  `{"available":true}`,
 			wantError: false,
 		},
 		"Internal error": {
@@ -747,7 +737,7 @@ func TestCheckEmail(t *testing.T) {
 		},
 		"Invalid email format": {
 			email:     "invalid-email",
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 	}
@@ -810,13 +800,13 @@ func TestCheckUsername(t *testing.T) {
 		"Username exists": {
 			username:  "existinguser",
 			wantCode:  http.StatusOK,
-			wantBody:  `{"exists":true}`,
+			wantBody:  `{"available":false}`,
 			wantError: false,
 		},
 		"Username doesn't exist": {
 			username:  "newusername",
 			wantCode:  http.StatusOK,
-			wantBody:  `{"exists":false}`,
+			wantBody:  `{"available":true}`,
 			wantError: false,
 		},
 		"Internal error": {
@@ -827,12 +817,12 @@ func TestCheckUsername(t *testing.T) {
 		},
 		"Username too short": {
 			username:  "a",
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Username with special characters": {
 			username:  "user@name!",
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 	}
@@ -918,7 +908,7 @@ func TestBanUser(t *testing.T) {
 		"Missing required fields": {
 			contextUser: adminUser,
 			body:        `{}`,
-			wantCode:    http.StatusBadRequest,
+			wantCode:    http.StatusUnprocessableEntity,
 			wantError:   true,
 		},
 		"User to ban not found": {
@@ -936,19 +926,19 @@ func TestBanUser(t *testing.T) {
 		"Invalid duration (zero)": {
 			contextUser: adminUser,
 			body:        fmt.Sprintf(`{"reason":"test","duration":0,"user_id":"%s"}`, user.ID),
-			wantCode:    http.StatusBadRequest,
+			wantCode:    http.StatusUnprocessableEntity,
 			wantError:   true,
 		},
 		"Invalid duration (negative)": {
 			contextUser: adminUser,
 			body:        fmt.Sprintf(`{"reason":"test","duration":-5,"user_id":"%s"}`, user.ID),
-			wantCode:    http.StatusBadRequest,
+			wantCode:    http.StatusUnprocessableEntity,
 			wantError:   true,
 		},
 		"Invalid reason (empty)": {
 			contextUser: adminUser,
 			body:        fmt.Sprintf(`{"reason":"","duration":24,"user_id":"%s"}`, user.ID),
-			wantCode:    http.StatusBadRequest,
+			wantCode:    http.StatusUnprocessableEntity,
 			wantError:   true,
 		},
 	}
@@ -1021,7 +1011,7 @@ func TestDeactivate(t *testing.T) {
 		},
 		"user with token not found": {
 			token:     "-",
-			wantCode:  http.StatusUnauthorized,
+			wantCode:  http.StatusNotFound,
 			wantError: true,
 		},
 		"Failed to activate user": {

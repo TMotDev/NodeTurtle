@@ -44,7 +44,7 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 	}
 
 	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	user, err := h.userService.GetUserByEmail(payload.Email)
@@ -74,7 +74,7 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 	go h.mailService.SendEmail(user.Email, "Activate Your Account", "activation", emailData)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"message": "Account activation request successfully. Please check your email to activate your account.",
+		"message": "Account activation request successful. Please check your email to activate your account.",
 	})
 }
 
@@ -84,14 +84,14 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 func (h *TokenHandler) ActivateAccount(c echo.Context) error {
 	token := c.Param("token")
 	if token == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid reset token")
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid or expired reset token")
 	}
 
 	user, err := h.userService.GetForToken(data.ScopeUserActivation, token)
 
 	if err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
+			return echo.NewHTTPError(http.StatusNotFound, err)
 		}
 
 		if errors.Is(err, services.ErrAccountSuspended) {
@@ -134,7 +134,7 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 	}
 
 	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	user, err := h.userService.GetUserByEmail(payload.Email)
@@ -164,7 +164,7 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 
 	go h.mailService.SendEmail(user.Email, "Reset Your Password", "reset", emailData)
 
-	return c.JSON(http.StatusOK, map[string]string{
+	return c.JSON(http.StatusAccepted, map[string]string{
 		"message": "If an account with that email exists, a password reset link has been sent.",
 	})
 }
@@ -189,14 +189,14 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 	}
 
 	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	user, err := h.userService.GetForToken(data.ScopePasswordReset, token)
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrRecordNotFound):
-			return echo.NewHTTPError(http.StatusUnprocessableEntity, err)
+			return echo.NewHTTPError(http.StatusNotFound, err)
 
 		default:
 			c.Logger().Errorf("Internal user retrieval error %v", err)
@@ -222,9 +222,7 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Password has been reset successfully. You can now login with your new password.",
-	})
+	return c.NoContent(http.StatusNoContent)
 }
 
 // RequestDeactivationToken handles the HTTP request for sending an account deactivation token to a user's email address.
@@ -251,5 +249,7 @@ func (h *TokenHandler) RequestDeactivationToken(c echo.Context) error {
 	}
 	go h.mailService.SendEmail(contextUser.Email, "Account deactivation", "deactivation", emailData)
 
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusAccepted, map[string]string{
+		"message": "Deactivation email has been sent. Please follow the instructions to deactivate your account.",
+	})
 }

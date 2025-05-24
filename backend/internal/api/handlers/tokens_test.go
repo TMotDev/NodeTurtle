@@ -54,8 +54,13 @@ func TestRequestActivationToken(t *testing.T) {
 		wantError bool
 	}{
 		"Invalid request body": {
-			reqBody:   `{"emai":"test@test.test"}`,
+			reqBody:   `{"emai:"test@test.test"}`,
 			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"Invalid json content": {
+			reqBody:   `{"emai":"test@test.test"}`,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"User not found": {
@@ -148,7 +153,7 @@ func TestActivateAccount(t *testing.T) {
 		},
 		"Record not found": {
 			token:     "-",
-			wantCode:  http.StatusUnprocessableEntity,
+			wantCode:  http.StatusNotFound,
 			wantError: true,
 		},
 		"Failed to retrieve user": {
@@ -231,6 +236,11 @@ func TestRequestPasswordReset(t *testing.T) {
 			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
+		"Invalid email": {
+			email:     "test",
+			wantCode:  http.StatusUnprocessableEntity,
+			wantError: true,
+		},
 		"Internal error": {
 			email:     "internal@test.test",
 			wantCode:  http.StatusInternalServerError,
@@ -238,7 +248,7 @@ func TestRequestPasswordReset(t *testing.T) {
 		},
 		"Valid request": {
 			email:     "test@test.test",
-			wantCode:  http.StatusOK,
+			wantCode:  http.StatusAccepted,
 			wantError: false,
 		},
 		"Failed to create reset token": {
@@ -314,7 +324,7 @@ func TestResetPassword(t *testing.T) {
 		"Success": {
 			token:     "validtoken",
 			body:      `{"password":"NewPassword123"}`,
-			wantCode:  http.StatusOK,
+			wantCode:  http.StatusNoContent,
 			wantError: false,
 		},
 		"Empty token": {
@@ -326,7 +336,7 @@ func TestResetPassword(t *testing.T) {
 		"User not found": {
 			token:     "badtoken",
 			body:      `{"password":"NewPassword123"}`,
-			wantCode:  http.StatusUnprocessableEntity,
+			wantCode:  http.StatusNotFound,
 			wantError: true,
 		},
 		"Account not activated": {
@@ -338,7 +348,7 @@ func TestResetPassword(t *testing.T) {
 		"Short password": {
 			token:     "validtoken",
 			body:      `{"password":"short"}`,
-			wantCode:  http.StatusBadRequest,
+			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
 		"Bad request body": {
@@ -431,7 +441,7 @@ func TestRequestDeactivationToken(t *testing.T) {
 	}{
 		"Successful request": {
 			contextUser: &validUser,
-			wantCode:    http.StatusOK,
+			wantCode:    http.StatusAccepted,
 			wantError:   false,
 		},
 		"User not activated": {

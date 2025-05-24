@@ -52,7 +52,7 @@ func (h *UserHandler) CheckEmail(c echo.Context) error {
 	param := EmailParam{Email: c.Param("email")}
 
 	if err := c.Validate(&param); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	exists, err := h.userService.EmailExists(param.Email)
@@ -61,7 +61,7 @@ func (h *UserHandler) CheckEmail(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate email")
 	}
 
-	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
+	return c.JSON(http.StatusOK, map[string]bool{"available": !exists})
 }
 
 // CheckEmail handles checking if provided username is valid and is taken or not
@@ -72,7 +72,7 @@ func (h *UserHandler) CheckUsername(c echo.Context) error {
 	param := UsernameParam{Username: c.Param("username")}
 
 	if err := c.Validate(&param); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	exists, err := h.userService.UsernameExists(param.Username)
@@ -81,7 +81,7 @@ func (h *UserHandler) CheckUsername(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate username")
 	}
 
-	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
+	return c.JSON(http.StatusOK, map[string]bool{"available": !exists})
 }
 
 // UpdateCurrent handles the request to update the currently authenticated user's information.
@@ -108,7 +108,7 @@ func (h *UserHandler) UpdateCurrent(c echo.Context) error {
 	}
 
 	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	// Password revalidation
@@ -158,9 +158,7 @@ func (h *UserHandler) UpdateCurrent(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "User updated successfully",
-	})
+	return c.NoContent(http.StatusOK)
 }
 
 // ChangePassword handles the request to change a user's password.
@@ -187,7 +185,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 	}
 
 	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	if err := h.userService.ChangePassword(contextUser.ID, payload.OldPassword, payload.NewPassword); err != nil {
@@ -203,9 +201,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to change password")
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Password changed successfully",
-	})
+	return c.NoContent(http.StatusNoContent)
 }
 
 // List handles the request to retrieve a paginated list of all users.
@@ -219,7 +215,7 @@ func (h *UserHandler) List(c echo.Context) error {
 
 	if err := c.Validate(&filters); err != nil {
 		c.Logger().Errorf("Filter validation error: %v", err)
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	users, total, err := h.userService.ListUsers(filters)
@@ -284,7 +280,7 @@ func (h *UserHandler) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 	if err := c.Validate(&updates); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	if updates.Username == nil && updates.Email == nil && updates.Activated == nil && updates.Role == nil {
@@ -320,9 +316,7 @@ func (h *UserHandler) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "User updated successfully",
-	})
+	return c.NoContent(http.StatusOK)
 }
 
 // Delete handles the request to remove a user from the system.
@@ -344,9 +338,7 @@ func (h *UserHandler) Delete(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete user")
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "User deleted successfully",
-	})
+	return c.NoContent(http.StatusNoContent)
 }
 
 // Ban handles the request to ban/deactivate specific user account.
@@ -369,7 +361,7 @@ func (h *UserHandler) Ban(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 	if err := c.Validate(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	// verify ban receiver exists
@@ -382,7 +374,7 @@ func (h *UserHandler) Ban(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
-	_, err = h.banService.Ban(banReceiver.ID, contextUser.ID, time.Now().Add(time.Duration(payload.Duration)*time.Hour), payload.Reason)
+	ban, err := h.banService.Ban(banReceiver.ID, contextUser.ID, time.Now().Add(time.Duration(payload.Duration)*time.Hour), payload.Reason)
 	if err != nil {
 		c.Logger().Errorf("Internal user ban error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")
@@ -394,8 +386,13 @@ func (h *UserHandler) Ban(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
+	return c.JSON(http.StatusOK, map[string]interface{}{
 		"message": "User banned successfully",
+		"ban": map[string]interface{}{
+			"expiresUntil": ban.ExpiresAt,
+			"reason":       ban.Reason,
+			"bannedAt":     ban.BannedAt,
+		},
 	})
 }
 
@@ -408,7 +405,7 @@ func (h *UserHandler) Deactivate(c echo.Context) error {
 
 	user, err := h.userService.GetForToken(data.ScopeDeactivate, token)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid or expired token")
+		return echo.NewHTTPError(http.StatusNotFound, "Token or user not found")
 	}
 
 	_, err = h.banService.Ban(user.ID, user.ID, time.Now().Add(87600*time.Hour), "Self-deactivation")
@@ -422,5 +419,7 @@ func (h *UserHandler) Deactivate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deactivate account")
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Account has been deactivated",
+	})
 }
