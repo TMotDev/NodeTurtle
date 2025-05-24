@@ -374,7 +374,7 @@ func (h *UserHandler) Ban(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
 	}
 
-	ban, err := h.banService.Ban(banReceiver.ID, contextUser.ID, time.Now().Add(time.Duration(payload.Duration)*time.Hour), payload.Reason)
+	ban, err := h.banService.Ban(banReceiver.ID, contextUser.ID, time.Now().UTC().Add(time.Duration(payload.Duration)*time.Hour), payload.Reason)
 	if err != nil {
 		c.Logger().Errorf("Internal user ban error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")

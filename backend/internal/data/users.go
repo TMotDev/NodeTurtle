@@ -33,6 +33,15 @@ type Ban struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
+// IsValid checks if the ban is still active.
+func (b *Ban) IsValid() bool {
+	if b == nil {
+		return false
+	}
+
+	return b.ExpiresAt.After(time.Now().UTC())
+}
+
 // MarshalJSON provides custom JSON serialization for User.
 // It ensures LastLogin is properly formatted and handles the nil case.
 func (u User) MarshalJSON() ([]byte, error) {

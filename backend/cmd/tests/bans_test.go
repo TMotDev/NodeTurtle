@@ -63,7 +63,7 @@ func TestBan(t *testing.T) {
 				assert.Error(t, err)
 				assert.Equal(t, tt.err, err)
 
-				if ban != nil {
+				if ban.IsValid() {
 					assert.Equal(t, ban.ExpiresAt, tt.expires_at)
 				}
 			} else {

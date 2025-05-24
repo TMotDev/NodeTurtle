@@ -98,7 +98,7 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 		}
 	}
 
-	if user.Ban != nil && user.Ban.ExpiresAt.After(time.Now().UTC()) {
+	if user.Ban.IsValid() {
 		return "", nil, fmt.Errorf("%w (reason: %v)", services.ErrAccountSuspended, user.Ban.Reason)
 	}
 

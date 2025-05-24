@@ -151,7 +151,7 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to refresh session")
 	}
 
-	if user.Ban != nil {
+	if user.Ban.IsValid() {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
 	}
 
