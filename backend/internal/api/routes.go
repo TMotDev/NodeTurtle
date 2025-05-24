@@ -81,27 +81,28 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, tokenHandler *handlers.TokenHandler, authService *auth.AuthService, userService *users.UserService) {
 
 	// Public routes
-	e.POST("/api/register", authHandler.Register)
-	e.GET("/api/accounts/username/:username", userHandler.CheckUsername)
-	e.GET("/api/accounts/email/:email", userHandler.CheckEmail)
-	e.GET("/api/activate/:token", tokenHandler.ActivateAccount)
-	e.POST("/api/login", authHandler.Login)
+	e.POST("/api/users", authHandler.Register)
+	e.GET("/api/users/username/:username", userHandler.CheckUsername)
+	e.GET("/api/users/email/:email", userHandler.CheckEmail)
 
-	e.POST("/api/activate", tokenHandler.RequestActivationToken)
-	e.POST("/api/deactivate/:token", userHandler.Deactivate)
-	e.POST("/api/password/reset", tokenHandler.RequestPasswordReset)
-	e.POST("/api/password/reset/:token", tokenHandler.ResetPassword)
-	e.POST("/api/refresh", authHandler.RefreshToken)
+	e.POST("/api/auth/activate", tokenHandler.RequestActivationToken)
+	e.POST("/api/users/activate/:token", tokenHandler.ActivateAccount)
+	e.POST("/api/auth/session", authHandler.Login)
+	e.POST("/api/auth/refresh", authHandler.RefreshToken)
+	e.POST("/api/auth/deactivate/:token", userHandler.Deactivate)
+
+	e.POST("/api/password/request-reset", tokenHandler.RequestPasswordReset)
+	e.PUT("/api/password/reset/:token", tokenHandler.ResetPassword)
 
 	// Protected routes - requires authentication
 	api := e.Group("/api")
 	api.Use(m.JWT(authService, userService))
 	api.Use(m.CheckBan)
-	// User routes
-	api.POST("/auth/logout", authHandler.Logout)
+
+	api.DELETE("/auth/session", authHandler.Logout)
 	api.GET("/users/me", userHandler.GetCurrent)
 	api.PUT("/users/me", userHandler.UpdateCurrent)
-	api.POST("/users/me/password", userHandler.ChangePassword)
+	api.PUT("/users/me/password", userHandler.ChangePassword)
 	api.POST("/users/me/deactivate", tokenHandler.RequestDeactivationToken)
 
 	// Role-specific routes
@@ -111,7 +112,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	admin.GET("/users/:id", userHandler.Get)
 	admin.PUT("/users/:id", userHandler.Update)
 	admin.DELETE("/users/:id", userHandler.Delete)
-	admin.POST("/ban", userHandler.Ban)
+	admin.POST("/users/ban", userHandler.Ban)
 }
 
 func (s *Server) Start() error {

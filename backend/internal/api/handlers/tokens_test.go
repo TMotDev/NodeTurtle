@@ -77,7 +77,7 @@ func TestRequestActivationToken(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/api/password/reset", strings.NewReader(tt.reqBody))
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.reqBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
@@ -168,7 +168,6 @@ func TestActivateAccount(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			c.SetPath("/api/activate/:token")
 			c.SetParamNames("token")
 			c.SetParamValues(tt.token)
 
@@ -254,7 +253,7 @@ func TestRequestPasswordReset(t *testing.T) {
 			body, _ := json.Marshal(struct{ Email string }{
 				Email: tt.email,
 			})
-			req := httptest.NewRequest(http.MethodPost, "/api/password/reset", bytes.NewReader(body))
+			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
@@ -371,11 +370,11 @@ func TestResetPassword(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			token := tt.token
-			req := httptest.NewRequest(http.MethodPost, "/api/password/reset/"+token, bytes.NewReader([]byte(tt.body)))
+			req := httptest.NewRequest(http.MethodPost, "/"+token, bytes.NewReader([]byte(tt.body)))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			c.SetPath("/api/password/reset/:token")
+			c.SetPath("/api/:token")
 			c.SetParamNames("token")
 			c.SetParamValues(token)
 
@@ -449,7 +448,7 @@ func TestRequestDeactivationToken(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/users/me/deactivate", nil)
+			req := httptest.NewRequest(http.MethodPost, "/", nil)
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)

@@ -185,7 +185,7 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 	}
 
 	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, contextUser.ID); err != nil {
-		// logging instead of returning to allow user to smoothly logout
+		// logging instead of returning to allow user to logout without encountering some erorr
 		c.Logger().Error("Failed to delete refresh tokens on user logout")
 	}
 

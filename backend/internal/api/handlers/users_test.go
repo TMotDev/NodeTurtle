@@ -54,7 +54,7 @@ func TestGetCurrentUser(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
@@ -205,7 +205,7 @@ func TestUpdateCurrentUser(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPut, "/api/users/me", strings.NewReader(tt.reqBody))
+			req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(tt.reqBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
@@ -311,7 +311,7 @@ func TestChangePassword(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPut, "/api/users/me/password", strings.NewReader(tt.reqBody))
+			req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(tt.reqBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
@@ -401,7 +401,7 @@ func TestListUsers(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			req := httptest.NewRequest(http.MethodGet, "/api/admin/users"+tt.query, nil)
+			req := httptest.NewRequest(http.MethodGet, "/"+tt.query, nil)
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
@@ -476,7 +476,7 @@ func TestGetUserByID(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			c.SetPath("/api/admin/users/:id")
+			c.SetPath("/api/:id")
 			c.SetParamNames("id")
 			c.SetParamValues(tt.userID)
 
@@ -616,7 +616,7 @@ func TestUpdateUser(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			c.SetPath("/api/admin/users/:id")
+			c.SetPath("/api/:id")
 			c.SetParamNames("id")
 			c.SetParamValues(tt.userID)
 
@@ -685,7 +685,7 @@ func TestDeleteUser(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			c.SetPath("/api/admin/users/:id")
+			c.SetPath("/api/:id")
 			c.SetParamNames("id")
 			c.SetParamValues(tt.userID)
 
@@ -844,7 +844,7 @@ func TestCheckUsername(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			c.SetPath("/api/accounts/username/:username")
+			c.SetPath("/api/:username")
 			c.SetParamNames("username")
 			c.SetParamValues(tt.username)
 
@@ -1036,7 +1036,7 @@ func TestDeactivate(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
-			c.SetPath("/api/deactivate/:token")
+			c.SetPath("/api/:token")
 			c.SetParamNames("token")
 			c.SetParamValues(tt.token)
 
