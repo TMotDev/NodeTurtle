@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"time"
 
 	"NodeTurtleAPI/internal/data"
@@ -49,7 +50,13 @@ func (h *UserHandler) CheckEmail(c echo.Context) error {
 	type EmailParam struct {
 		Email string `validate:"required,email"`
 	}
-	param := EmailParam{Email: c.Param("email")}
+	rawEmail := c.Param("email")
+	email, err := url.PathUnescape(rawEmail)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid email encoding")
+	}
+
+	param := EmailParam{Email: email}
 
 	if err := c.Validate(&param); err != nil {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
@@ -61,7 +68,7 @@ func (h *UserHandler) CheckEmail(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate email")
 	}
 
-	return c.JSON(http.StatusOK, map[string]bool{"available": !exists})
+	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
 }
 
 // CheckEmail handles checking if provided username is valid and is taken or not
@@ -69,8 +76,14 @@ func (h *UserHandler) CheckUsername(c echo.Context) error {
 	type UsernameParam struct {
 		Username string `validate:"required,min=3,max=20,alphanum"`
 	}
-	param := UsernameParam{Username: c.Param("username")}
 
+	rawUsername := c.Param("username")
+	username, err := url.PathUnescape(rawUsername)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid username encoding")
+	}
+
+	param := UsernameParam{Username: username}
 	if err := c.Validate(&param); err != nil {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
@@ -81,7 +94,7 @@ func (h *UserHandler) CheckUsername(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to validate username")
 	}
 
-	return c.JSON(http.StatusOK, map[string]bool{"available": !exists})
+	return c.JSON(http.StatusOK, map[string]bool{"exists": exists})
 }
 
 // UpdateCurrent handles the request to update the currently authenticated user's information.
