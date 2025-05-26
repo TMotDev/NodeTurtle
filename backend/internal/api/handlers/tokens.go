@@ -66,10 +66,10 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create Activation token")
 	}
 
-	activationLink := fmt.Sprintf("http://website.com/activate/%s", activationToken.Plaintext)
-	emailData := map[string]interface{}{
-		"Username":       user.Username,
-		"ActivationLink": activationLink,
+	activationLink := fmt.Sprintf("/activate/%s", activationToken.Plaintext)
+	emailData := map[string]string{
+		"Username": user.Username,
+		"url":      activationLink,
 	}
 	go h.mailService.SendEmail(user.Email, "Activate Your Account", "activation", emailData)
 
@@ -156,10 +156,10 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create reset token")
 	}
 
-	resetLink := fmt.Sprintf("http://website.com/reset-password/%s", resetToken.Plaintext)
-	emailData := map[string]interface{}{
-		"Username":  user.Username,
-		"ResetLink": resetLink,
+	resetLink := fmt.Sprintf("/reset-password/%s", resetToken.Plaintext)
+	emailData := map[string]string{
+		"Username": user.Username,
+		"url":      resetLink,
 	}
 
 	go h.mailService.SendEmail(user.Email, "Reset Your Password", "reset", emailData)
@@ -242,10 +242,10 @@ func (h *TokenHandler) RequestDeactivationToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create Deactivation token")
 	}
 
-	link := fmt.Sprintf("http://website.com/deactivate/%s", dt.Plaintext)
-	emailData := map[string]interface{}{
-		"Username":         contextUser.Username,
-		"DeactivationLink": link,
+	link := fmt.Sprintf("/deactivate/%s", dt.Plaintext)
+	emailData := map[string]string{
+		"Username": contextUser.Username,
+		"url":      link,
 	}
 	go h.mailService.SendEmail(contextUser.Email, "Account deactivation", "deactivation", emailData)
 

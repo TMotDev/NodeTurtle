@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
@@ -500,7 +501,7 @@ func TestUpdateUser(t *testing.T) {
 
 	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
-	validUser := data.User{
+	validUser := &data.User{
 		ID:          uuid.New(),
 		Email:       "test1@test.test",
 		Username:    "testuser1",
@@ -516,7 +517,7 @@ func TestUpdateUser(t *testing.T) {
 
 	missingUserID := uuid.New()
 
-	mockUserService.On("GetUserByID", validUser.ID).Return(&validUser, nil)
+	mockUserService.On("GetUserByID", validUser.ID).Return(validUser, nil)
 	mockUserService.On("GetUserByID", missingUserID).Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByID", mock.Anything).Return(nil, services.ErrInternal)
 	mockUserService.On("GetUserByEmail", validUser2.Email).Return(validUser2, nil)
@@ -650,7 +651,7 @@ func TestDeleteUser(t *testing.T) {
 	}{
 		"Successful user delete": {
 			userID:    validUserID.String(),
-			wantCode:  http.StatusOK,
+			wantCode:  http.StatusNoContent,
 			wantError: false,
 		},
 		"Invalid user id": {
@@ -720,13 +721,13 @@ func TestCheckEmail(t *testing.T) {
 		"Email exists": {
 			email:     "existing@test.com",
 			wantCode:  http.StatusOK,
-			wantBody:  `{"available":false}`,
+			wantBody:  `{"exists":true}`,
 			wantError: false,
 		},
 		"Email doesn't exist": {
 			email:     "new@test.com",
 			wantCode:  http.StatusOK,
-			wantBody:  `{"available":true}`,
+			wantBody:  `{"exists":false}`,
 			wantError: false,
 		},
 		"Internal error": {
@@ -800,13 +801,13 @@ func TestCheckUsername(t *testing.T) {
 		"Username exists": {
 			username:  "existinguser",
 			wantCode:  http.StatusOK,
-			wantBody:  `{"available":false}`,
+			wantBody:  `{"exists":true}`,
 			wantError: false,
 		},
 		"Username doesn't exist": {
 			username:  "newusername",
 			wantCode:  http.StatusOK,
-			wantBody:  `{"available":true}`,
+			wantBody:  `{"exists":false}`,
 			wantError: false,
 		},
 		"Internal error": {
@@ -875,7 +876,7 @@ func TestBanUser(t *testing.T) {
 
 	mockUserService.On("GetUserByID", user.ID).Return(user, nil)
 	mockUserService.On("GetUserByID", mock.Anything).Return(nil, services.ErrUserNotFound)
-	mockBanService.On("Ban", user.ID, adminUser.ID, mock.Anything, mock.Anything).Return(nil, nil)
+	mockBanService.On("Ban", user.ID, adminUser.ID, mock.Anything, mock.Anything).Return(&data.Ban{ExpiresAt: time.Now().UTC(), Reason: "test", BannedAt: time.Now().UTC()}, nil)
 	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, user.ID).Return(nil)
 	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, mock.Anything).Return(services.ErrInternal)
 

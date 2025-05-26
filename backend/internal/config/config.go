@@ -33,11 +33,12 @@ type DatabaseConfig struct {
 }
 
 type MailConfig struct {
-	Host     string
-	Port     int
-	Username string
-	Password string
-	From     string
+	Host      string
+	Port      int
+	Username  string
+	Password  string
+	From      string
+	ClientURL string
 }
 
 type JWTConfig struct {
@@ -70,11 +71,12 @@ func Load(configPath, envFile string) (*Config, error) {
 			SSLMode:  GetEnv("DB_SSLMODE", "disable"),
 		},
 		Mail: MailConfig{
-			Host:     GetEnv("MAIL_HOST", "smtp.mailtrap.io"),
-			Port:     GetEnvAsInt("MAIL_PORT", 2525),
-			Username: GetEnv("MAIL_USERNAME", ""),
-			Password: GetEnv("MAIL_PASSWORD", ""),
-			From:     GetEnv("MAIL_FROM", "noreply@turtlegraphics.com"),
+			Host:      GetEnv("MAIL_HOST", "smtp.mailtrap.io"),
+			Port:      GetEnvAsInt("MAIL_PORT", 2525),
+			Username:  GetEnv("MAIL_USERNAME", ""),
+			Password:  GetEnv("MAIL_PASSWORD", ""),
+			From:      GetEnv("MAIL_FROM", "noreply@turtlegraphics.com"),
+			ClientURL: GetEnv("CLIENT_URL", "http://website.com"),
 		},
 		JWT: JWTConfig{
 			Secret:     GetEnv("JWT_SECRET", ""),

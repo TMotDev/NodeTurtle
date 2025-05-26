@@ -12,7 +12,7 @@ import (
 )
 
 type IMailService interface {
-	SendEmail(to, subject, templateName string, data map[string]interface{}) error
+	SendEmail(to, subject, templateName string, data map[string]string) error
 }
 
 type MailService struct {
@@ -45,13 +45,21 @@ func NewMailService(cfg config.MailConfig) MailService {
 	}
 }
 
-func (s *MailService) SendEmail(to, subject, templateName string, data map[string]interface{}) error {
+func (s *MailService) SendEmail(to, subject, templateName string, data map[string]string) error {
 	tmpl, ok := s.templates[templateName]
 	if !ok {
 		return fmt.Errorf("template %s not found", templateName)
 	}
 
 	var body bytes.Buffer
+
+	route, present := data["url"]
+	if present {
+		// attach client url to the route
+		route = s.config.ClientURL + route
+		data["url"] = route
+	}
+
 	if err := tmpl.Execute(&body, data); err != nil {
 		return err
 	}

@@ -66,10 +66,10 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create Activation token")
 	}
 
-	activationLink := fmt.Sprintf("http://website.com/activate/%s", activationToken.Plaintext)
-	emailData := map[string]interface{}{
-		"Username":       user.Username,
-		"ActivationLink": activationLink,
+	activationLink := fmt.Sprintf("/activate/%s", activationToken.Plaintext)
+	emailData := map[string]string{
+		"Username": user.Username,
+		"url":      activationLink,
 	}
 	go h.mailService.SendEmail(user.Email, "Activate Your Account", "activation", emailData)
 
