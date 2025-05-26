@@ -1,8 +1,11 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod' // Using the specific import path you provided
+import { z } from 'zod'
 
+import { useEffect, useState } from 'react'
+import { AlertCircle, CheckCircle, Loader2, XCircle } from 'lucide-react'
+import type { ValidationStatus } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -21,39 +24,36 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useFieldValidation } from '@/lib/utils'
+import { emailSchema, passwordSchema, usernameSchema } from '@/lib/validation'
+
+export const Route = createFileRoute('/register')({
+  component: RegistrationFormComponent,
+})
 
 const registrationSchema = z
   .object({
-    username: z
-      .string()
-      .min(3, { message: 'Username must be at least 3 characters long.' })
-      .max(20, { message: 'Username must be at most 20 characters long.' })
-      .regex(/^[a-zA-Z0-9]+$/, {
-        message: 'Username can only contain alphanumeric characters.',
-      }),
-    email: z
-      .string()
-      .email({ message: 'Please enter a valid email address.' })
-      .min(1),
-    password: z
-      .string()
-      .min(8, { message: 'Password must be at least 8 characters long.' }),
-    repeatPassword: z
-      .string()
-      .min(8, {
-        message: 'Password confirmation must be at least 8 characters long.',
-      }),
+    username: usernameSchema,
+    email: emailSchema,
+    password: passwordSchema,
+    repeatPassword: z.string().min(8, {
+      message: 'Password confirmation must be at least 8 characters long.',
+    }),
   })
   .refine((data) => data.password === data.repeatPassword, {
     message: "Passwords don't match.",
     path: ['repeatPassword'],
   })
 
-export const Route = createFileRoute('/register')({
-  component: RegistrationFormComponent,
-})
-
 function RegistrationFormComponent() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [serverError, setServerError] = useState('')
+
+  const { validationState, validateField, setValidationState } =
+    useFieldValidation()
+
   const form = useForm<z.infer<typeof registrationSchema>>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
@@ -64,12 +64,100 @@ function RegistrationFormComponent() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof registrationSchema>) {
-    // Handle form submission, e.g., send data to your API
-    // Exclude repeatPassword if your backend doesn't expect it
+  const watchedUsername = form.watch('username')
+  const watchedEmail = form.watch('email')
+
+  useEffect(() => {
+    if (watchedUsername) {
+      validateField('username', watchedUsername, usernameSchema)
+    }
+  }, [watchedUsername, validateField])
+
+  useEffect(() => {
+    if (watchedEmail) {
+      validateField('email', watchedEmail, emailSchema)
+    }
+  }, [watchedEmail, validateField])
+
+  async function onSubmit(values: z.infer<typeof registrationSchema>) {
+    setIsLoading(true)
+    setServerError('')
+    setSuccessMessage('')
+
+    // Check if validation is still in progress or shows errors
+    if (
+      validationState.username === 'taken' ||
+      validationState.email === 'taken'
+    ) {
+      setIsLoading(false)
+      return
+    }
+
     const { repeatPassword, ...submissionData } = values
-    console.log('Form submitted with:', submissionData)
-    // Example: alert(JSON.stringify(submissionData, null, 2));
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submissionData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+
+        setServerError(
+          errorData.message ||
+            'An unexpected error occurred. Please try again.',
+        )
+      } else {
+        setSuccessMessage(
+          'Account registered successfully! Please check your email for confirmation.',
+        )
+        form.reset()
+        setValidationState({ username: 'idle', email: 'idle' })
+      }
+    } catch (error) {
+      setServerError('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const getValidationIcon = (status: ValidationStatus) => {
+    switch (status) {
+      case 'checking':
+        return (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        )
+      case 'available':
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case 'taken':
+        return <XCircle className="h-4 w-4 text-red-500" />
+      case 'error':
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />
+      default:
+        return null
+    }
+  }
+
+  const getValidationMessage = (
+    field: 'username' | 'email',
+    status: ValidationStatus,
+  ) => {
+    switch (status) {
+      case 'checking':
+        return `Checking ${field} availability...`
+      case 'available':
+        return `${field === 'username' ? 'Username' : 'Email'} is available`
+      case 'taken':
+        return `This ${field} is already taken`
+      case 'error':
+        return `Could not verify ${field} availability`
+      default:
+        return ''
+    }
   }
 
   return (
@@ -79,10 +167,31 @@ function RegistrationFormComponent() {
           <CardTitle className="text-2xl font-bold">
             Create an account
           </CardTitle>
-          {/* Optional: You can add a CardDescription here if needed */}
-          {/* <CardDescription>Enter your details below to get started.</CardDescription> */}
+          <CardDescription>
+            Enter your details below to get started.
+          </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Success Message */}
+          {successMessage && (
+            <Alert className="mb-4 border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                {successMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Server Error Message */}
+          {serverError && (
+            <Alert className="mb-4 border-red-200 bg-red-50">
+              <XCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                {serverError}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -92,9 +201,30 @@ function RegistrationFormComponent() {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="yourusername" {...field} />
+                      <div className="relative">
+                        <Input placeholder="yourusername" {...field} />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {getValidationIcon(validationState.username)}
+                        </div>
+                      </div>
                     </FormControl>
                     <FormMessage />
+                    {validationState.username !== 'idle' && (
+                      <p
+                        className={`text-xs mt-1 ${
+                          validationState.username === 'available'
+                            ? 'text-green-600'
+                            : validationState.username === 'taken'
+                              ? 'text-red-600'
+                              : 'text-muted-foreground'
+                        }`}
+                      >
+                        {getValidationMessage(
+                          'username',
+                          validationState.username,
+                        )}
+                      </p>
+                    )}
                   </FormItem>
                 )}
               />
@@ -105,13 +235,31 @@ function RegistrationFormComponent() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="m@example.com"
-                        {...field}
-                      />
+                      <div className="relative">
+                        <Input
+                          type="email"
+                          placeholder="m@example.com"
+                          {...field}
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {getValidationIcon(validationState.email)}
+                        </div>
+                      </div>
                     </FormControl>
                     <FormMessage />
+                    {validationState.email !== 'idle' && (
+                      <p
+                        className={`text-xs mt-1 ${
+                          validationState.email === 'available'
+                            ? 'text-green-600'
+                            : validationState.email === 'taken'
+                              ? 'text-red-600'
+                              : 'text-muted-foreground'
+                        }`}
+                      >
+                        {getValidationMessage('email', validationState.email)}
+                      </p>
+                    )}
                   </FormItem>
                 )}
               />
@@ -145,24 +293,37 @@ function RegistrationFormComponent() {
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />{' '}
-                    {/* Displays "Passwords don't match" if refine fails */}
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Continue
+              <Button
+                disabled={
+                  isLoading ||
+                  validationState.username === 'taken' ||
+                  validationState.email === 'taken' ||
+                  validationState.username === 'checking' ||
+                  validationState.email === 'checking'
+                }
+                type="submit"
+                className="w-full"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Continue'
+                )}
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm">
-          <p>
-            Already registered?{' '}
-            <Link
-              to="/login"
-              className="font-medium text-primary hover:underline"
-            >
+          <p className="flex gap-2">
+            Already registered?
+            <Link to="/login" className="font-medium text-primary underline">
               Log in
             </Link>
           </p>

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -124,11 +123,11 @@ function RegistrationFormComponent() {
           </Form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm">
-          <p>
-            Don't have an account?{' '}
+          <p className='flex gap-2'>
+            Don't have an account?
             <Link
               to="/register"
-              className="font-medium text-primary hover:underline"
+              className="font-medium text-primary underline"
             >
               Register
             </Link>
