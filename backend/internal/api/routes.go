@@ -45,6 +45,9 @@ func customFunc(fl validator.FieldLevel) bool {
 func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	e := echo.New()
 
+	// TODO: have a environment flag?
+	e.Debug = true
+
 	// validator setup
 	v := validator.New()
 	v.RegisterValidation("email", customFunc)

@@ -73,6 +73,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	}
 	go h.mailService.SendEmail(user.Email, "Activate Your Account", "activation", emailData)
 
+	c.Logger().Debug(activationToken.Plaintext)
 	return c.NoContent(http.StatusCreated)
 }
 

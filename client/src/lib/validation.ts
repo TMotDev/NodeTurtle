@@ -1,5 +1,10 @@
 import z from 'zod'
 
+export type FormStatus = {
+  success: boolean
+  error: string | null
+}
+
 export const usernameSchema = z
   .string()
   .min(3, { message: 'Username must be at least 3 characters long.' })

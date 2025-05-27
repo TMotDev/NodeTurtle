@@ -156,7 +156,7 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create reset token")
 	}
 
-	resetLink := fmt.Sprintf("/reset-password/%s", resetToken.Plaintext)
+	resetLink := fmt.Sprintf("/reset/%s", resetToken.Plaintext)
 	emailData := map[string]string{
 		"Username": user.Username,
 		"url":      resetLink,
