@@ -205,7 +205,7 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	}
 
 	query := `
-		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
+		SELECT u.id, u.email, u.password, u.username, u.activated, u.created_at, u.last_login,
 		       r.id, r.name, r.description, r.created_at,
 			   bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
 		FROM users u
@@ -215,7 +215,7 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	`
 
 	err := s.db.QueryRow(query, userID).Scan(
-		&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
+		&user.ID, &user.Email, &user.Password.Hash, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description, &role.CreatedAt,
 		&ban.expiresAt, &ban.bannedAt, &ban.reason, &ban.bannedBy,
 	)
@@ -254,7 +254,7 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	}
 
 	query := `
-		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
+		SELECT u.id, u.email, u.password, u.username, u.activated, u.created_at, u.last_login,
                r.id, r.name, r.description,
                bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
 		FROM users u
@@ -264,7 +264,7 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	`
 
 	err := s.db.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
+		&user.ID, &user.Email, &user.Password.Hash, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description,
 		&ban.expiresAt, &ban.bannedAt, &ban.reason, &ban.bannedBy,
 	)

@@ -415,15 +415,20 @@ func TestRequestDeactivationToken(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
+	password := data.Password{}
+	password.Set("testtest")
+
 	inactiveUser := data.User{
 		ID:          uuid.New(),
 		Email:       "inactive@test.com",
+		Password:    password,
 		Username:    "inactive",
 		IsActivated: false,
 	}
 	validUser := data.User{
 		ID:          uuid.New(),
 		Email:       "vlid@test.com",
+		Password:    password,
 		Username:    "valid",
 		IsActivated: true,
 	}
@@ -436,29 +441,51 @@ func TestRequestDeactivationToken(t *testing.T) {
 
 	tests := map[string]struct {
 		contextUser *data.User
+		body        string
 		wantCode    int
 		wantError   bool
 	}{
 		"Successful request": {
 			contextUser: &validUser,
+			body:        `{"password":"testtest"}`,
 			wantCode:    http.StatusAccepted,
 			wantError:   false,
 		},
 		"User not activated": {
 			contextUser: &inactiveUser,
+			body:        `{"password":"testtest"}`,
 			wantCode:    http.StatusForbidden,
 			wantError:   true,
 		},
 		"No user in context": {
 			contextUser: nil,
+			body:        `{"password":"testtest"}`,
 			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+		"Invalid password": {
+			contextUser: &validUser,
+			body:        `{"password":"testtestTEST"}`,
+			wantCode:    http.StatusUnauthorized,
+			wantError:   true,
+		},
+		"Invalid request body": {
+			contextUser: &validUser,
+			body:        `{"password:"testtestTEST"}`,
+			wantCode:    http.StatusBadRequest,
+			wantError:   true,
+		},
+		"No password": {
+			contextUser: &validUser,
+			body:        `{}`,
+			wantCode:    http.StatusUnprocessableEntity,
 			wantError:   true,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/", nil)
+			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(tt.body)))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)

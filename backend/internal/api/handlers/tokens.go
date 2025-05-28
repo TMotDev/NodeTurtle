@@ -232,6 +232,27 @@ func (h *TokenHandler) RequestDeactivationToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
 	}
 
+	var payload struct {
+		Password string `json:"password" validate:"required"`
+	}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+	}
+
+	matches, err := contextUser.Password.Matches(payload.Password)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if !matches {
+		return echo.NewHTTPError(http.StatusUnauthorized, services.ErrInvalidCredentials)
+	}
+
 	if !contextUser.IsActivated {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}
