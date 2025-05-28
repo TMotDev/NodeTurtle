@@ -4,8 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
 import { useEffect, useState } from 'react'
-import { AlertCircle, CheckCircle, Loader2, XCircle } from 'lucide-react'
-import type { ValidationStatus } from '@/lib/utils'
+import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import type { FormStatus } from '@/lib/validation'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,7 +26,13 @@ import {
 } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useFieldValidation } from '@/lib/utils'
-import { emailSchema, passwordSchema, usernameSchema } from '@/lib/validation'
+import {
+  emailSchema,
+  getValidationIcon,
+  getValidationMessage,
+  passwordSchema,
+  usernameSchema,
+} from '@/lib/validation'
 import Header from '@/components/Header'
 
 export const Route = createFileRoute('/register')({
@@ -93,7 +98,7 @@ function RegisterPage() {
       return
     }
 
-    const { repeatPassword, ...submissionData } = values
+    const { repeatPassword, ...data } = values
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
@@ -101,11 +106,11 @@ function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(submissionData),
+        body: JSON.stringify(data),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
 
         setFormStatus({
           success: false,
@@ -125,41 +130,6 @@ function RegisterPage() {
       })
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const getValidationIcon = (status: ValidationStatus) => {
-    switch (status) {
-      case 'checking':
-        return (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        )
-      case 'available':
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'taken':
-        return <XCircle className="h-4 w-4 text-red-500" />
-      case 'error':
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />
-      default:
-        return null
-    }
-  }
-
-  const getValidationMessage = (
-    field: 'username' | 'email',
-    status: ValidationStatus,
-  ) => {
-    switch (status) {
-      case 'checking':
-        return `Checking ${field} availability...`
-      case 'available':
-        return `${field === 'username' ? 'Username' : 'Email'} is available`
-      case 'taken':
-        return `This ${field} is already taken`
-      case 'error':
-        return `Could not verify ${field} availability`
-      default:
-        return ''
     }
   }
 
@@ -191,7 +161,7 @@ function RegisterPage() {
             {/* Submit error */}
             {formStatus.error && (
               <Alert className="mb-4 border-red-200 bg-red-50">
-                <XCircle className="h-4 w-4 text-red-600" />
+                <AlertTriangle className="h-4 w-4" />
                 <AlertDescription className="text-red-800">
                   {formStatus.error}
                 </AlertDescription>

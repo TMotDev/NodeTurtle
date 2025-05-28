@@ -1,10 +1,6 @@
-import {
-  Link,
-  createFileRoute,
-  redirect,
-} from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { CheckCircle, Loader2, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import type { FormStatus } from '@/lib/validation'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,7 +17,6 @@ export const Route = createFileRoute('/activate/$token')({
 })
 
 function ActivationPage() {
-
   const { token } = Route.useParams()
   const [isLoading, setIsLoading] = useState(false)
   const [formStatus, setFormStatus] = useState<FormStatus>({
@@ -44,8 +39,7 @@ function ActivationPage() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-
-     try {
+    try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/users/activate/${token}`,
         {
@@ -93,7 +87,6 @@ function ActivationPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-
             <Link className="btn w-full" to="/login">
               Go to Login
             </Link>
@@ -117,7 +110,7 @@ function ActivationPage() {
             {/* Submit error */}
             {formStatus.error && (
               <Alert variant="destructive">
-                <XCircle className="h-4 w-4" />
+                <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>{formStatus.error}</AlertDescription>
               </Alert>
             )}

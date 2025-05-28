@@ -1,7 +1,7 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
-import { CheckCircle, Loader2, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import type { FormStatus } from '@/lib/validation'
@@ -111,7 +111,6 @@ function PasswordResetPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-
             <Link className="btn w-full" to="/login">
               Go to Login
             </Link>
@@ -136,7 +135,7 @@ function PasswordResetPage() {
               {/* Submit error */}
               {formStatus.error && (
                 <Alert variant="destructive">
-                  <XCircle className="h-4 w-4" />
+                  <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>{formStatus.error}</AlertDescription>
                 </Alert>
               )}

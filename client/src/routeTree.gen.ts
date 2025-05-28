@@ -15,6 +15,7 @@ import { Route as RegisterImport } from './routes/register'
 import { Route as LoginImport } from './routes/login'
 import { Route as IndexImport } from './routes/index'
 import { Route as ResetTokenImport } from './routes/reset/$token'
+import { Route as DeactivateTokenImport } from './routes/deactivate/$token'
 import { Route as ActivateTokenImport } from './routes/activate/$token'
 
 // Create/Update Routes
@@ -40,6 +41,12 @@ const IndexRoute = IndexImport.update({
 const ResetTokenRoute = ResetTokenImport.update({
   id: '/reset/$token',
   path: '/reset/$token',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DeactivateTokenRoute = DeactivateTokenImport.update({
+  id: '/deactivate/$token',
+  path: '/deactivate/$token',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -81,6 +88,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivateTokenImport
       parentRoute: typeof rootRoute
     }
+    '/deactivate/$token': {
+      id: '/deactivate/$token'
+      path: '/deactivate/$token'
+      fullPath: '/deactivate/$token'
+      preLoaderRoute: typeof DeactivateTokenImport
+      parentRoute: typeof rootRoute
+    }
     '/reset/$token': {
       id: '/reset/$token'
       path: '/reset/$token'
@@ -98,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
+  '/deactivate/$token': typeof DeactivateTokenRoute
   '/reset/$token': typeof ResetTokenRoute
 }
 
@@ -106,6 +121,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
+  '/deactivate/$token': typeof DeactivateTokenRoute
   '/reset/$token': typeof ResetTokenRoute
 }
 
@@ -115,20 +131,34 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
+  '/deactivate/$token': typeof DeactivateTokenRoute
   '/reset/$token': typeof ResetTokenRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/activate/$token' | '/reset/$token'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/activate/$token'
+    | '/deactivate/$token'
+    | '/reset/$token'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/activate/$token' | '/reset/$token'
+  to:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/activate/$token'
+    | '/deactivate/$token'
+    | '/reset/$token'
   id:
     | '__root__'
     | '/'
     | '/login'
     | '/register'
     | '/activate/$token'
+    | '/deactivate/$token'
     | '/reset/$token'
   fileRoutesById: FileRoutesById
 }
@@ -138,6 +168,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ActivateTokenRoute: typeof ActivateTokenRoute
+  DeactivateTokenRoute: typeof DeactivateTokenRoute
   ResetTokenRoute: typeof ResetTokenRoute
 }
 
@@ -146,6 +177,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ActivateTokenRoute: ActivateTokenRoute,
+  DeactivateTokenRoute: DeactivateTokenRoute,
   ResetTokenRoute: ResetTokenRoute,
 }
 
@@ -163,6 +195,7 @@ export const routeTree = rootRoute
         "/login",
         "/register",
         "/activate/$token",
+        "/deactivate/$token",
         "/reset/$token"
       ]
     },
@@ -177,6 +210,9 @@ export const routeTree = rootRoute
     },
     "/activate/$token": {
       "filePath": "activate/$token.tsx"
+    },
+    "/deactivate/$token": {
+      "filePath": "deactivate/$token.tsx"
     },
     "/reset/$token": {
       "filePath": "reset/$token.tsx"

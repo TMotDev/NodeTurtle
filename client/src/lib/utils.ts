@@ -1,14 +1,19 @@
-import {  clsx } from 'clsx'
+import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { useCallback, useState } from 'react';
-import type {ClassValue} from 'clsx';
-import type z from 'zod';
+import { useCallback, useState } from 'react'
+import type { ClassValue } from 'clsx'
+import type z from 'zod'
 
 export function cn(...inputs: Array<ClassValue>) {
   return twMerge(clsx(inputs))
 }
 
-export type ValidationStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error'
+export type ValidationStatus =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'taken'
+  | 'error'
 
 export interface ValidationState {
   username: ValidationStatus
@@ -19,52 +24,59 @@ export interface ValidationState {
 export function useFieldValidation() {
   const [validationState, setValidationState] = useState<ValidationState>({
     username: 'idle',
-    email: 'idle'
+    email: 'idle',
   })
 
   const validateField = useCallback(
-    debounce(async (field: 'username' | 'email', value: string, schema?: z.ZodSchema) => {
-      if (!value || value.length < 3) {
-        setValidationState(prev => ({ ...prev, [field]: 'idle' }))
-        return
-      }
-
-      // validates against a schema first
-      if (schema) {
-        try {
-          schema.parse(value)
-        } catch (error) {
-          setValidationState(prev => ({ ...prev, [field]: 'idle' }))
+    debounce(
+      async (
+        field: 'username' | 'email',
+        value: string,
+        schema?: z.ZodSchema,
+      ) => {
+        if (!value || value.length < 3) {
+          setValidationState((prev) => ({ ...prev, [field]: 'idle' }))
           return
         }
-      }
 
-      setValidationState(prev => ({ ...prev, [field]: 'checking' }))
+        // validates against a schema first
+        if (schema) {
+          try {
+            schema.parse(value)
+          } catch (error) {
+            setValidationState((prev) => ({ ...prev, [field]: 'idle' }))
+            return
+          }
+        }
 
-      const result = await validateUserField(field, value)
+        setValidationState((prev) => ({ ...prev, [field]: 'checking' }))
 
-      if (result.error) {
-        setValidationState(prev => ({ ...prev, [field]: 'error' }))
-      } else {
-        setValidationState(prev => ({
-          ...prev,
-          [field]: result.exists ? 'taken' : 'available'
-        }))
-      }
-    }, 500),
-    []
+        const result = await validateUserField(field, value)
+
+        if (result.error) {
+          setValidationState((prev) => ({ ...prev, [field]: 'error' }))
+        } else {
+          setValidationState((prev) => ({
+            ...prev,
+            [field]: result.exists ? 'taken' : 'available',
+          }))
+        }
+      },
+      500,
+    ),
+    [],
   )
 
   return {
     validationState,
     validateField,
-    setValidationState
+    setValidationState,
   }
 }
 
 function debounce<T extends (...args: Array<any>) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: number | null = null
   return (...args: Parameters<T>) => {
@@ -83,9 +95,10 @@ export async function validateUserField(
   value: string,
 ): Promise<{ exists: boolean; error?: string }> {
   try {
-    const endpoint = field === 'username'
-      ? `/users/username/${encodeURIComponent(value)}`
-      : `/users/email/${encodeURIComponent(value)}`
+    const endpoint =
+      field === 'username'
+        ? `/users/username/${encodeURIComponent(value)}`
+        : `/users/email/${encodeURIComponent(value)}`
 
     const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`)
 
@@ -99,4 +112,3 @@ export async function validateUserField(
     return { exists: false, error: 'Network error during validation' }
   }
 }
-
