@@ -55,10 +55,12 @@ func (u User) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		LastLogin *string `json:"last_login,omitempty"`
 		Role      string  `json:"role"`
+		Ban       *Ban    `json:"ban,omitempty"`
 		Alias
 	}{
 		LastLogin: lastLogin,
 		Role:      u.Role.Name,
+		Ban:       u.Ban,
 		Alias:     (Alias)(u),
 	})
 }
