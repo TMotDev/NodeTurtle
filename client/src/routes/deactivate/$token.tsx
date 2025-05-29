@@ -153,11 +153,10 @@ function DeactivationPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleFormSubmit} className="space-y-4">
-            {/* Submit error */}
             {formStatus.error && (
               <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>{formStatus.error}</AlertDescription>
+                <AlertTriangle className="h-4 w-4 stroke-destructive" />
+                <AlertDescription className="text-destructive">{formStatus.error}</AlertDescription>
               </Alert>
             )}
 
@@ -199,7 +198,7 @@ function DeactivationPage() {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-red-500" />
+                    <AlertTriangle className="h-5 w-5 stroke-destructive" />
                     Are you absolutely sure?
                   </AlertDialogTitle>
                   <AlertDialogDescription>
@@ -229,14 +228,6 @@ function DeactivationPage() {
             </AlertDialog>
           </form>
 
-          {/* <div className="mt-6 text-center">
-            <Link
-              to="/support"
-              className="text-sm text-blue-600 hover:text-blue-500 underline"
-            >
-              Need help? Contact Support
-            </Link>
-          </div> */}
         </CardContent>
       </Card>
     </div>

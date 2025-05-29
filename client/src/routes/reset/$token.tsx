@@ -132,11 +132,10 @@ function PasswordResetPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Submit error */}
               {formStatus.error && (
                 <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{formStatus.error}</AlertDescription>
+                  <AlertTriangle className="h-4 w-4 stroke-destructive" />
+                  <AlertDescription className="text-destructive">{formStatus.error}</AlertDescription>
                 </Alert>
               )}
 

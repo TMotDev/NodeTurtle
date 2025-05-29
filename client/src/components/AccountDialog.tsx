@@ -178,14 +178,6 @@ export default function AccountDialog() {
           <ResetPasswordForm />
         </DialogContent>
       </Dialog>
-      {/* <Button
-        type="button"
-        variant="link"
-        className="w-full p-0 h-auto text-blue-600 hover:text-blue-800"
-        onClick={onForgotPasswordClick}
-      >
-        Forgot your current password?
-      </Button> */}
 
       <DeactivateAccountForm
         isOpen={isDeactivateAccountOpen}

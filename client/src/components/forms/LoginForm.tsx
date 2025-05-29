@@ -97,11 +97,10 @@ export default function LoginForm() {
         <CardTitle className="text-3xl font-bold">Sign in</CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Submit error */}
         {formStatus.error && (
           <Alert className="mb-4 border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="text-red-800">
+            <AlertTriangle className="h-4 w-4 stroke-destructive" />
+            <AlertDescription className="text-destructive">
               {formStatus.error}
             </AlertDescription>
           </Alert>

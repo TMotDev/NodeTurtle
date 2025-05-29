@@ -140,7 +140,6 @@ export default function RegisterForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Submit success */}
         {formStatus.success && (
           <Alert className="mb-4 border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -151,11 +150,10 @@ export default function RegisterForm() {
           </Alert>
         )}
 
-        {/* Submit error */}
         {formStatus.error && (
           <Alert className="mb-4 border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="text-red-800">
+            <AlertTriangle className="h-4 w-4 stroke-destructive" />
+            <AlertDescription className="text-destructive">
               {formStatus.error}
             </AlertDescription>
           </Alert>
