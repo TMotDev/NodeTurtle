@@ -9,6 +9,7 @@ import ResetPasswordForm from './forms/ResetPasswordForm'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -127,25 +128,56 @@ export default function AccountDialog() {
         </DialogContent>
       </Dialog>
 
-      {/* Form Components */}
-      <ChangeNameForm
-        isOpen={isChangeNameOpen}
-        onOpenChange={setIsChangeNameOpen}
-      />
+      <Dialog open={isChangeNameOpen} onOpenChange={setIsChangeNameOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Username</DialogTitle>
+            <DialogDescription>
+              Enter your new username and confirm with your password.
+            </DialogDescription>
+          </DialogHeader>
+          <ChangeNameForm />
+        </DialogContent>
+      </Dialog>
 
-      <ChangeEmailForm
-        isOpen={isChangeEmailOpen}
-        onOpenChange={setIsChangeEmailOpen}
-      />
+      <Dialog open={isChangeEmailOpen} onOpenChange={setIsChangeEmailOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Email</DialogTitle>
+            <DialogDescription>
+              Enter your new email and confirm with your password.
+            </DialogDescription>
+          </DialogHeader>
+          <ChangeEmailForm />
+        </DialogContent>
+      </Dialog>
 
-      <ChangePasswordForm
-        isOpen={isChangePasswordOpen}
+      <Dialog
+        open={isChangePasswordOpen}
         onOpenChange={setIsChangePasswordOpen}
-      />
-      <ResetPasswordForm
-        isOpen={isResetPasswordOpen}
-        onOpenChange={setIsResetPasswordOpen}
-      />
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Enter your current and new password.
+            </DialogDescription>
+          </DialogHeader>
+          <ChangePasswordForm />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isResetPasswordOpen} onOpenChange={setIsResetPasswordOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email to receive a password reset link.
+            </DialogDescription>
+          </DialogHeader>
+          <ResetPasswordForm />
+        </DialogContent>
+      </Dialog>
       {/* <Button
         type="button"
         variant="link"

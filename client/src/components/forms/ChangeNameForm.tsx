@@ -11,20 +11,12 @@ import {
   FormLabel,
   FormMessage,
 } from '../ui/form'
-import type { Dispatch, SetStateAction } from 'react'
 import type { FormStatus } from '@/lib/validation'
 import {
   getValidationIcon,
   getValidationMessage,
   usernameSchema,
 } from '@/lib/validation'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -35,13 +27,7 @@ const changeUsernameSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 })
 
-export default function ChangeUsernameForm({
-  isOpen,
-  onOpenChange,
-}: {
-  isOpen: boolean
-  onOpenChange: Dispatch<SetStateAction<boolean>>
-}) {
+export default function ChangeUsernameForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
@@ -66,14 +52,6 @@ export default function ChangeUsernameForm({
       validateField('username', watchedUsername, usernameSchema)
     }
   }, [watchedUsername, validateField])
-
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset()
-      setFormStatus({ success: false, error: null })
-      setValidationState({ username: 'idle', email: 'idle' })
-    }
-  }, [isOpen])
 
   async function onSubmit(values: z.infer<typeof changeUsernameSchema>) {
     setIsLoading(true)
@@ -117,110 +95,91 @@ export default function ChangeUsernameForm({
     }
   }
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      form.reset()
-    }
-    onOpenChange(open)
-  }
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Change Username</DialogTitle>
-          <DialogDescription>
-            Enter your new username and confirm with your password.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {formStatus.success ? (
+        <Alert variant="success">
+          <Check className="h-4 w-4" />
+          <AlertDescription>Username change successful</AlertDescription>
+        </Alert>
+      ) : (
+        <div className="space-y-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Username</FormLabel>
 
-        {formStatus.success ? (
-          <Alert variant="success">
-            <Check className="h-4 w-4" />
-            <AlertDescription>Username change successful</AlertDescription>
-          </Alert>
-        ) : (
-          <div className="space-y-4">
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>New Username</FormLabel>
-
-                      <FormControl>
-                        <div className="relative">
-                          <Input {...field} />
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            {getValidationIcon(validationState.username)}
-                          </div>
+                    <FormControl>
+                      <div className="relative">
+                        <Input {...field} />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {getValidationIcon(validationState.username)}
                         </div>
-                      </FormControl>
-                      <FormMessage />
-                      {validationState.username !== 'idle' && (
-                        <p
-                          className={`text-xs mt-1 ${
-                            validationState.username === 'available'
-                              ? 'text-green-600'
-                              : validationState.username === 'taken'
-                                ? 'text-red-600'
-                                : 'text-muted-foreground'
-                          }`}
-                        >
-                          {getValidationMessage(
-                            'username',
-                            validationState.username,
-                          )}
-                        </p>
-                      )}
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="••••••••"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {formStatus.error && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>{formStatus.error}</AlertDescription>
-                  </Alert>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                    {validationState.username !== 'idle' && (
+                      <p
+                        className={`text-xs mt-1 ${
+                          validationState.username === 'available'
+                            ? 'text-green-600'
+                            : validationState.username === 'taken'
+                              ? 'text-red-600'
+                              : 'text-muted-foreground'
+                        }`}
+                      >
+                        {getValidationMessage(
+                          'username',
+                          validationState.username,
+                        )}
+                      </p>
+                    )}
+                  </FormItem>
                 )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="animate-spin" />
-                      Changing...
-                    </>
-                  ) : (
-                    'Change Username'
-                  )}
-                </Button>
-              </form>
-            </Form>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+              {formStatus.error && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{formStatus.error}</AlertDescription>
+                </Alert>
+              )}
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Changing...
+                  </>
+                ) : (
+                  'Change Username'
+                )}
+              </Button>
+            </form>
+          </Form>
+        </div>
+      )}
+    </>
   )
 }

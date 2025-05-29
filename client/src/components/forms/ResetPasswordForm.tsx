@@ -11,15 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../ui/form'
-import type { Dispatch, SetStateAction } from 'react'
 import type { FormStatus } from '@/lib/validation'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -28,13 +20,7 @@ const passwordResetSchema = z.object({
   email: z.string().email('Please enter a valid email'),
 })
 
-export default function ResetPasswordForm({
-  isOpen,
-  onOpenChange,
-}: {
-  isOpen: boolean
-  onOpenChange: Dispatch<SetStateAction<boolean>>
-}) {
+export default function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
@@ -86,78 +72,58 @@ export default function ResetPasswordForm({
     }
   }
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      form.reset()
-      setFormStatus({ success: false, error: null })
-    }
-    onOpenChange(open)
-  }
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Reset Password</DialogTitle>
-          <DialogDescription>
-            Enter your email to receive a password reset link.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {formStatus.success ? (
+        <Alert variant="success">
+          <Check className="h-4 w-4" />
+          <AlertDescription>
+            Password reset email sent successfully! Check your inbox.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <>
+          {formStatus.error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{formStatus.error}</AlertDescription>
+            </Alert>
+          )}
 
-        {formStatus.success ? (
-          <Alert variant="success">
-            <Check className="h-4 w-4" />
-            <AlertDescription>
-              Password reset email sent successfully! Check your inbox.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <>
-            {formStatus.error && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>{formStatus.error}</AlertDescription>
-              </Alert>
-            )}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter your email"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="Enter your email"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    'Send Reset Link'
-                  )}
-                </Button>
-              </form>
-            </Form>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Reset Link'
+                )}
+              </Button>
+            </form>
+          </Form>
+        </>
+      )}
+    </>
   )
 }
