@@ -592,10 +592,6 @@ func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext stri
 		}
 	}
 
-	if user.Ban.IsValid() {
-		return nil, fmt.Errorf("%w (reason: %v)", services.ErrAccountSuspended, user.Ban.Reason)
-	}
-
 	return &user, nil
 }
 

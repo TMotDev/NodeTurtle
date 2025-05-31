@@ -204,6 +204,10 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 		}
 	}
 
+	if user.Ban.IsValid() {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
+	}
+
 	if !user.IsActivated {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is not activated")
 	}

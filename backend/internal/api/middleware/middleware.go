@@ -15,19 +15,28 @@ import (
 func JWT(authService auth.IAuthService, userService users.IUserService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			// Get token from Authorization header
-			authHeader := c.Request().Header.Get("Authorization")
-			if authHeader == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Missing authorization header")
+			var tokenString string
+
+			cookie, err := c.Cookie("access_token")
+			if err == nil && cookie.Value != "" {
+				tokenString = cookie.Value
+			} else {
+				// Fallback to the Authorization header
+				authHeader := c.Request().Header.Get("Authorization")
+				if authHeader == "" {
+					return echo.NewHTTPError(http.StatusUnauthorized, "Missing authorization token")
+				}
+
+				parts := strings.Split(authHeader, " ")
+				if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+					return echo.NewHTTPError(http.StatusUnauthorized, "Invalid authorization format")
+				}
+				tokenString = parts[1]
 			}
 
-			// Bearer token format
-			parts := strings.Split(authHeader, " ")
-			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid authorization format")
+			if tokenString == "" {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Missing authorization token")
 			}
-
-			tokenString := parts[1]
 
 			claims, err := authService.VerifyToken(tokenString)
 			if err != nil {

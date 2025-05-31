@@ -268,8 +268,10 @@ func TestRefreshToken(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
-	userID := uuid.New()
-	validUser := &data.User{ID: userID, Email: "test@test.test", Username: "testuser", IsActivated: true}
+	validUser := &data.User{ID: uuid.New(), Email: "test@test.test", Username: "testuser", IsActivated: true}
+	bannedUser := &data.User{ID: uuid.New(), Email: "test2@test.test", Username: "testuser2", IsActivated: true, Ban: &data.Ban{
+		ExpiresAt: time.Now().Add(time.Hour),
+	}}
 	refreshToken := "valid-refresh-token"
 	newAccessToken := "new-access-token"
 	newRefreshToken := &data.Token{Plaintext: "new-refresh-token", Scope: data.ScopeRefresh}
@@ -277,10 +279,10 @@ func TestRefreshToken(t *testing.T) {
 	mockUserService.On("GetForToken", data.ScopeRefresh, refreshToken).Return(validUser, nil)
 	mockUserService.On("GetForToken", data.ScopeRefresh, "wrongtoken").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", data.ScopeRefresh, "internalerror").Return(nil, services.ErrInternal)
-	mockUserService.On("GetForToken", data.ScopeRefresh, "banned").Return(nil, services.ErrAccountSuspended)
+	mockUserService.On("GetForToken", data.ScopeRefresh, "banned").Return(bannedUser, nil)
 	mockAuthService.On("CreateAccessToken", *validUser).Return(newAccessToken, nil)
-	mockTokenService.On("New", userID, mock.Anything, data.ScopeRefresh).Return(newRefreshToken, nil)
-	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, userID).Return(nil)
+	mockTokenService.On("New", validUser.ID, mock.Anything, data.ScopeRefresh).Return(newRefreshToken, nil)
+	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, validUser.ID).Return(nil)
 
 	handler := NewAuthHandler(&mockAuthService, &mockUserService, &mockTokenService, &mockMailerService)
 
@@ -291,28 +293,28 @@ func TestRefreshToken(t *testing.T) {
 		wantError bool
 	}{
 		"Success": {
-			body:      `{"refreshToken":"valid-refresh-token"}`,
+			body:      `{"refresh_token":"valid-refresh-token"}`,
 			wantCode:  http.StatusOK,
 			wantBody:  `"token":"new-access-token"`,
 			wantError: false,
 		},
 		"Invalid refresh token": {
-			body:      `{"refreshToken":"wrongtoken"}`,
+			body:      `{"refresh_token":"wrongtoken"}`,
 			wantCode:  http.StatusNotFound,
 			wantError: true,
 		},
 		"Malformed JSON": {
-			body:      `{"refreshToken":`,
+			body:      `{"refresh_token":`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		"Internal error on GetForToken": {
-			body:      `{"refreshToken":"internalerror"}`,
+			body:      `{"refresh_token":"internalerror"}`,
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
 		"Token owner is suspended": {
-			body:      `{"refreshToken":"banned"}`,
+			body:      `{"refresh_token":"banned"}`,
 			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},

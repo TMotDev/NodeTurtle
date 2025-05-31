@@ -99,7 +99,7 @@ func TestJWT_MissingAuthHeader(t *testing.T) {
 	e := echo.New()
 	mockAuth, mockUser := createMockServices()
 
-	testJWTFailure(t, e, mockAuth, mockUser, "", http.StatusUnauthorized, "Missing authorization header")
+	testJWTFailure(t, e, mockAuth, mockUser, "", http.StatusUnauthorized, "Missing authorization token")
 }
 
 func TestJWT_InvalidAuthFormat(t *testing.T) {

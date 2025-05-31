@@ -9,9 +9,9 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   return (
-    <div className="h-screen w-screen">
+    <div className="h-screen w-screen bg-background">
       <Header />
-        <div className="flex justify-center h-full halftone items-center p-4">
+        <div className="flex justify-center h-full items-center p-4">
           <LoginForm />
         </div>
     </div>

@@ -61,6 +61,7 @@ export default function LoginForm() {
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: "include",
           body: JSON.stringify(values),
         },
       )
@@ -94,6 +95,7 @@ export default function LoginForm() {
   return (
     <Card className="w-full max-w-md bg-background border-none shadow-none">
       <CardHeader className="text-center">
+
         <CardTitle className="text-3xl font-bold">Sign in</CardTitle>
       </CardHeader>
       <CardContent>

@@ -68,6 +68,7 @@ export default function ChangeUsernameForm() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: "include",
         body: JSON.stringify(values),
       })
 

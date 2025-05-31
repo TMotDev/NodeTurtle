@@ -45,8 +45,7 @@ func customFunc(fl validator.FieldLevel) bool {
 func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	e := echo.New()
 
-	// TODO: have a environment flag?
-	e.Debug = true
+	e.Debug = cfg.Env == "DEV"
 
 	// validator setup
 	v := validator.New()
@@ -70,7 +69,10 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 		Format: "ip:${remote_ip} method:${method}, uri:${uri}, status:${status}, error:${error}\n",
 	}))
 	e.Use(middleware.Recover())
-	e.Use(middleware.CORS())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:3000"}, // TODO: alloworigins env variable?
+		AllowCredentials: true,
+	}))
 
 	setupRoutes(e, &authHandler, &userHandler, &tokenHandler, &authService, &userService)
 

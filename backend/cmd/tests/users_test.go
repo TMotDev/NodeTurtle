@@ -509,11 +509,6 @@ func TestGetForToken(t *testing.T) {
 			tokenPlaintext: "asdf",
 			err:            services.ErrRecordNotFound,
 		},
-		"Account suspended": {
-			tokenScope:     data.ScopePasswordReset,
-			tokenPlaintext: td.Tokens["tom_account_suspended"].Plaintext,
-			err:            services.ErrAccountSuspended,
-		},
 		"Expired token": {
 			tokenScope:     data.ScopePasswordReset,
 			tokenPlaintext: td.Tokens["alice_expired_password_reset"].Plaintext,

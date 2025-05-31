@@ -10,6 +10,7 @@ import (
 )
 
 type Config struct {
+	Env      string
 	Server   ServerConfig
 	Database DatabaseConfig
 	Mail     MailConfig
@@ -56,6 +57,7 @@ func Load(configPath, envFile string) (*Config, error) {
 
 	// Load from environment variables
 	cfg := &Config{
+		Env: GetEnv("ENV", "DEV"), // DEV | PROD
 		Server: ServerConfig{
 			Port:         GetEnvAsInt("SERVER_PORT", 8080),
 			Host:         GetEnv("SERVER_HOST", ""),

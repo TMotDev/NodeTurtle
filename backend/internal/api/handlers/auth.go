@@ -34,6 +34,56 @@ func NewAuthHandler(authService auth.IAuthService, userService users.IUserServic
 	}
 }
 
+// setTokenCookies sets the access and refresh tokens as HTTP-only cookies.
+func setTokenCookies(c echo.Context, accessToken string, refreshToken string) {
+	accessCookie := &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Expires:  time.Now().Add(15 * time.Minute),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
+	}
+	c.SetCookie(accessCookie)
+
+	refreshCookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Expires:  time.Now().Add(7 * 24 * time.Hour),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
+	}
+	c.SetCookie(refreshCookie)
+}
+
+// clearTokenCookies clears the authentication cookies.
+func clearTokenCookies(c echo.Context) {
+	accessCookie := &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
+	}
+	c.SetCookie(accessCookie)
+
+	refreshCookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
+	}
+	c.SetCookie(refreshCookie)
+}
+
 // Register handles the request to create a new user account.
 // It validates registration data, creates the user, and sends an activation email.
 // Returns an error if the registration data is invalid, if a user with the same
@@ -119,6 +169,8 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new refresh token")
 	}
 
+	setTokenCookies(c, token, refreshToken.Plaintext)
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token":        token,
 		"refreshToken": refreshToken.Plaintext,
@@ -134,17 +186,21 @@ func (h *AuthHandler) Login(c echo.Context) error {
 // Returns an error if the refresh token is invalid or expired, or if token creation fails.
 func (h *AuthHandler) RefreshToken(c echo.Context) error {
 	var payload struct {
-		RefreshToken string `json:"refreshToken"`
+		RefreshToken string `json:"refresh_token"`
 	}
-	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+
+	refreshTokenCookie, err := c.Cookie("refresh_token")
+	if err == nil && refreshTokenCookie.Value != "" {
+		payload.RefreshToken = refreshTokenCookie.Value
+	} else {
+		// Fallback to request body
+		if err := c.Bind(&payload); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+		}
 	}
 
 	user, err := h.userService.GetForToken(data.ScopeRefresh, payload.RefreshToken)
 	if err != nil {
-		if errors.Is(err, services.ErrAccountSuspended) {
-			return echo.NewHTTPError(http.StatusForbidden, err)
-		}
 		if errors.Is(err, services.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err)
 		}
@@ -190,6 +246,8 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 		// logging instead of returning to allow user to logout without encountering some erorr
 		c.Logger().Error("Failed to delete refresh tokens on user logout")
 	}
+
+	clearTokenCookies(c)
 
 	return c.NoContent(http.StatusNoContent)
 }
