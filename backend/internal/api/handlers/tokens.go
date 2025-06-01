@@ -56,6 +56,10 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
 	}
 
+	if user.Ban.IsValid() {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
+	}
+
 	if user.IsActivated {
 		return echo.NewHTTPError(http.StatusConflict, "Account is already activated")
 	}
@@ -88,18 +92,17 @@ func (h *TokenHandler) ActivateAccount(c echo.Context) error {
 	}
 
 	user, err := h.userService.GetForToken(data.ScopeUserActivation, token)
-
 	if err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err)
 		}
 
-		if errors.Is(err, services.ErrAccountSuspended) {
-			return echo.NewHTTPError(http.StatusForbidden, err)
-		}
-
 		c.Logger().Errorf("Internal user retrieval error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
+	}
+
+	if user.Ban.IsValid() {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
 	}
 
 	if err := h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)}); err != nil {
@@ -144,6 +147,10 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 		}
 		c.Logger().Errorf("Internal user retrieval error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
+	}
+
+	if user.Ban.IsValid() {
+		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
 	}
 
 	if !user.IsActivated {
@@ -250,6 +257,7 @@ func (h *TokenHandler) RequestDeactivationToken(c echo.Context) error {
 
 	matches, err := contextUser.Password.Matches(payload.Password)
 	if err != nil {
+		c.Logger().Errorf("Internal password matching error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

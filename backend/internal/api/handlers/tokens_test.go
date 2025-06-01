@@ -5,11 +5,11 @@ import (
 	"NodeTurtleAPI/internal/mocks"
 	"NodeTurtleAPI/internal/services"
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
@@ -26,7 +26,7 @@ func TestRequestActivationToken(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
-	validUser := data.User{
+	inactiveUser := data.User{
 		ID:          uuid.New(),
 		Email:       "validuser@test.com",
 		Username:    "validuser",
@@ -38,11 +38,21 @@ func TestRequestActivationToken(t *testing.T) {
 		Username:    "active",
 		IsActivated: true,
 	}
+	bannedUser := data.User{
+		ID:          uuid.New(),
+		Email:       "banned@test.com",
+		Username:    "banned",
+		IsActivated: true,
+		Ban: &data.Ban{
+			ExpiresAt: time.Now().Add(time.Hour),
+		},
+	}
 	newRefreshToken := data.Token{Plaintext: "new-refresh-token", Scope: data.ScopeRefresh}
 
 	handler := NewTokenHandler(&mockUserService, &mockTokenService, &mockMailerService)
 
-	mockUserService.On("GetUserByEmail", validUser.Email).Return(&validUser, nil)
+	mockUserService.On("GetUserByEmail", inactiveUser.Email).Return(&inactiveUser, nil)
+	mockUserService.On("GetUserByEmail", bannedUser.Email).Return(&bannedUser, nil)
 	mockUserService.On("GetUserByEmail", activatedUser.Email).Return(&activatedUser, nil)
 	mockUserService.On("GetUserByEmail", mock.Anything).Return(nil, services.ErrUserNotFound)
 	mockTokenService.On("New", mock.Anything, mock.Anything, mock.Anything).Return(&newRefreshToken, nil)
@@ -66,6 +76,11 @@ func TestRequestActivationToken(t *testing.T) {
 		"User not found": {
 			reqBody:   `{"email":"test@test.test"}`,
 			wantCode:  http.StatusNotFound,
+			wantError: true,
+		},
+		"User banned": {
+			reqBody:   `{"email":"banned@test.com"}`,
+			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
 		"User already activated": {
@@ -113,17 +128,20 @@ func TestActivateAccount(t *testing.T) {
 	mockTokenService := mocks.MockTokenService{}
 	mockMailerService := mocks.MockMailService{}
 
-	userID1 := uuid.New()
-	userID2 := uuid.New()
+	userIDValid := uuid.New()
+	userIDConflict := uuid.New()
 	userIDErr := uuid.New()
 
-	mockUserService.On("GetForToken", mock.Anything, "token").Return(&data.User{ID: userID1, Email: "test@test.test", Username: "testuser"}, nil)
-	mockUserService.On("GetForToken", mock.Anything, "editConflict").Return(&data.User{ID: userID2, Email: "editConflict@test.test", Username: "testuser2"}, nil)
+	mockUserService.On("GetForToken", mock.Anything, "token").Return(&data.User{ID: userIDValid, Email: "test@test.test", Username: "testuser"}, nil)
+	mockUserService.On("GetForToken", mock.Anything, "editConflict").Return(&data.User{ID: userIDConflict, Email: "editConflict@test.test", Username: "testuser2"}, nil)
 	mockUserService.On("GetForToken", mock.Anything, "updateUserFail").Return(&data.User{ID: userIDErr, Email: "update@test.test", Username: "updateErrorUser"}, nil)
+	mockUserService.On("GetForToken", mock.Anything, "banned").Return(&data.User{ID: uuid.New(), Email: "banned@test.test", Username: "bannedUser", Ban: &data.Ban{
+		ExpiresAt: time.Now().Add(time.Hour),
+	}}, nil)
 	mockUserService.On("GetForToken", mock.Anything, "-").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", mock.Anything, "internal error").Return(nil, services.ErrInternal)
 
-	mockUserService.On("UpdateUser", userID2, mock.Anything).Return(services.ErrEditConflict)
+	mockUserService.On("UpdateUser", userIDConflict, mock.Anything).Return(services.ErrEditConflict)
 	mockUserService.On("UpdateUser", mock.Anything, mock.Anything).Return(nil)
 
 	mockTokenService.On("DeleteAllForUser", mock.Anything, userIDErr).Return(services.ErrInternal)
@@ -144,6 +162,11 @@ func TestActivateAccount(t *testing.T) {
 		"Edit conflict": {
 			token:     "editConflict",
 			wantCode:  http.StatusConflict,
+			wantError: true,
+		},
+		"Banned user": {
+			token:     "banned",
+			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
 		"Invalid token": {
@@ -211,6 +234,9 @@ func TestRequestPasswordReset(t *testing.T) {
 	mockUserService.On("GetUserByEmail", "test@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser", IsActivated: true}, nil)
 	mockUserService.On("GetUserByEmail", "resetTokenFail@test.test").Return(&data.User{ID: userIDFail, Email: "resetTokenFail@test.test", Username: "resetTokenFail", IsActivated: true}, nil)
 	mockUserService.On("GetUserByEmail", "notactivated@test.test").Return(&data.User{ID: userID, Email: "test@test.test", Username: "testuser", IsActivated: false}, nil)
+	mockUserService.On("GetUserByEmail", "banned@test.test").Return(&data.User{ID: userID, Email: "banned@test.test", Username: "testuser", IsActivated: false, Ban: &data.Ban{
+		ExpiresAt: time.Now().Add(time.Hour),
+	}}, nil)
 
 	mockTokenService.On("New", userID, mock.Anything, data.ScopePasswordReset).Return(&data.Token{
 		Plaintext: "mocktoken",
@@ -222,37 +248,47 @@ func TestRequestPasswordReset(t *testing.T) {
 	handler := NewTokenHandler(&mockUserService, &mockTokenService, &mockMailerService)
 
 	tests := map[string]struct {
-		email     string
+		body      string
 		wantCode  int
 		wantError bool
 	}{
 		"User not found": {
-			email:     "notfound@test.test",
+			body:      `{"email":"notfound@test.test"}`,
 			wantCode:  http.StatusBadRequest,
 			wantError: true,
 		},
 		"User not activated": {
-			email:     "notactivated@test.test",
+			body:      `{"email":"notactivated@test.test"}`,
+			wantCode:  http.StatusForbidden,
+			wantError: true,
+		},
+		"User is banned": {
+			body:      `{"email":"banned@test.test"}`,
 			wantCode:  http.StatusForbidden,
 			wantError: true,
 		},
 		"Invalid email": {
-			email:     "test",
+			body:      `{"email":"test"}`,
 			wantCode:  http.StatusUnprocessableEntity,
 			wantError: true,
 		},
+		"Invalid body": {
+			body:      `{"email":test"}`,
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
 		"Internal error": {
-			email:     "internal@test.test",
+			body:      `{"email":"internal@test.test"}`,
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
 		"Valid request": {
-			email:     "test@test.test",
+			body:      `{"email":"test@test.test"}`,
 			wantCode:  http.StatusAccepted,
 			wantError: false,
 		},
 		"Failed to create reset token": {
-			email:     "resetTokenFail@test.test",
+			body:      `{"email":"resetTokenFail@test.test"}`,
 			wantCode:  http.StatusInternalServerError,
 			wantError: true,
 		},
@@ -260,10 +296,7 @@ func TestRequestPasswordReset(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			body, _ := json.Marshal(struct{ Email string }{
-				Email: tt.email,
-			})
-			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
@@ -302,6 +335,9 @@ func TestResetPassword(t *testing.T) {
 
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken").Return(validUser, nil)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "validtoken2").Return(&data.User{ID: userIDInternalFail, Email: "fail@test.test", Username: "failuser", IsActivated: true}, nil)
+	mockUserService.On("GetForToken", data.ScopePasswordReset, "bannedtoken").Return(&data.User{ID: uuid.New(), Email: "fail@test.test", Username: "failuser", IsActivated: true, Ban: &data.Ban{
+		ExpiresAt: time.Now().Add(time.Hour),
+	}}, nil)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "badtoken").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "internalerror").Return(nil, services.ErrInternal)
 	mockUserService.On("GetForToken", data.ScopePasswordReset, "inactive").Return(&data.User{ID: userIDValid, Email: "valid@test.test", Username: "validUser", IsActivated: false}, nil)
@@ -341,6 +377,12 @@ func TestResetPassword(t *testing.T) {
 		},
 		"Account not activated": {
 			token:     "inactive",
+			body:      `{"password":"NewPassword123"}`,
+			wantCode:  http.StatusForbidden,
+			wantError: true,
+		},
+		"Account is suspended": {
+			token:     "bannedtoken",
 			body:      `{"password":"NewPassword123"}`,
 			wantCode:  http.StatusForbidden,
 			wantError: true,

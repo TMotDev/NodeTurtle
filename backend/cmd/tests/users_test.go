@@ -174,7 +174,7 @@ func TestGetUserById(t *testing.T) {
 		err    error
 	}{
 		"Successful user fetch": {
-			userId: td.Users[0].ID,
+			userId: td.Users[4].ID,
 			err:    nil,
 		},
 		"User ID not found": {
@@ -208,7 +208,7 @@ func TestGetUserByEmail(t *testing.T) {
 		err   error
 	}{
 		"Successful user fetch": {
-			email: td.Users[0].Email,
+			email: td.Users[4].Email,
 			err:   nil,
 		},
 		"User ID not found": {
@@ -501,7 +501,7 @@ func TestGetForToken(t *testing.T) {
 	}{
 		"Successful user fetch": {
 			tokenScope:     data.ScopePasswordReset,
-			tokenPlaintext: td.Tokens["bob_valid_password_reset"].Plaintext,
+			tokenPlaintext: td.Tokens["tom_account_suspended"].Plaintext,
 			err:            nil,
 		},
 		"Invalid token format": {
