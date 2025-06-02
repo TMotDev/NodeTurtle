@@ -65,6 +65,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	tokenHandler := handlers.NewTokenHandler(&userService, &tokenService, &mailService)
 
 	// setup middleware
+	// TODO: requestloggerwithconfig
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "ip:${remote_ip} method:${method}, uri:${uri}, status:${status}, error:${error}\n",
 	}))

@@ -3,7 +3,7 @@ import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import z from 'zod'
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   Card,
   CardContent,
@@ -26,6 +26,9 @@ import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 
 import type { FormStatus } from '@/lib/validation'
+import type {role, user} from '@/lib/authStore';
+import useAuthStore from '@/lib/authStore';
+
 
 const loginSchema = z.object({
   email: z.string().min(1),
@@ -33,6 +36,11 @@ const loginSchema = z.object({
 })
 
 export default function LoginForm() {
+
+  const navigate = useNavigate()
+
+  const login = useAuthStore((state) => state.login)
+
   const [isLoading, setIsLoading] = useState(false)
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
@@ -78,9 +86,16 @@ export default function LoginForm() {
       } else {
         const data = await response.json()
 
-        // TODO: store tokens
+        const userData: user = {
+          username: data.user.username,
+          email: data.user.email,
+          id: data.user.id,
+          role: data.user.role as role,
+        }
 
+        login(userData);
         setFormStatus({ success: true, error: null })
+        navigate({ to: '/' });
       }
     } catch (error) {
       setFormStatus({

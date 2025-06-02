@@ -175,7 +175,9 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		"token":        token,
 		"refreshToken": refreshToken.Plaintext,
 		"user": map[string]interface{}{
+			"id":       user.ID,
 			"username": user.Username,
+			"email":    user.Email,
 			"role":     user.Role.Name,
 		},
 	})
