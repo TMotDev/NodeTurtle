@@ -9,11 +9,11 @@ export const Route = createFileRoute('/register')({
 
 function RegisterPage() {
   return (
-    <div className="h-screen w-screen">
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <div className="flex justify-center h-full halftone items-center p-4">
+      <main className="flex-grow flex justify-center items-center p-4">
         <RegisterForm />
-      </div>
+      </main>
     </div>
   )
 }

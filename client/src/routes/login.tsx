@@ -9,11 +9,11 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   return (
-    <div className="h-screen w-screen bg-background">
+     <div className="flex flex-col min-h-screen">
       <Header />
-        <div className="flex justify-center h-full items-center p-4">
-          <LoginForm />
-        </div>
+      <main className="flex-grow flex justify-center items-center p-4">
+        <LoginForm />
+      </main>
     </div>
   )
 }

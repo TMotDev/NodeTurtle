@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import AccountDialog from '@/components/AccountDialog'
 import Header from '@/components/Header'
+import AccountSettings from '@/components/AccountSettings'
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -8,9 +8,11 @@ export const Route = createFileRoute('/')({
 
 function App() {
   return (
-    <div className="text-center">
+     <div className="flex flex-col min-h-screen">
       <Header />
-      <AccountDialog />
+      <main className="flex-grow flex justify-center items-center p-4">
+
+      </main>
     </div>
   )
 }
