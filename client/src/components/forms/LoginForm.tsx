@@ -26,9 +26,8 @@ import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 
 import type { FormStatus } from '@/lib/validation'
-import type {role, user} from '@/lib/authStore';
-import useAuthStore from '@/lib/authStore';
-
+import type { role, user } from '@/lib/authStore'
+import useAuthStore from '@/lib/authStore'
 
 const loginSchema = z.object({
   email: z.string().min(1),
@@ -36,9 +35,7 @@ const loginSchema = z.object({
 })
 
 export default function LoginForm() {
-
   const navigate = useNavigate()
-
   const login = useAuthStore((state) => state.login)
 
   const [isLoading, setIsLoading] = useState(false)
@@ -69,7 +66,7 @@ export default function LoginForm() {
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: "include",
+          credentials: 'include',
           body: JSON.stringify(values),
         },
       )
@@ -93,9 +90,9 @@ export default function LoginForm() {
           role: data.user.role as role,
         }
 
-        login(userData);
+        login(userData)
         setFormStatus({ success: true, error: null })
-        navigate({ to: '/' });
+        navigate({ to: '/' })
       }
     } catch (error) {
       setFormStatus({
@@ -110,7 +107,6 @@ export default function LoginForm() {
   return (
     <Card className="w-full max-w-md bg-background border-none shadow-none">
       <CardHeader className="text-center">
-
         <CardTitle className="text-3xl font-bold">Sign in</CardTitle>
       </CardHeader>
       <CardContent>

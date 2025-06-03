@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => set({ user: null }),
 
   checkAuthStatus: async () => {
-        set({ isLoading: true });
+    set({ isLoading: true })
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/users/me`, {

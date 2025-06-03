@@ -18,93 +18,91 @@ import { Separator } from '@/components/ui/separator'
 import useAuthStore from '@/lib/authStore'
 
 export default function AccountSettings() {
-  // Form dialog states
-  const [isChangeNameOpen, setIsChangeNameOpen] = useState(false)
-  const [isChangeEmailOpen, setIsChangeEmailOpen] = useState(false)
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
-  const [isDeactivateAccountOpen, setIsDeactivateAccountOpen] = useState(false)
-  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false)
+  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false)
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false)
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
 
-    const user = useAuthStore((state) => state.user)
+  const user = useAuthStore((state) => state.user)
 
   return (
     <>
       <div className="space-y-6">
         {/* Username Section */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-lg font-medium">
+        <section className="space-y-2">
+          <header className="flex items-center gap-2 text-lg font-medium">
             Username
-          </div>
+          </header>
           <div className="text-sm text-muted-foreground">
-            {user ? user.username : <Loader/> }
+            {user ? user.username : <Loader />}
           </div>
           <Button
             variant="link"
             className="p-0 h-auto text-blue-600 hover:text-blue-800"
-            onClick={() => setIsChangeNameOpen(true)}
+            onClick={() => setIsNameDialogOpen(true)}
           >
             Change name
           </Button>
-        </div>
+        </section>
 
         {/* Email Section */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-lg font-medium">
+        <section className="space-y-2">
+          <header className="flex items-center gap-2 text-lg font-medium">
             Email
-          </div>
+          </header>
           <div className="text-sm text-muted-foreground">
-            {user ? user.email : <Loader/>}
+            {user ? user.email : <Loader />}
           </div>
           <Button
             variant="link"
             className="p-0 h-auto text-blue-600 hover:text-blue-800"
-            onClick={() => setIsChangeEmailOpen(true)}
+            onClick={() => setIsEmailDialogOpen(true)}
           >
             Change email
           </Button>
-        </div>
+        </section>
 
         <Separator />
 
         {/* Security Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
+        <section className="space-y-4">
+          <header className="flex items-center gap-2 text-lg font-medium">
             Security
-          </div>
+          </header>
           <div className="space-y-2 flex flex-col items-start">
             <Button
               variant="link"
               className="p-0 h-auto text-blue-600 hover:text-blue-800"
-              onClick={() => setIsChangePasswordOpen(true)}
+              onClick={() => setIsPasswordDialogOpen(true)}
             >
               Change password
             </Button>
             <Button
               variant="link"
               className="p-0 h-auto text-blue-600 hover:text-blue-800"
-              onClick={() => setIsResetPasswordOpen(true)}
+              onClick={() => setIsResetDialogOpen(true)}
             >
               Forgot password?
             </Button>
           </div>
-        </div>
+        </section>
 
         <Separator />
 
         {/* Deactivate Account Section */}
-        <div className="space-y-2">
+        <section className="space-y-2">
           <Button
             variant="link"
             className="p-0 h-auto text-red-600 hover:text-red-800"
-            onClick={() => setIsDeactivateAccountOpen(true)}
+            onClick={() => setIsDeactivateDialogOpen(true)}
           >
             Deactivate account
           </Button>
-        </div>
+        </section>
       </div>
 
-      {/* Form Dialogs */}
-      <Dialog open={isChangeNameOpen} onOpenChange={setIsChangeNameOpen}>
+      <Dialog open={isNameDialogOpen} onOpenChange={setIsNameDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Change Username</DialogTitle>
@@ -116,7 +114,7 @@ export default function AccountSettings() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isChangeEmailOpen} onOpenChange={setIsChangeEmailOpen}>
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Change Email</DialogTitle>
@@ -129,8 +127,8 @@ export default function AccountSettings() {
       </Dialog>
 
       <Dialog
-        open={isChangePasswordOpen}
-        onOpenChange={setIsChangePasswordOpen}
+        open={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -143,7 +141,7 @@ export default function AccountSettings() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isResetPasswordOpen} onOpenChange={setIsResetPasswordOpen}>
+      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
@@ -156,8 +154,8 @@ export default function AccountSettings() {
       </Dialog>
 
       <DeactivateAccountForm
-        isOpen={isDeactivateAccountOpen}
-        onOpenChange={setIsDeactivateAccountOpen}
+        isOpen={isDeactivateDialogOpen}
+        onOpenChange={setIsDeactivateDialogOpen}
       />
     </>
   )

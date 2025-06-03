@@ -68,7 +68,7 @@ export default function ChangeUsernameForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: "include",
+        credentials: 'include',
         body: JSON.stringify(values),
       })
 
@@ -113,7 +113,6 @@ export default function ChangeUsernameForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>New Username</FormLabel>
-
                     <FormControl>
                       <div className="relative">
                         <Input {...field} />

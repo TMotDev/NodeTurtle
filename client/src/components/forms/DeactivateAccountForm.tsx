@@ -61,7 +61,7 @@ export default function DeactivateAccountForm({
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: "include",
+          credentials: 'include',
           body: JSON.stringify(values),
         },
       )
@@ -129,7 +129,6 @@ export default function DeactivateAccountForm({
                 deactivation process.
               </AlertDescription>
             </Alert>
-
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -155,10 +154,11 @@ export default function DeactivateAccountForm({
                 {formStatus.error && (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4 stroke-destructive" />
-                    <AlertDescription className="text-destructive">{formStatus.error}</AlertDescription>
+                    <AlertDescription className="text-destructive">
+                      {formStatus.error}
+                    </AlertDescription>
                   </Alert>
                 )}
-
                 <Button
                   variant="destructive"
                   type="submit"

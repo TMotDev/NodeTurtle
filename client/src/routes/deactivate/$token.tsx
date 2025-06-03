@@ -156,7 +156,9 @@ function DeactivationPage() {
             {formStatus.error && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4 stroke-destructive" />
-                <AlertDescription className="text-destructive">{formStatus.error}</AlertDescription>
+                <AlertDescription className="text-destructive">
+                  {formStatus.error}
+                </AlertDescription>
               </Alert>
             )}
 
@@ -227,7 +229,6 @@ function DeactivationPage() {
               </AlertDialogContent>
             </AlertDialog>
           </form>
-
         </CardContent>
       </Card>
     </div>
