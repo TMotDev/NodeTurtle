@@ -36,7 +36,7 @@ const loginSchema = z.object({
 
 export default function LoginForm() {
   const navigate = useNavigate()
-  const login = useAuthStore((state) => state.login)
+  const setUser = useAuthStore((state) => state.setUser)
 
   const [isLoading, setIsLoading] = useState(false)
   const [formStatus, setFormStatus] = useState<FormStatus>({
@@ -90,7 +90,7 @@ export default function LoginForm() {
           role: data.user.role as role,
         }
 
-        login(userData)
+        setUser(userData)
         setFormStatus({ success: true, error: null })
         navigate({ to: '/' })
       }

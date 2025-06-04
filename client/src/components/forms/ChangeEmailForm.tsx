@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useFieldValidation } from '@/lib/utils'
+import useAuthStore from '@/lib/authStore'
 
 const changeEmailSchema = z.object({
   email: emailSchema,
@@ -28,6 +29,8 @@ const changeEmailSchema = z.object({
 })
 
 export default function ChangeEmailForm() {
+  const updateUser = useAuthStore((state) => state.updateUser)
+
   const [isLoading, setIsLoading] = useState(false)
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
@@ -82,8 +85,10 @@ export default function ChangeEmailForm() {
             'An unexpected error occurred. Please try again.',
         })
       } else {
-        setFormStatus({ success: true, error: null })
+        const data = await response.json()
+        updateUser({email: data.email})
         form.reset()
+        setFormStatus({ success: true, error: null })
         setValidationState({ username: 'idle', email: 'idle' })
       }
     } catch (error) {

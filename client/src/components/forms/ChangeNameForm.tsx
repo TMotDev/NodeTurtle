@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useFieldValidation } from '@/lib/utils'
+import useAuthStore from '@/lib/authStore'
 
 const changeUsernameSchema = z.object({
   username: usernameSchema,
@@ -28,6 +29,8 @@ const changeUsernameSchema = z.object({
 })
 
 export default function ChangeUsernameForm() {
+  const updateUser = useAuthStore((state) => state.updateUser)
+
   const [isLoading, setIsLoading] = useState(false)
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
@@ -82,6 +85,8 @@ export default function ChangeUsernameForm() {
             'An unexpected error occurred. Please try again.',
         })
       } else {
+        const data = await response.json()
+        updateUser({username: data.username})
         setFormStatus({ success: true, error: null })
         form.reset()
         setValidationState({ username: 'idle', email: 'idle' })
