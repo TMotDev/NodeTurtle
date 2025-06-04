@@ -141,8 +141,8 @@ func TestActivateAccount(t *testing.T) {
 	mockUserService.On("GetForToken", mock.Anything, "-").Return(nil, services.ErrRecordNotFound)
 	mockUserService.On("GetForToken", mock.Anything, "internal error").Return(nil, services.ErrInternal)
 
-	mockUserService.On("UpdateUser", userIDConflict, mock.Anything).Return(services.ErrEditConflict)
-	mockUserService.On("UpdateUser", mock.Anything, mock.Anything).Return(nil)
+	mockUserService.On("UpdateUser", userIDConflict, mock.Anything).Return(nil, services.ErrEditConflict)
+	mockUserService.On("UpdateUser", mock.Anything, mock.Anything).Return(&data.User{ID: userIDValid, Email: "test@test.test", Username: "testuser"}, nil)
 
 	mockTokenService.On("DeleteAllForUser", mock.Anything, userIDErr).Return(services.ErrInternal)
 	mockTokenService.On("DeleteAllForUser", mock.Anything, mock.Anything).Return(nil)

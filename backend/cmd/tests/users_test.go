@@ -443,7 +443,7 @@ func TestUpdateUser(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			err := s.UpdateUser(tt.userID, *tt.updates)
+			_, err := s.UpdateUser(tt.userID, *tt.updates)
 
 			if tt.err != nil {
 				assert.Error(t, err)

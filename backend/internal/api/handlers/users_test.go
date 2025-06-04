@@ -118,7 +118,7 @@ func TestUpdateCurrentUser(t *testing.T) {
 	mockUserService.On("GetUserByEmail", mock.Anything).Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByUsername", validUser2.Username).Return(validUser2, nil)
 	mockUserService.On("GetUserByUsername", mock.Anything).Return(nil, services.ErrUserNotFound)
-	mockUserService.On("UpdateUser", validUser.ID, mock.Anything).Return(nil)
+	mockUserService.On("UpdateUser", validUser.ID, mock.Anything).Return(validUser, nil)
 
 	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
 
@@ -524,7 +524,7 @@ func TestUpdateUser(t *testing.T) {
 	mockUserService.On("GetUserByEmail", mock.Anything).Return(nil, services.ErrUserNotFound)
 	mockUserService.On("GetUserByUsername", validUser2.Username).Return(validUser2, nil)
 	mockUserService.On("GetUserByUsername", mock.Anything).Return(nil, services.ErrUserNotFound)
-	mockUserService.On("UpdateUser", validUser.ID, mock.Anything).Return(nil)
+	mockUserService.On("UpdateUser", validUser.ID, mock.Anything).Return(validUser, nil)
 
 	tests := map[string]struct {
 		userID    string

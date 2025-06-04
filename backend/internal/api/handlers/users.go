@@ -166,12 +166,17 @@ func (h *UserHandler) UpdateCurrent(c echo.Context) error {
 		updates.Username = payload.Username
 	}
 
-	if err := h.userService.UpdateUser(contextUser.ID, updates); err != nil {
+	user, err := h.userService.UpdateUser(contextUser.ID, updates)
+
+	if err != nil {
 		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"username": user.Username,
+		"email":    user.Email,
+	})
 }
 
 // ChangePassword handles the request to change a user's password.
@@ -324,12 +329,19 @@ func (h *UserHandler) Update(c echo.Context) error {
 		}
 	}
 
-	if err := h.userService.UpdateUser(user.ID, updates); err != nil {
+	user, err = h.userService.UpdateUser(user.ID, updates)
+
+	if err != nil {
 		c.Logger().Errorf("Internal user update error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update user")
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"username":  user.Username,
+		"email":     user.Email,
+		"activated": user.IsActivated,
+		"role":      user.Role,
+	})
 }
 
 // Delete handles the request to remove a user from the system.

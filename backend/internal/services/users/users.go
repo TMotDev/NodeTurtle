@@ -25,7 +25,7 @@ type IUserService interface {
 	GetUserByEmail(email string) (*data.User, error)
 	GetUserByUsername(username string) (*data.User, error)
 	ListUsers(filters data.UserFilter) ([]data.User, int, error)
-	UpdateUser(userID uuid.UUID, updates data.UserUpdate) error
+	UpdateUser(userID uuid.UUID, updates data.UserUpdate) (*data.User, error)
 	DeleteUser(userID uuid.UUID) error
 	GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error)
 	UsernameExists(username string) (bool, error)
@@ -464,8 +464,8 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 
 // UpdateUser modifies a user's fields based on the provided updates map.
 // Valid keys for the updates map are "username", "email", "activated", and "role_id".
-// It returns ErrNoFields if the updates map is empty or ErrUserNotFound if the user doesn't exist.
-func (s UserService) UpdateUser(userID uuid.UUID, updates data.UserUpdate) error {
+// It returns the updated user, ErrNoFields if the updates map is empty, or ErrUserNotFound if the user doesn't exist.
+func (s UserService) UpdateUser(userID uuid.UUID, updates data.UserUpdate) (*data.User, error) {
 	assignments := []string{}
 	args := []interface{}{}
 	argCount := 1
@@ -492,30 +492,41 @@ func (s UserService) UpdateUser(userID uuid.UUID, updates data.UserUpdate) error
 	}
 
 	if len(assignments) == 0 {
-		return services.ErrNoFields
+		return nil, services.ErrNoFields
 	}
 
 	tx, err := s.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	_, err = s.GetUserByID(userID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	query := "UPDATE users SET " + strings.Join(assignments, ", ")
 	query += fmt.Sprintf(" WHERE id = $%d", argCount)
+	query += " RETURNING id, username, email, activated, role_id"
 	args = append(args, userID)
 
-	_, err = tx.Exec(query, args...)
+	var updatedUser data.User
+	err = tx.QueryRow(query, args...).Scan(
+		&updatedUser.ID,
+		&updatedUser.Username,
+		&updatedUser.Email,
+		&updatedUser.IsActivated,
+		&updatedUser.RoleID,
+	)
 	if err != nil {
-		return err
+		if err == sql.ErrNoRows {
+			return nil, services.ErrUserNotFound
+		}
+		return nil, err
 	}
 
-	return tx.Commit()
+	return &updatedUser, tx.Commit()
 }
 
 // DeleteUser removes a user from the database by their ID.

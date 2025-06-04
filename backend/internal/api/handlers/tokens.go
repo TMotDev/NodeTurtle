@@ -105,7 +105,9 @@ func (h *TokenHandler) ActivateAccount(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
 	}
 
-	if err := h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)}); err != nil {
+	_, err = h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)})
+
+	if err != nil {
 		if errors.Is(err, services.ErrEditConflict) {
 			return echo.NewHTTPError(http.StatusConflict, "Edit conflict")
 		}
