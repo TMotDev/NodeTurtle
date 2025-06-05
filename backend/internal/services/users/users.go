@@ -196,18 +196,12 @@ func (s UserService) ChangePassword(userID uuid.UUID, oldPassword, newPassword s
 func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	var user data.User
 	var role data.Role
-
-	var ban struct {
-		expiresAt *time.Time
-		reason    *string
-		bannedAt  *time.Time
-		bannedBy  *uuid.UUID
-	}
+	var ban data.OptionalBan
 
 	query := `
 		SELECT u.id, u.email, u.password, u.username, u.activated, u.created_at, u.last_login,
 		       r.id, r.name, r.description, r.created_at,
-			   bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
+			   bu.id, bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
 		LEFT JOIN banned_users bu ON u.id = bu.user_id
@@ -217,7 +211,7 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 	err := s.db.QueryRow(query, userID).Scan(
 		&user.ID, &user.Email, &user.Password.Hash, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description, &role.CreatedAt,
-		&ban.expiresAt, &ban.bannedAt, &ban.reason, &ban.bannedBy,
+		&ban.ID, &ban.ExpiresAt, &ban.BannedAt, &ban.Reason, &ban.BannedBy,
 	)
 
 	if err != nil {
@@ -227,12 +221,13 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 		return nil, err
 	}
 
-	if ban.bannedAt != nil && ban.expiresAt != nil && ban.reason != nil && ban.bannedBy != nil {
+	if ban.NotNull() {
 		user.Ban = &data.Ban{
-			ExpiresAt: *ban.expiresAt,
-			Reason:    *ban.reason,
-			BannedAt:  *ban.bannedAt,
-			BannedBy:  *ban.bannedBy,
+			ID:        *ban.ID,
+			ExpiresAt: *ban.ExpiresAt,
+			Reason:    *ban.Reason,
+			BannedAt:  *ban.BannedAt,
+			BannedBy:  *ban.BannedBy,
 		}
 	}
 
@@ -245,18 +240,12 @@ func (s UserService) GetUserByID(userID uuid.UUID) (*data.User, error) {
 func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	var user data.User
 	var role data.Role
-
-	var ban struct {
-		expiresAt *time.Time
-		reason    *string
-		bannedAt  *time.Time
-		bannedBy  *uuid.UUID
-	}
+	var ban data.OptionalBan
 
 	query := `
 		SELECT u.id, u.email, u.password, u.username, u.activated, u.created_at, u.last_login,
                r.id, r.name, r.description,
-               bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
+               bu.id, bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
 		LEFT JOIN banned_users bu ON u.id = bu.user_id
@@ -266,7 +255,7 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 	err := s.db.QueryRow(query, email).Scan(
 		&user.ID, &user.Email, &user.Password.Hash, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
 		&role.ID, &role.Name, &role.Description,
-		&ban.expiresAt, &ban.bannedAt, &ban.reason, &ban.bannedBy,
+		&ban.ID, &ban.ExpiresAt, &ban.BannedAt, &ban.Reason, &ban.BannedBy,
 	)
 
 	if err != nil {
@@ -276,12 +265,13 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 		return nil, err
 	}
 
-	if ban.bannedAt != nil && ban.expiresAt != nil && ban.reason != nil && ban.bannedBy != nil {
+	if ban.NotNull() {
 		user.Ban = &data.Ban{
-			ExpiresAt: *ban.expiresAt,
-			Reason:    *ban.reason,
-			BannedAt:  *ban.bannedAt,
-			BannedBy:  *ban.bannedBy,
+			ID:        *ban.ID,
+			ExpiresAt: *ban.ExpiresAt,
+			Reason:    *ban.Reason,
+			BannedAt:  *ban.BannedAt,
+			BannedBy:  *ban.BannedBy,
 		}
 	}
 
@@ -294,18 +284,21 @@ func (s UserService) GetUserByEmail(email string) (*data.User, error) {
 func (s UserService) GetUserByUsername(username string) (*data.User, error) {
 	var user data.User
 	var role data.Role
+	var ban data.OptionalBan
 
 	query := `
 		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
-		       r.id, r.name, r.description
+		       r.id, r.name, r.description,
+			   bu.id, bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
+		LEFT JOIN banned_users bu ON u.id = bu.user_id
 		WHERE u.username = $1
 	`
 
 	err := s.db.QueryRow(query, username).Scan(
 		&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &user.LastLogin,
-		&role.ID, &role.Name, &role.Description,
+		&role.ID, &role.Name, &role.Description, &ban.ID, &ban.ExpiresAt, &ban.BannedAt, &ban.Reason, &ban.BannedBy,
 	)
 
 	if err != nil {
@@ -313,6 +306,16 @@ func (s UserService) GetUserByUsername(username string) (*data.User, error) {
 			return nil, services.ErrUserNotFound
 		}
 		return nil, err
+	}
+
+	if ban.NotNull() {
+		user.Ban = &data.Ban{
+			ID:        *ban.ID,
+			ExpiresAt: *ban.ExpiresAt,
+			Reason:    *ban.Reason,
+			BannedAt:  *ban.BannedAt,
+			BannedBy:  *ban.BannedBy,
+		}
 	}
 
 	user.Role = role
@@ -401,7 +404,7 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 	query := `
 		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
 		       r.id, r.name,
-			   bu.expires_at, bu.banned_at, bu.banned_by, bu.reason
+			   bu.id, bu.expires_at, bu.banned_at, bu.banned_by, bu.reason
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
 		LEFT JOIN banned_users bu ON u.id = bu.user_id
@@ -424,17 +427,14 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 	for rows.Next() {
 		var user data.User
 		var role data.Role
-		var ban struct {
-			expiresAt *time.Time
-			reason    *string
-			bannedAt  *time.Time
-			bannedBy  *uuid.UUID
-		}
+		var ban data.OptionalBan
+
 		var lastLogin sql.NullTime
 
 		err := rows.Scan(
 			&user.ID, &user.Email, &user.Username, &user.IsActivated, &user.CreatedAt, &lastLogin,
-			&role.ID, &role.Name, &ban.expiresAt, &ban.bannedAt, &ban.bannedBy, &ban.reason,
+			&role.ID, &role.Name,
+			&ban.ID, &ban.ExpiresAt, &ban.BannedAt, &ban.BannedBy, &ban.Reason,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -443,12 +443,13 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 		user.LastLogin = lastLogin
 		user.Role = role
 
-		if ban.expiresAt != nil && ban.bannedAt != nil && ban.bannedBy != nil && ban.reason != nil {
+		if ban.NotNull() {
 			user.Ban = &data.Ban{
-				ExpiresAt: *ban.expiresAt,
-				Reason:    *ban.reason,
-				BannedAt:  *ban.bannedAt,
-				BannedBy:  *ban.bannedBy,
+				ID:        *ban.ID,
+				ExpiresAt: *ban.ExpiresAt,
+				Reason:    *ban.Reason,
+				BannedAt:  *ban.BannedAt,
+				BannedBy:  *ban.BannedBy,
 			}
 		}
 
@@ -562,11 +563,11 @@ func (s UserService) DeleteUser(userID uuid.UUID) error {
 func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext string) (*data.User, error) {
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 
-	var expiresAt sql.NullTime
-	var reason sql.NullString
+	var ban data.OptionalBan
 
 	query := `
-        SELECT users.id, users.created_at, users.username, users.email, users.password, users.activated, bu.expires_at, bu.reason
+        SELECT users.id, users.created_at, users.username, users.email, users.password, users.activated,
+		bu.id, bu.expires_at, bu.banned_at, bu.reason, bu.banned_by
         FROM users
         INNER JOIN tokens ON users.id = tokens.user_id
 		LEFT JOIN banned_users bu ON users.id = bu.user_id
@@ -579,14 +580,8 @@ func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext stri
 	var user data.User
 
 	err := s.db.QueryRow(query, args...).Scan(
-		&user.ID,
-		&user.CreatedAt,
-		&user.Username,
-		&user.Email,
-		&user.Password.Hash,
-		&user.IsActivated,
-		&expiresAt,
-		&reason,
+		&user.ID, &user.CreatedAt, &user.Username, &user.Email, &user.Password.Hash, &user.IsActivated,
+		&ban.ID, &ban.ExpiresAt, &ban.BannedAt, &ban.Reason, &ban.BannedBy,
 	)
 
 	if err != nil {
@@ -596,10 +591,13 @@ func (s UserService) GetForToken(tokenScope data.TokenScope, tokenPlaintext stri
 		return nil, err
 	}
 
-	if expiresAt.Valid && reason.Valid {
+	if ban.NotNull() {
 		user.Ban = &data.Ban{
-			ExpiresAt: expiresAt.Time,
-			Reason:    reason.String,
+			ID:        *ban.ID,
+			ExpiresAt: *ban.ExpiresAt,
+			Reason:    *ban.Reason,
+			BannedAt:  *ban.BannedAt,
+			BannedBy:  *ban.BannedBy,
 		}
 	}
 

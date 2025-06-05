@@ -33,6 +33,23 @@ type Ban struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
+// for reading from database and checking if user has any bans
+type OptionalBan struct {
+	ID        *int64
+	BannedAt  *time.Time
+	Reason    *string
+	BannedBy  *uuid.UUID
+	ExpiresAt *time.Time
+}
+
+func (ob *OptionalBan) NotNull() bool {
+	return ob.ID != nil &&
+		ob.ExpiresAt != nil &&
+		ob.Reason != nil &&
+		ob.BannedAt != nil &&
+		ob.BannedBy != nil
+}
+
 // IsValid checks if the ban is still active.
 func (b *Ban) IsValid() bool {
 	if b == nil {
