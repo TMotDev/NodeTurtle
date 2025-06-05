@@ -6,3 +6,9 @@ dist-ssr
 .vscode
 TODO.md
 .env
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
