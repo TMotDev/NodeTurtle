@@ -37,7 +37,8 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return cv.validator.Struct(i)
 }
 
-func customFunc(fl validator.FieldLevel) bool {
+// emailValidation validates using RFC 5322 standard
+func emailValidation(fl validator.FieldLevel) bool {
 	_, err := gomail.ParseAddress(fl.Field().String())
 	return err == nil
 }
@@ -49,7 +50,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 
 	// validator setup
 	v := validator.New()
-	v.RegisterValidation("email", customFunc)
+	v.RegisterValidation("email", emailValidation)
 	e.Validator = &CustomValidator{validator: v}
 
 	// setup services

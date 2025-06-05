@@ -16,6 +16,8 @@ import { Route as LoginImport } from './routes/login'
 import { Route as IndexImport } from './routes/index'
 import { Route as ResetTokenImport } from './routes/reset/$token'
 import { Route as DeactivateTokenImport } from './routes/deactivate/$token'
+import { Route as AdminUsersImport } from './routes/admin/users'
+import { Route as AdminDashboardImport } from './routes/admin/dashboard'
 import { Route as ActivateTokenImport } from './routes/activate/$token'
 
 // Create/Update Routes
@@ -47,6 +49,18 @@ const ResetTokenRoute = ResetTokenImport.update({
 const DeactivateTokenRoute = DeactivateTokenImport.update({
   id: '/deactivate/$token',
   path: '/deactivate/$token',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AdminUsersRoute = AdminUsersImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AdminDashboardRoute = AdminDashboardImport.update({
+  id: '/admin/dashboard',
+  path: '/admin/dashboard',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -88,6 +102,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivateTokenImport
       parentRoute: typeof rootRoute
     }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardImport
+      parentRoute: typeof rootRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersImport
+      parentRoute: typeof rootRoute
+    }
     '/deactivate/$token': {
       id: '/deactivate/$token'
       path: '/deactivate/$token'
@@ -112,6 +140,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/reset/$token': typeof ResetTokenRoute
 }
@@ -121,6 +151,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/reset/$token': typeof ResetTokenRoute
 }
@@ -131,6 +163,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/reset/$token': typeof ResetTokenRoute
 }
@@ -142,6 +176,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/activate/$token'
+    | '/admin/dashboard'
+    | '/admin/users'
     | '/deactivate/$token'
     | '/reset/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -150,6 +186,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/activate/$token'
+    | '/admin/dashboard'
+    | '/admin/users'
     | '/deactivate/$token'
     | '/reset/$token'
   id:
@@ -158,6 +196,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/activate/$token'
+    | '/admin/dashboard'
+    | '/admin/users'
     | '/deactivate/$token'
     | '/reset/$token'
   fileRoutesById: FileRoutesById
@@ -168,6 +208,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ActivateTokenRoute: typeof ActivateTokenRoute
+  AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   DeactivateTokenRoute: typeof DeactivateTokenRoute
   ResetTokenRoute: typeof ResetTokenRoute
 }
@@ -177,6 +219,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ActivateTokenRoute: ActivateTokenRoute,
+  AdminDashboardRoute: AdminDashboardRoute,
+  AdminUsersRoute: AdminUsersRoute,
   DeactivateTokenRoute: DeactivateTokenRoute,
   ResetTokenRoute: ResetTokenRoute,
 }
@@ -195,6 +239,8 @@ export const routeTree = rootRoute
         "/login",
         "/register",
         "/activate/$token",
+        "/admin/dashboard",
+        "/admin/users",
         "/deactivate/$token",
         "/reset/$token"
       ]
@@ -210,6 +256,12 @@ export const routeTree = rootRoute
     },
     "/activate/$token": {
       "filePath": "activate/$token.tsx"
+    },
+    "/admin/dashboard": {
+      "filePath": "admin/dashboard.tsx"
+    },
+    "/admin/users": {
+      "filePath": "admin/users.tsx"
     },
     "/deactivate/$token": {
       "filePath": "deactivate/$token.tsx"

@@ -1,10 +1,10 @@
 import { create } from 'zustand'
 
 export enum role {
-  User = 1,
-  Premium,
-  Moderator,
-  Admin,
+  User = "user",
+  Premium = "premium",
+  Moderator = "moderator",
+  Admin = "admin",
 }
 
 export type user = {
