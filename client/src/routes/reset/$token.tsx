@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import type { FormStatus } from '@/lib/validation'
+import type { FormStatus } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { passwordSchema } from '@/lib/validation'
+import { passwordSchema } from '@/lib/schemas'
 import {
   Form,
   FormControl,

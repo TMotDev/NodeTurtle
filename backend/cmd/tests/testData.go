@@ -73,7 +73,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Activated: true,
 			Ban: utils.Ptr(data.Ban{
 				BannedBy:  adminID,
-				Reason:    "Self-deactivated",
+				Reason:    "test ban",
 				BannedAt:  time.Now().UTC(),
 				ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
 			}),
@@ -87,7 +87,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Activated: true,
 			Ban: utils.Ptr(data.Ban{
 				BannedBy:  adminID,
-				Reason:    "Self-deactivated",
+				Reason:    "test expired ban",
 				BannedAt:  time.Now().UTC(),
 				ExpiresAt: time.Now().UTC().Add(-24 * time.Hour), // expired ban
 			}),

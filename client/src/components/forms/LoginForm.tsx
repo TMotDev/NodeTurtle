@@ -25,8 +25,8 @@ import { Input } from '../ui/input'
 
 import { Button } from '../ui/button'
 
-import type { FormStatus } from '@/lib/validation'
-import type { role, user } from '@/lib/authStore'
+import type { FormStatus } from '@/lib/schemas'
+import type { Role, User } from '@/lib/authStore'
 import useAuthStore from '@/lib/authStore'
 
 const loginSchema = z.object({
@@ -83,11 +83,11 @@ export default function LoginForm() {
       } else {
         const data = await response.json()
 
-        const userData: user = {
+        const userData: User = {
           username: data.user.username,
           email: data.user.email,
           id: data.user.id,
-          role: data.user.role as role,
+          role: data.user.role as Role,
         }
 
         setUser(userData)

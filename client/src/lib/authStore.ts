@@ -1,26 +1,26 @@
 import { create } from 'zustand'
 
-export enum role {
-  User = "user",
-  Premium = "premium",
-  Moderator = "moderator",
-  Admin = "admin",
+export enum Role {
+  User = 'user',
+  Premium = 'premium',
+  Moderator = 'moderator',
+  Admin = 'admin',
 }
 
-export type user = {
+export type User = {
   username: string
   email: string
   id: string
-  role: role
+  role: Role
 }
 
 interface AuthState {
-  user: null | user
+  user: null | User
   isLoading: boolean
   logout: () => void
   checkAuthStatus: () => void
-  setUser: (data: user) => void
-  updateUser: (updatedData: Partial<user>) => void
+  setUser: (data: User) => void
+  updateUser: (updatedData: Partial<User>) => void
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -39,11 +39,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (response.ok) {
         const data = await response.json()
 
-        const userData: user = {
+        const userData: User = {
           username: data.username,
           email: data.email,
           id: data.id,
-          role: data.role as role,
+          role: data.role as Role,
         }
 
         set({ user: userData, isLoading: false })
@@ -56,9 +56,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  setUser: (data: user) => set({ user: data }),
+  setUser: (data: User) => set({ user: data }),
 
-  updateUser: (updatedData: Partial<user>) =>
+  updateUser: (updatedData: Partial<User>) =>
     set((state) => ({
       user: state.user ? { ...state.user, ...updatedData } : null,
     })),

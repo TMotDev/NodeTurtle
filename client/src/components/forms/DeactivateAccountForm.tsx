@@ -12,7 +12,7 @@ import {
   FormMessage,
 } from '../ui/form' // Assuming path is correct
 import type { Dispatch, SetStateAction } from 'react'
-import type { FormStatus } from '@/lib/validation' // Assuming FormStatus type is defined here
+import type { FormStatus } from '@/lib/schemas' // Assuming FormStatus type is defined here
 import {
   Dialog,
   DialogContent,

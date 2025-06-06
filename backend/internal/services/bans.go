@@ -11,7 +11,8 @@ import (
 
 // IBanService defines the interface for user banning operations.
 type IBanService interface {
-	Ban(userId uuid.UUID, bannedBy uuid.UUID, expires_at time.Time, reason string) (*data.Ban, error)
+	BanUser(userId uuid.UUID, bannedBy uuid.UUID, expires_at time.Time, reason string) (*data.Ban, error)
+	UnbanUser(userId uuid.UUID) error
 }
 
 // BanService implements the IBanService interface for handling user bans.
@@ -26,7 +27,7 @@ func NewBanService(db *sql.DB) BanService {
 	}
 }
 
-func (s BanService) Ban(userId uuid.UUID, bannedBy uuid.UUID, expires_at time.Time, reason string) (*data.Ban, error) {
+func (s BanService) BanUser(userId uuid.UUID, bannedBy uuid.UUID, expires_at time.Time, reason string) (*data.Ban, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return nil, err
@@ -62,4 +63,27 @@ func (s BanService) Ban(userId uuid.UUID, bannedBy uuid.UUID, expires_at time.Ti
 	}
 
 	return &ban, nil
+}
+
+func (s BanService) UnbanUser(userId uuid.UUID) error {
+	query := `
+        DELETE FROM banned_users
+        WHERE user_id = $1;
+    `
+
+	result, err := s.db.Exec(query, userId)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
 }

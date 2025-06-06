@@ -78,7 +78,7 @@ function debounce<T extends (...args: Array<any>) => any>(
   func: T,
   wait: number,
 ): (...args: Parameters<T>) => void {
-  let timeout: number | null = null
+  let timeout: ReturnType<typeof setTimeout> | null = null
   return (...args: Parameters<T>) => {
     if (timeout) {
       clearTimeout(timeout)
@@ -111,4 +111,31 @@ export async function validateUserField(
   } catch (error) {
     return { exists: false, error: 'Network error during validation' }
   }
+}
+
+/**
+ * Converts a date into a human-readable string showing the time difference.
+ */
+export function getTimeDifference(date: string): string {
+  const now = new Date()
+  const givenDate = new Date(date)
+
+  // Calculate the difference in milliseconds
+  const diffInMs = now.getTime() - givenDate.getTime()
+
+  // If the difference is less than a day, return "today"
+  if (diffInMs < 1000 * 60 * 60 * 24) {
+    return 'today'
+  }
+
+  // Calculate the difference in days and months
+  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+  const months = Math.floor(days / 30)
+  const remainingDays = days % 30
+
+  // Return the formatted string
+  if (months > 0) {
+    return `${months} month${months > 1 ? 's' : ''} ${remainingDays} day${remainingDays > 1 ? 's' : ''}`
+  }
+  return `${days} day${days > 1 ? 's' : ''}`
 }

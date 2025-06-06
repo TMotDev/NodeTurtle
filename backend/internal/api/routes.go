@@ -115,11 +115,12 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	// Role-specific routes
 	admin := api.Group("/admin")
 	admin.Use(m.RequireRole(data.RoleAdmin.String()))
-	admin.GET("/users", userHandler.List)
+	admin.GET("/users/all", userHandler.List)
 	admin.GET("/users/:id", userHandler.Get)
 	admin.PUT("/users/:id", userHandler.Update)
 	admin.DELETE("/users/:id", userHandler.Delete)
 	admin.POST("/users/ban", userHandler.Ban)
+	admin.DELETE("/users/ban/:userID", userHandler.Unban)
 }
 
 func (s *Server) Start() error {

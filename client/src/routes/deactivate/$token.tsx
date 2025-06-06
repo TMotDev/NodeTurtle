@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
-import type { FormStatus } from '@/lib/validation'
+import type { FormStatus } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import {
   Card,

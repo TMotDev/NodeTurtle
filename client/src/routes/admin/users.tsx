@@ -1,6 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { Filter, MoreHorizontal, Search } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { MoreHorizontal, Search } from 'lucide-react'
+import { Toaster, toast } from 'sonner'
+import type { User } from '@/services/api'
+import { Role } from '@/lib/authStore'
 import {
   Table,
   TableBody,
@@ -24,7 +27,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Select,
@@ -33,157 +35,164 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { Skeleton } from '@/components/ui/skeleton'
 import Header from '@/components/Header'
+import { banUser, listUsers, unbanUser, updateUserRole } from '@/services/api'
+import { getTimeDifference } from '@/lib/utils'
 
 export const Route = createFileRoute('/admin/users')({
   component: AdminUsers,
 })
 
-type UserRole = 'user' | 'premium' | 'mod' | 'admin'
-type UserStatus = 'not_activated' | 'activated' | 'banned'
-
-interface User {
-  id: string
-  username: string
-  email: string
-  age: number
-  role: UserRole
-  status: UserStatus
-  banReason?: string
-  createdAt: string
-  lastLogin: string
+function TableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={index}>
+          <TableCell>
+            <Skeleton className="h-5 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-32" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-16" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-20" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-20" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-28" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-28" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-8 w-8 rounded-md" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  )
 }
 
-// Mock data - replace with real API calls
-const mockUsers: Array<User> = [
-  {
-    id: '1',
-    username: 'john_doe',
-    email: 'john.doe@example.com',
-    age: 28,
-    role: 'user',
-    status: 'activated',
-    createdAt: '2024-01-15',
-    lastLogin: '2024-06-01',
-  },
-  {
-    id: '2',
-    username: 'jane_smith',
-    email: 'jane.smith@example.com',
-    age: 32,
-    role: 'premium',
-    status: 'activated',
-    createdAt: '2024-02-20',
-    lastLogin: '2024-06-04',
-  },
-  {
-    id: '3',
-    username: 'bob_wilson',
-    email: 'bob.wilson@example.com',
-    age: 45,
-    role: 'mod',
-    status: 'activated',
-    createdAt: '2024-01-10',
-    lastLogin: '2024-06-05',
-  },
-  {
-    id: '4',
-    username: 'alice_johnson',
-    email: 'alice.johnson@example.com',
-    age: 24,
-    role: 'user',
-    status: 'not_activated',
-    createdAt: '2024-06-01',
-    lastLogin: 'Never',
-  },
-  {
-    id: '5',
-    username: 'spam_user',
-    email: 'spam@bad.com',
-    age: 19,
-    role: 'user',
-    status: 'banned',
-    banReason: 'Spamming and inappropriate content',
-    createdAt: '2024-05-15',
-    lastLogin: '2024-05-20',
-  },
-]
-
 function AdminUsers() {
-  const [users, setUsers] = useState<Array<User>>(mockUsers)
+  const [users, setUsers] = useState<Array<User>>([])
+  const [loading, setLoading] = useState(true)
+
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [filters, setFilters] = useState({
+    role: 'all',
+    status: 'all',
+  })
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [roleFilter, setRoleFilter] = useState<string>('all')
+
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [banDialogOpen, setBanDialogOpen] = useState(false)
   const [banReason, setBanReason] = useState('')
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const fetchUsers = useCallback(
+    async (currentFilters: any) => {
+      setLoading(true)
+      try {
+        const queryParams: any = { page, limit: 10 }
+        if (currentFilters.role !== 'all')
+          queryParams.role = currentFilters.role
+        if (currentFilters.status !== 'all') {
+          queryParams.activated = currentFilters.status === 'activated'
+        }
+        if (currentFilters.username)
+          queryParams.username = currentFilters.username
 
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter
+        const data = await listUsers(queryParams)
+        setUsers(data.users)
+        setTotalPages(Math.ceil(data.meta.total / 10))
+      } catch (err) {
+        toast.error('Failed to fetch users. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [page],
+  )
 
-    return matchesSearch && matchesStatus && matchesRole
-  })
+  useEffect(() => {
+    fetchUsers(filters)
+  }, [filters, page, fetchUsers])
 
-  const getStatusBadge = (status: UserStatus) => {
-    switch (status) {
-      case 'activated':
-        return (
-          <Badge variant="default" className="bg-green-500">
-            Activated
-          </Badge>
-        )
-      case 'not_activated':
-        return <Badge variant="secondary">Not Activated</Badge>
-      case 'banned':
-        return <Badge variant="destructive">Banned</Badge>
-      default:
-        return <Badge variant="outline">Unknown</Badge>
-    }
+  const handleSearch = () => {
+    setPage(1)
+    fetchUsers({ ...filters, username: searchTerm })
   }
 
-  const getRoleBadge = (role: UserRole) => {
-    switch (role) {
-      case 'admin':
-        return (
-          <Badge variant="default" className="bg-purple-500">
-            Admin
-          </Badge>
-        )
-      case 'mod':
-        return (
-          <Badge variant="default" className="bg-blue-500">
-            Moderator
-          </Badge>
-        )
-      case 'premium':
-        return (
-          <Badge variant="default" className="bg-yellow-500">
-            Premium
-          </Badge>
-        )
-      case 'user':
-        return <Badge variant="outline">User</Badge>
-      default:
-        return <Badge variant="outline">Unknown</Badge>
-    }
+  const handleFilterChange = (key: 'role' | 'status', value: string) => {
+    setPage(1)
+    setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
-  const handleRoleChange = (userId: string, newRole: UserRole) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === userId ? { ...user, role: newRole } : user,
-      ),
+  const getStatusBadge = (user: User) => {
+    if (user.ban) {
+      return <Badge variant="destructive">Banned</Badge>
+    }
+    return user.activated ? (
+      <Badge variant="default" className="bg-green-500">
+        Activated
+      </Badge>
+    ) : (
+      <Badge variant="secondary">Not Activated</Badge>
     )
+  }
+
+  const getRoleBadge = (role: Role) => {
+    const roleColors: Record<Role, string> = {
+      admin: 'bg-purple-500',
+      moderator: 'bg-blue-500',
+      premium: 'bg-yellow-500',
+      user: 'outline',
+    }
+    const roleName: Record<Role, string> = {
+      admin: 'Admin',
+      moderator: 'Moderator',
+      premium: 'Premium',
+      user: 'User',
+    }
+    return (
+      <Badge
+        variant={role === 'user' ? 'outline' : 'default'}
+        className={roleColors[role]}
+      >
+        {roleName[role]}
+      </Badge>
+    )
+  }
+
+  const handleRoleChange = async (userId: string, newRole: Role) => {
+    const result = await updateUserRole(userId, newRole)
+
+    if (result.error) {
+      toast.error(`Error when updating role: ${result.error.message}`)
+    } else {
+      toast.success(`User role updated`)
+    }
+
+    fetchUsers(filters)
   }
 
   const handleBanUser = (user: User) => {
@@ -191,36 +200,38 @@ function AdminUsers() {
     setBanDialogOpen(true)
   }
 
-  const confirmBan = () => {
+  const confirmBan = async () => {
     if (selectedUser) {
-      setUsers((prev) =>
-        prev.map((user) =>
-          user.id === selectedUser.id
-            ? { ...user, status: 'banned' as UserStatus, banReason }
-            : user,
-        ),
-      )
+      const result = await banUser(selectedUser.id, banReason)
+      if (result.error) {
+        toast.error(`Error when banning a user: ${result.error.message}`)
+      } else {
+        toast.success(`User successfully banned`)
+      }
+
+      setBanDialogOpen(false)
+      setBanReason('')
+      setSelectedUser(null)
+      fetchUsers(filters)
     }
-    setBanDialogOpen(false)
-    setBanReason('')
-    setSelectedUser(null)
   }
 
-  const handleUnbanUser = (userId: string) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === userId
-          ? { ...user, status: 'activated' as UserStatus, banReason: undefined }
-          : user,
-      ),
-    )
+  const handleUnbanUser = async (userId: string) => {
+    const result = await unbanUser(userId)
+    if (result.error) {
+      toast.error(`Error when unbanning a user: ${result.error.message}`)
+    } else {
+      toast.success(`User successfully unbanned`)
+    }
+
+    fetchUsers(filters)
   }
 
   return (
     <div className="flex flex-col min-h-screen">
-        <Header />
+      <Header />
       <main className="flex-grow flex justify-center p-4">
-
+        <Toaster richColors position="top-center" expand />
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">
@@ -230,30 +241,37 @@ function AdminUsers() {
               Manage user accounts, roles, and permissions
             </p>
           </div>
-          {/* Filters */}
+
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
+            <div className="relative flex-1 flex gap-2">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search users..."
+                placeholder="Search by username..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 className="pl-8"
               />
+              <Button onClick={handleSearch}>Search</Button>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+            <Select
+              value={filters.status}
+              onValueChange={(value) => handleFilterChange('status', value)}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="activated">Activated</SelectItem>
                 <SelectItem value="not_activated">Not Activated</SelectItem>
-                <SelectItem value="banned">Banned</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-[180px]">
+            <Select
+              value={filters.role}
+              onValueChange={(value) => handleFilterChange('role', value)}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>
@@ -265,100 +283,141 @@ function AdminUsers() {
               </SelectContent>
             </Select>
           </div>
-          {/* Users Table */}
+
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Username</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Age</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Last Login</TableHead>
+                  <TableHead>Account Age</TableHead>
+                  <TableHead title="Last time the user has logged in">
+                    Last Active
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.username}
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.age}</TableCell>
-                    <TableCell>{getRoleBadge(user.role)}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        {getStatusBadge(user.status)}
-                        {user.status === 'banned' && user.banReason && (
-                          <span className="text-xs text-muted-foreground">
-                            {user.banReason}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{user.createdAt}</TableCell>
-                    <TableCell>{user.lastLogin}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              navigator.clipboard.writeText(user.email)
-                            }
-                          >
-                            Copy email
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleRoleChange(user.id, 'user')}
-                          >
-                            Set as User
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleRoleChange(user.id, 'premium')}
-                          >
-                            Set as Premium
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleRoleChange(user.id, 'mod')}
-                          >
-                            Set as Moderator
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {user.status === 'banned' ? (
-                            <DropdownMenuItem
-                              onClick={() => handleUnbanUser(user.id)}
-                              className="text-green-600"
+                {loading ? (
+                  <TableSkeleton />
+                ) : (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        {user.username}
+                      </TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{getRoleBadge(user.role)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {getStatusBadge(user)}
+                          {user.ban && (
+                            <span
+                              title={user.ban.reason}
+                              className="text-xs text-muted-foreground overflow-hidden text-ellipsis w-36"
                             >
-                              Unban User
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() => handleBanUser(user)}
-                              className="text-red-600"
-                            >
-                              Ban User
-                            </DropdownMenuItem>
+                              {user.ban.reason}
+                            </span>
                           )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getTimeDifference(user.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        {user.last_login
+                          ? getTimeDifference(user.last_login)
+                          : 'Never'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleRoleChange(user.id, Role.User)
+                              }
+                            >
+                              Set as User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleRoleChange(user.id, Role.Premium)
+                              }
+                            >
+                              Set as Premium
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleRoleChange(user.id, Role.Moderator)
+                              }
+                            >
+                              Set as Moderator
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {user.ban ? (
+                              <DropdownMenuItem
+                                onClick={() => handleUnbanUser(user.id)}
+                                className="text-green-600"
+                              >
+                                Unban User
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => handleBanUser(user)}
+                                className="text-red-600"
+                              >
+                                Ban User
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
-          {/* Ban User Dialog */}
+
+          <div className="mt-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      href="#"
+                      isActive={page === i + 1}
+                      onClick={() => setPage(i + 1)}
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+
           <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
             <DialogContent>
               <DialogHeader>

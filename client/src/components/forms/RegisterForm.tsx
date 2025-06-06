@@ -25,14 +25,14 @@ import { Alert, AlertDescription } from '../ui/alert'
 
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import type { FormStatus } from '@/lib/validation'
+import type { FormStatus } from '@/lib/schemas'
 import {
   emailSchema,
   getValidationIcon,
   getValidationMessage,
   passwordSchema,
   usernameSchema,
-} from '@/lib/validation'
+} from '@/lib/schemas'
 import { useFieldValidation } from '@/lib/utils'
 
 const registrationSchema = z

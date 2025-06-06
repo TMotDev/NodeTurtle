@@ -389,24 +389,17 @@ func (h *UserHandler) Ban(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
-	// verify ban receiver exists
-	banReceiver, err := h.userService.GetUserByID(payload.UserID)
+	ban, err := h.banService.BanUser(payload.UserID, contextUser.ID, time.Now().UTC().Add(time.Duration(payload.Duration)*time.Hour), payload.Reason)
 	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
+		if err == services.ErrUserNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "User not found")
 		}
-		c.Logger().Errorf("Internal user retrieval error %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
-	}
-
-	ban, err := h.banService.Ban(banReceiver.ID, contextUser.ID, time.Now().UTC().Add(time.Duration(payload.Duration)*time.Hour), payload.Reason)
-	if err != nil {
 		c.Logger().Errorf("Internal user ban error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")
 	}
 
 	// invalidate all refresh tokens for banned user
-	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, banReceiver.ID); err != nil {
+	if err := h.tokenService.DeleteAllForUser(data.ScopeRefresh, payload.UserID); err != nil {
 		c.Logger().Errorf("Internal token deletion error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")
 	}
@@ -421,6 +414,24 @@ func (h *UserHandler) Ban(c echo.Context) error {
 	})
 }
 
+func (h *UserHandler) Unban(c echo.Context) error {
+	idStr := c.Param("userID")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID")
+	}
+
+	if err := h.banService.UnbanUser(id); err != nil {
+		if err == services.ErrUserNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "User not found")
+		}
+		c.Logger().Errorf("Internal user unban error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unban a user")
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
 func (h *UserHandler) Deactivate(c echo.Context) error {
 
 	token := c.Param("token")
@@ -433,7 +444,7 @@ func (h *UserHandler) Deactivate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Token or user not found")
 	}
 
-	_, err = h.banService.Ban(user.ID, user.ID, time.Now().Add(87600*time.Hour), "Self-deactivation")
+	_, err = h.banService.BanUser(user.ID, user.ID, time.Now().Add(87600*time.Hour), "Self-deactivation")
 	if err != nil {
 		c.Logger().Errorf("Internal self-deactivation error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to deactivate account")

@@ -12,7 +12,7 @@ type MockBanService struct {
 	mock.Mock
 }
 
-func (m *MockBanService) Ban(userId uuid.UUID, bannedBy uuid.UUID, expires_at time.Time, reason string) (*data.Ban, error) {
+func (m *MockBanService) BanUser(userId uuid.UUID, bannedBy uuid.UUID, expires_at time.Time, reason string) (*data.Ban, error) {
 	args := m.Called(userId, bannedBy, expires_at, reason)
 
 	var user *data.Ban
@@ -21,4 +21,10 @@ func (m *MockBanService) Ban(userId uuid.UUID, bannedBy uuid.UUID, expires_at ti
 	}
 
 	return user, args.Error(1)
+}
+
+func (m *MockBanService) UnbanUser(userId uuid.UUID) error {
+	args := m.Called(userId)
+
+	return args.Error(0)
 }

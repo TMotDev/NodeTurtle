@@ -11,7 +11,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu'
-import useAuthStore, { role } from '@/lib/authStore'
+import useAuthStore, { Role } from '@/lib/authStore'
 import { cn } from '@/lib/utils'
 
 export default function Header() {
@@ -61,7 +61,7 @@ export default function Header() {
               </>
             )}
 
-            {user?.role === role.Admin && (
+            {user?.role === Role.Admin && (
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="h-10">
                   Admin

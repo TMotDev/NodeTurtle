@@ -11,7 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../ui/form'
-import type { FormStatus } from '@/lib/validation'
+import type { FormStatus } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'

@@ -874,9 +874,8 @@ func TestBanUser(t *testing.T) {
 	adminUser := &data.User{ID: uuid.New(), Email: "admin@test.test", Username: "adminuser", IsActivated: true}
 	user := &data.User{ID: uuid.New(), Email: "test@test.test", Username: "testuser", IsActivated: true}
 
-	mockUserService.On("GetUserByID", user.ID).Return(user, nil)
-	mockUserService.On("GetUserByID", mock.Anything).Return(nil, services.ErrUserNotFound)
-	mockBanService.On("Ban", user.ID, adminUser.ID, mock.Anything, mock.Anything).Return(&data.Ban{ExpiresAt: time.Now().UTC(), Reason: "test", BannedAt: time.Now().UTC()}, nil)
+	mockBanService.On("BanUser", user.ID, adminUser.ID, mock.Anything, mock.Anything).Return(&data.Ban{ExpiresAt: time.Now().UTC(), Reason: "test", BannedAt: time.Now().UTC()}, nil)
+	mockBanService.On("BanUser", mock.Anything, adminUser.ID, mock.Anything, mock.Anything).Return(nil, services.ErrUserNotFound)
 	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, user.ID).Return(nil)
 	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, mock.Anything).Return(services.ErrInternal)
 
@@ -967,7 +966,6 @@ func TestBanUser(t *testing.T) {
 		})
 	}
 
-	mockUserService.AssertExpectations(t)
 	mockTokenService.AssertExpectations(t)
 	mockBanService.AssertExpectations(t)
 }
@@ -988,7 +986,7 @@ func TestDeactivate(t *testing.T) {
 	mockUserService.On("GetForToken", mock.Anything, "updateUserFail").Return(&data.User{ID: userIDErr, Email: "update@test.test", Username: "updateErrorUser"}, nil)
 	mockUserService.On("GetForToken", mock.Anything, "-").Return(nil, services.ErrRecordNotFound)
 
-	mockBanService.On("Ban", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&data.Ban{}, nil)
+	mockBanService.On("BanUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&data.Ban{}, nil)
 
 	mockTokenService.On("DeleteAllForUser", mock.Anything, userIDErr).Return(services.ErrInternal)
 	mockTokenService.On("DeleteAllForUser", mock.Anything, mock.Anything).Return(nil)
@@ -1047,6 +1045,75 @@ func TestDeactivate(t *testing.T) {
 
 	mockUserService.AssertExpectations(t)
 	mockTokenService.AssertExpectations(t)
+	mockBanService.AssertExpectations(t)
+
+}
+
+func TestUnbanUser(t *testing.T) {
+
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockUserService := mocks.MockUserService{}
+	mockAuthService := mocks.MockAuthService{}
+	mockTokenService := mocks.MockTokenService{}
+	mockBanService := mocks.MockBanService{}
+
+	handler := NewUserHandler(&mockUserService, &mockAuthService, &mockTokenService, &mockBanService)
+
+	validUserID := uuid.New()
+
+	mockBanService.On("UnbanUser", validUserID).Return(nil)
+	mockBanService.On("UnbanUser", mock.Anything).Return(services.ErrUserNotFound)
+
+	tests := map[string]struct {
+		userID    string
+		wantCode  int
+		wantBody  string
+		wantError bool
+	}{
+		"Successful request": {
+			userID:    validUserID.String(),
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
+		"Invalid user id": {
+			userID:    "1234",
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"User not found": {
+			userID:    uuid.New().String(),
+			wantCode:  http.StatusNotFound,
+			wantError: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			c.SetPath("/api/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.userID)
+
+			err := handler.Unban(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+			}
+		})
+	}
+
 	mockBanService.AssertExpectations(t)
 
 }

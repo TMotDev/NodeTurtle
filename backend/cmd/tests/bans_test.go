@@ -20,7 +20,7 @@ func setupBansService() (services.IBanService, TestData, func()) {
 	return services.NewBanService(db), *testData, func() { db.Close() }
 }
 
-func TestBan(t *testing.T) {
+func TestBanUser(t *testing.T) {
 	s, td, close := setupBansService()
 	defer close()
 
@@ -57,7 +57,7 @@ func TestBan(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			ban, err := s.Ban(tt.userId, tt.bannedBy, tt.expires_at, tt.reason)
+			ban, err := s.BanUser(tt.userId, tt.bannedBy, tt.expires_at, tt.reason)
 
 			if tt.err != nil {
 				assert.Error(t, err)
@@ -66,6 +66,44 @@ func TestBan(t *testing.T) {
 				if ban.IsValid() {
 					assert.Equal(t, ban.ExpiresAt, tt.expires_at)
 				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, nil, err)
+			}
+		})
+	}
+}
+
+func TestUnbanUser(t *testing.T) {
+	s, td, close := setupBansService()
+	defer close()
+
+	tests := map[string]struct {
+		userId uuid.UUID
+		err    error
+	}{
+		"Successful unban": {
+			userId: td.Users[4].ID,
+			err:    nil,
+		},
+		"Expired ban unban should still work": {
+			userId: td.Users[5].ID,
+			err:    nil,
+		},
+		"unban receiver ID not found": {
+			userId: uuid.New(),
+			err:    services.ErrUserNotFound,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			err := s.UnbanUser(tt.userId)
+
+			if tt.err != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.err, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, nil, err)
