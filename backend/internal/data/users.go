@@ -150,6 +150,7 @@ type UserFilter struct {
 	Role             *RoleType `query:"role" validate:"omitempty"`
 	Username         *string   `query:"username" validate:"omitempty"`
 	Email            *string   `query:"email" validate:"omitempty"`
+	SearchTerm       *string   `query:"search_term" validate:"omitempty"`
 
 	// Time fields
 	CreatedBefore   *time.Time `query:"created_before" validate:"omitempty"`

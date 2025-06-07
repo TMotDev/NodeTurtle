@@ -28,6 +28,7 @@ import { Button } from '../ui/button'
 import type { FormStatus } from '@/lib/schemas'
 import type { Role, User } from '@/lib/authStore'
 import useAuthStore from '@/lib/authStore'
+import { login } from '@/services/api'
 
 const loginSchema = z.object({
   email: z.string().min(1),
@@ -58,50 +59,27 @@ export default function LoginForm() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/session`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(values),
-        },
-      )
+    const result = await login(values)
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-
-        setFormStatus({
-          success: false,
-          error:
-            errorData.message ||
-            'An unexpected error occurred. Please try again.',
-        })
-      } else {
-        const data = await response.json()
-
-        const userData: User = {
-          username: data.user.username,
-          email: data.user.email,
-          id: data.user.id,
-          role: data.user.role as Role,
-        }
-
-        setUser(userData)
-        setFormStatus({ success: true, error: null })
-        navigate({ to: '/' })
+    if (result.success) {
+      const userData: User = {
+        username: result.data.user.username,
+        email: result.data.user.email,
+        id: result.data.user.id,
+        role: result.data.user.role as Role,
       }
-    } catch (error) {
+      setUser(userData)
+      setFormStatus({ success: true, error: null })
+      navigate({ to: '/' })
+    } else {
       setFormStatus({
         success: false,
-        error: 'An unexpected error occurred. Please try again.',
+        error:
+          result.error.message ||
+          'An unexpected error occurred. Please try again.',
       })
-    } finally {
-      setIsLoading(false)
     }
+    setIsLoading(false)
   }
 
   return (

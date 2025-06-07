@@ -19,28 +19,23 @@ import {
 import { Button } from './ui/button'
 import AccountSettings from './AccountSettings'
 import useAuthStore from '@/lib/authStore'
+import { logout } from '@/services/api'
 
 export default function UserMenu() {
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false)
 
-  const [logout, isLoading, user] = useAuthStore(
-    useShallow((state) => [state.logout, state.isLoading, state.user]),
+  const [setUser, isLoading, user] = useAuthStore(
+    useShallow((state) => [state.setUser, state.isLoading, state.user]),
   )
 
   async function handleLogout() {
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/auth/session`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      })
-    } catch (error) {
-      console.warn('Logout request failed, but continuing with local logout:', error)
-    } finally {
-      logout()
+    const result = await logout()
+
+    if(result.error){
+      console.warn('Logout request failed, but continuing with local logout:', result.error.message)
     }
+
+    setUser(null)
   }
 
   if (!user) return null

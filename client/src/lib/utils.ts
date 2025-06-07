@@ -113,29 +113,109 @@ export async function validateUserField(
   }
 }
 
+
 /**
- * Converts a date into a human-readable string showing the time difference.
+ * Calculates a human-readable duration from now until a future date.
+ * All calendar-based comparisons are done in UTC to prevent timezone errors.
+ *
+ * @param dateString A string representation of a future date (typically in UTC ISO format).
+ * @returns A formatted duration string (e.g., "2 months", "7 days"). Returns "Expired" if the date is in the past.
  */
-export function getTimeDifference(date: string): string {
-  const now = new Date()
-  const givenDate = new Date(date)
+export function getTimeUntil(dateString: string): string {
+  const now = new Date();
+  const futureDate = new Date(dateString);
 
-  // Calculate the difference in milliseconds
-  const diffInMs = now.getTime() - givenDate.getTime()
+  // --- THE KEY CHANGE: Calculate time from now UNTIL the future date ---
+  const diffInMs = futureDate.getTime() - now.getTime();
 
-  // If the difference is less than a day, return "today"
-  if (diffInMs < 1000 * 60 * 60 * 24) {
-    return 'today'
+  // --- New Edge Case: Handle dates that have already passed ---
+  if (diffInMs <= 0) {
+    return 'Expired';
   }
 
-  // Calculate the difference in days and months
-  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
-  const months = Math.floor(days / 30)
-  const remainingDays = days % 30
+  return formatTimeDifference(diffInMs, futureDate, now);
+}
 
-  // Return the formatted string
-  if (months > 0) {
-    return `${months} month${months > 1 ? 's' : ''} ${remainingDays} day${remainingDays > 1 ? 's' : ''}`
+/**
+ * Calculates a human-readable duration from a past date until now.
+ * All calendar-based comparisons are done in UTC to prevent timezone errors.
+ *
+ * @param dateString A string representation of a past date (typically in UTC ISO format).
+ * @returns A formatted duration string (e.g., "2 months ago", "7 days ago"). Returns "Unknown" if the date is in the future.
+ */
+export function getTimeSince(dateString: string): string {
+  const now = new Date();
+  const pastDate = new Date(dateString);
+
+  // --- Calculate time from the past date UNTIL now ---
+  const diffInMs = now.getTime() - pastDate.getTime();
+
+  // --- Handle dates that are in the future ---
+  if (diffInMs <= 0) {
+    return 'Unknown';
   }
-  return `${days} day${days > 1 ? 's' : ''}`
+
+  return formatTimeDifference(diffInMs, now, pastDate) + ' ago';
+}
+
+/**
+ * Shared formatting logic for time differences.
+ *
+ * @param diffInMs The difference in milliseconds (always positive)
+ * @param laterDate The later date (for month calculations)
+ * @param earlierDate The earlier date (for month calculations)
+ * @returns A formatted duration string without "ago" suffix
+ */
+function formatTimeDifference(diffInMs: number, laterDate: Date, earlierDate: Date): string {
+  // --- Time Constants for Readability ---
+  const MS_PER_MINUTE = 1000 * 60;
+  const MS_PER_HOUR = MS_PER_MINUTE * 60;
+  const MS_PER_DAY = MS_PER_HOUR * 24;
+  const MS_PER_WEEK = MS_PER_DAY * 7;
+
+  // --- Logic Cascade for Time Difference ---
+
+  // Return minutes for durations under an hour
+  if (diffInMs < MS_PER_HOUR) {
+    const diffInMinutes = Math.floor(diffInMs / MS_PER_MINUTE);
+    return `${diffInMinutes} minute${diffInMinutes === 1 ? '' : 's'}`;
+  }
+
+  // Return hours for durations under a day
+  if (diffInMs < MS_PER_DAY) {
+    const diffInHours = Math.floor(diffInMs / MS_PER_HOUR);
+    return `${diffInHours} hour${diffInHours === 1 ? '' : 's'}`;
+  }
+
+  // Return days for durations under a week
+  if (diffInMs < MS_PER_WEEK) {
+    const diffInDays = Math.floor(diffInMs / MS_PER_DAY);
+    return `${diffInDays} day${diffInDays === 1 ? '' : 's'}`;
+  }
+
+  // Use absolute day difference for week/month checks
+  const diffInDays = Math.floor(diffInMs / MS_PER_DAY);
+
+  // Return weeks for durations less than ~a month
+  if (diffInDays < 30) {
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    return `${diffInWeeks} week${diffInWeeks === 1 ? '' : 's'}`;
+  }
+
+  // Return months using a timezone-safe UTC calendar calculation
+  let monthDiff = (laterDate.getUTCFullYear() - earlierDate.getUTCFullYear()) * 12;
+  monthDiff -= earlierDate.getUTCMonth();
+  monthDiff += laterDate.getUTCMonth();
+
+  if (laterDate.getUTCDate() < earlierDate.getUTCDate()) {
+    monthDiff--;
+  }
+
+  // Fallback to weeks if the calendar month difference is zero
+  if (monthDiff <= 0) {
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    return `${diffInWeeks} week${diffInWeeks === 1 ? '' : 's'}`;
+  }
+
+  return `${monthDiff} month${monthDiff === 1 ? '' : 's'}`;
 }

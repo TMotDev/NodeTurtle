@@ -344,16 +344,22 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 		args = append(args, roleId)
 	}
 
-	// Filter by username (partial match)
-	if filters.Username != nil && *filters.Username != "" {
-		whereClause = append(whereClause, "u.username ILIKE $"+fmt.Sprint(len(args)+1))
-		args = append(args, "%"+*filters.Username+"%")
-	}
+	// Filter by search term (partial match in username and email)
+	if filters.SearchTerm != nil && *filters.SearchTerm != "" {
+		whereClause = append(whereClause, "(u.username ILIKE $"+fmt.Sprint(len(args)+1)+" OR u.email ILIKE $"+fmt.Sprint(len(args)+1)+")")
+		args = append(args, "%"+*filters.SearchTerm+"%")
+	} else {
+		// Filter by username (partial match)
+		if filters.Username != nil && *filters.Username != "" {
+			whereClause = append(whereClause, "u.username ILIKE $"+fmt.Sprint(len(args)+1))
+			args = append(args, "%"+*filters.Username+"%")
+		}
 
-	// Filter by email (partial match)
-	if filters.Email != nil && *filters.Email != "" {
-		whereClause = append(whereClause, "u.email ILIKE $"+fmt.Sprint(len(args)+1))
-		args = append(args, "%"+*filters.Email+"%")
+		// Filter by email (partial match)
+		if filters.Email != nil && *filters.Email != "" {
+			whereClause = append(whereClause, "u.email ILIKE $"+fmt.Sprint(len(args)+1))
+			args = append(args, "%"+*filters.Email+"%")
+		}
 	}
 
 	// Filter by creation time

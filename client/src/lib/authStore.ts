@@ -17,16 +17,14 @@ export type User = {
 interface AuthState {
   user: null | User
   isLoading: boolean
-  logout: () => void
   checkAuthStatus: () => void
-  setUser: (data: User) => void
+  setUser: (data: User|null) => void
   updateUser: (updatedData: Partial<User>) => void
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: true,
-  logout: () => set({ user: null }),
 
   checkAuthStatus: async () => {
     set({ isLoading: true })
@@ -56,7 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  setUser: (data: User) => set({ user: data }),
+  setUser: (data: User|null) => set({ user: data }),
 
   updateUser: (updatedData: Partial<User>) =>
     set((state) => ({

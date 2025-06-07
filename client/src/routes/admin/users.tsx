@@ -21,14 +21,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -45,13 +37,12 @@ import {
 } from '@/components/ui/pagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import Header from '@/components/Header'
-import { banUser, listUsers, unbanUser, updateUserRole } from '@/services/api'
-import { getTimeDifference } from '@/lib/utils'
+import { listUsers, unbanUser, updateUserRole } from '@/services/api'
+import { getTimeSince, getTimeUntil } from '@/lib/utils'
+import BanDialog from '@/components/BanDialog'
 
 export const Route = createFileRoute('/admin/users')({
   component: AdminUsers,
@@ -104,9 +95,9 @@ function AdminUsers() {
   })
   const [searchTerm, setSearchTerm] = useState('')
 
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  // dialog states
   const [banDialogOpen, setBanDialogOpen] = useState(false)
-  const [banReason, setBanReason] = useState('')
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
   const fetchUsers = useCallback(
     async (currentFilters: any) => {
@@ -118,12 +109,20 @@ function AdminUsers() {
         if (currentFilters.status !== 'all') {
           queryParams.activated = currentFilters.status === 'activated'
         }
-        if (currentFilters.username)
-          queryParams.username = currentFilters.username
+        if (currentFilters.search_term)
+          queryParams.search_term = currentFilters.search_term
 
-        const data = await listUsers(queryParams)
-        setUsers(data.users)
-        setTotalPages(Math.ceil(data.meta.total / 10))
+        const result = await listUsers(queryParams)
+
+        if(result.success)
+        {
+          setUsers(result.data.users)
+          setTotalPages(Math.ceil(result.data.meta.total / 10))
+        }
+        else{
+          toast.error(`Failed to fetch users. ${result.error.message}`)
+        }
+
       } catch (err) {
         toast.error('Failed to fetch users. Please try again.')
       } finally {
@@ -139,7 +138,7 @@ function AdminUsers() {
 
   const handleSearch = () => {
     setPage(1)
-    fetchUsers({ ...filters, username: searchTerm })
+    fetchUsers({ ...filters, search_term: searchTerm })
   }
 
   const handleFilterChange = (key: 'role' | 'status', value: string) => {
@@ -147,17 +146,51 @@ function AdminUsers() {
     setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
-  const getStatusBadge = (user: User) => {
-    if (user.ban) {
-      return <Badge variant="destructive">Banned</Badge>
+  const getStatusBadges = (user: User) => {
+    const badges = []
+
+    if (user.activated) {
+      badges.push(
+        <Badge key="activated" variant="default" className="bg-green-500">
+          Activated
+        </Badge>,
+      )
+    } else {
+      badges.push(
+        <Badge key="not-activated" variant="secondary">
+          Not Activated
+        </Badge>,
+      )
     }
-    return user.activated ? (
-      <Badge variant="default" className="bg-green-500">
-        Activated
-      </Badge>
-    ) : (
-      <Badge variant="secondary">Not Activated</Badge>
-    )
+
+    if (user.ban) {
+      const now = new Date()
+      const expiresAt = new Date(user.ban.expires_at as string)
+
+      if (expiresAt > now) {
+        const timeRemaining = getTimeUntil(user.ban.expires_at as string)
+        badges.push(
+          <Badge key="banned" variant="destructive">
+            Banned ({timeRemaining})
+          </Badge>,
+        )
+      } else {
+        badges.push(
+          <Badge
+            key="ban-expired"
+            variant="outline"
+            className="border-orange-500 text-orange-600"
+          >
+            Ban Expired (
+            {new Intl.DateTimeFormat('en-CA').format(
+              new Date(user.ban.expires_at as string),
+            )}
+            )
+          </Badge>,
+        )
+      }
+    }
+    return badges
   }
 
   const getRoleBadge = (role: Role) => {
@@ -186,10 +219,10 @@ function AdminUsers() {
   const handleRoleChange = async (userId: string, newRole: Role) => {
     const result = await updateUserRole(userId, newRole)
 
-    if (result.error) {
-      toast.error(`Error when updating role: ${result.error.message}`)
-    } else {
+    if (result.success) {
       toast.success(`User role updated`)
+    } else {
+      toast.error(`Error when updating role: ${result.error.message}`)
     }
 
     fetchUsers(filters)
@@ -200,28 +233,23 @@ function AdminUsers() {
     setBanDialogOpen(true)
   }
 
-  const confirmBan = async () => {
-    if (selectedUser) {
-      const result = await banUser(selectedUser.id, banReason)
-      if (result.error) {
-        toast.error(`Error when banning a user: ${result.error.message}`)
-      } else {
-        toast.success(`User successfully banned`)
-      }
+  const handleBanDialogClose = () => {
+    setBanDialogOpen(false)
+    setSelectedUser(null)
+  }
 
-      setBanDialogOpen(false)
-      setBanReason('')
-      setSelectedUser(null)
-      fetchUsers(filters)
-    }
+  const handleBanSubmit = () => {
+    setBanDialogOpen(false)
+    setSelectedUser(null)
+    fetchUsers(filters)
   }
 
   const handleUnbanUser = async (userId: string) => {
     const result = await unbanUser(userId)
-    if (result.error) {
-      toast.error(`Error when unbanning a user: ${result.error.message}`)
-    } else {
+    if (result.success) {
       toast.success(`User successfully unbanned`)
+    } else {
+      toast.error(`Error when unbanning a user: ${result.error.message}`)
     }
 
     fetchUsers(filters)
@@ -283,7 +311,6 @@ function AdminUsers() {
               </SelectContent>
             </Select>
           </div>
-
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -312,7 +339,9 @@ function AdminUsers() {
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          {getStatusBadge(user)}
+                          <div className="flex flex-wrap gap-1">
+                            {getStatusBadges(user)}
+                          </div>
                           {user.ban && (
                             <span
                               title={user.ban.reason}
@@ -323,12 +352,10 @@ function AdminUsers() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {getTimeDifference(user.created_at)}
-                      </TableCell>
+                      <TableCell>{getTimeSince(user.created_at)}</TableCell>
                       <TableCell>
                         {user.last_login
-                          ? getTimeDifference(user.last_login)
+                          ? getTimeSince(user.last_login)
                           : 'Never'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -418,46 +445,12 @@ function AdminUsers() {
             </Pagination>
           </div>
 
-          <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Ban User</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to ban {selectedUser?.username}? Please
-                  provide a reason.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="ban-reason" className="text-right">
-                    Reason
-                  </Label>
-                  <Textarea
-                    id="ban-reason"
-                    value={banReason}
-                    onChange={(e) => setBanReason(e.target.value)}
-                    className="col-span-3"
-                    placeholder="Enter ban reason..."
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setBanDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={confirmBan}
-                  disabled={!banReason.trim()}
-                >
-                  Ban User
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <BanDialog
+            isOpen={banDialogOpen}
+            selectedUser={selectedUser}
+            onClose={handleBanDialogClose}
+            onSubmit={handleBanSubmit}
+          />
         </div>
       </main>
     </div>

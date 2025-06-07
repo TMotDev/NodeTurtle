@@ -1096,8 +1096,8 @@ func TestUnbanUser(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			c.SetPath("/api/:id")
-			c.SetParamNames("id")
+			c.SetPath("/api/:userID")
+			c.SetParamNames("userID")
 			c.SetParamValues(tt.userID)
 
 			err := handler.Unban(c)
