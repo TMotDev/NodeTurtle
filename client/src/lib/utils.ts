@@ -206,3 +206,16 @@ function formatTimeDifference(diffInMs: number, laterDate: Date, earlierDate: Da
 
   return `${monthDiff} month${monthDiff === 1 ? '' : 's'}`;
 }
+
+/**
+ * Checks if a ban is still active based on its expiration date.
+ *
+ * @param expiresAt A string representation of the ban expiration date
+ * @returns `true` if the ban is active (not expired), `false` otherwise.
+ */
+export function isBanActive(expiresAt: string): boolean {
+  const now = new Date();
+  const expirationDate = new Date(expiresAt);
+
+  return expirationDate > now;
+}

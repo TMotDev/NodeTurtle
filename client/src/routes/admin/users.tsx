@@ -40,7 +40,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import Header from '@/components/Header'
 import { listUsers, unbanUser, updateUserRole } from '@/services/api'
-import { getTimeSince, getTimeUntil } from '@/lib/utils'
+import { getTimeSince, getTimeUntil, isBanActive } from '@/lib/utils'
 import BanDialog from '@/components/BanDialog'
 
 export const Route = createFileRoute('/admin/users')({
@@ -121,10 +121,7 @@ function AdminUsers() {
     }
 
     if (user.ban) {
-      const now = new Date()
-      const expiresAt = new Date(user.ban.expires_at as string)
-
-      if (expiresAt > now) {
+      if (isBanActive(user.ban.expires_at as string)) {
         const timeRemaining = getTimeUntil(user.ban.expires_at as string)
         badges.push(
           <Badge key="banned" variant="destructive">
@@ -137,6 +134,7 @@ function AdminUsers() {
             key="ban-expired"
             variant="outline"
             className="border-orange-500 text-orange-600"
+            title={user.ban.reason}
           >
             Ban Expired (
             {new Intl.DateTimeFormat('en-CA').format(
@@ -296,7 +294,7 @@ function AdminUsers() {
                         <div className="flex flex-wrap gap-1">
                           {getStatusBadges(user)}
                         </div>
-                        {user.ban && (
+                        {user.ban && isBanActive(user.ban.expires_at as string) && (
                           <span
                             title={user.ban.reason}
                             className="text-xs text-muted-foreground overflow-hidden text-ellipsis w-36"
@@ -342,7 +340,7 @@ function AdminUsers() {
                             Set as Moderator
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          {user.ban ? (
+                          {user.ban && isBanActive(user.ban.expires_at as string) ? (
                             <DropdownMenuItem
                               onClick={() => handleUnbanUser(user.id)}
                               className="text-green-600"
