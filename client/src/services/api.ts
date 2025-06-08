@@ -238,14 +238,17 @@ export async function changePassword(
   new_password: string,
 ) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/users/me/password`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/users/me/password`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ old_password, new_password }),
       },
-      credentials: 'include',
-      body: JSON.stringify({ old_password, new_password }),
-    })
+    )
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))

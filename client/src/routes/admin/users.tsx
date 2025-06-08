@@ -38,7 +38,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import Header from '@/components/Header'
 import { listUsers, unbanUser, updateUserRole } from '@/services/api'
 import { getTimeSince, getTimeUntil } from '@/lib/utils'
@@ -48,44 +47,8 @@ export const Route = createFileRoute('/admin/users')({
   component: AdminUsers,
 })
 
-function TableSkeleton() {
-  return (
-    <>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <TableRow key={index}>
-          <TableCell>
-            <Skeleton className="h-5 w-24" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-5 w-32" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-5 w-16" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-5 w-20" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-5 w-20" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-5 w-28" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-5 w-28" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-8 w-8 rounded-md" />
-          </TableCell>
-        </TableRow>
-      ))}
-    </>
-  )
-}
-
 function AdminUsers() {
   const [users, setUsers] = useState<Array<User>>([])
-  const [loading, setLoading] = useState(true)
 
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
@@ -101,7 +64,6 @@ function AdminUsers() {
 
   const fetchUsers = useCallback(
     async (currentFilters: any) => {
-      setLoading(true)
       try {
         const queryParams: any = { page, limit: 10 }
         if (currentFilters.role !== 'all')
@@ -114,19 +76,14 @@ function AdminUsers() {
 
         const result = await listUsers(queryParams)
 
-        if(result.success)
-        {
+        if (result.success) {
           setUsers(result.data.users)
           setTotalPages(Math.ceil(result.data.meta.total / 10))
-        }
-        else{
+        } else {
           toast.error(`Failed to fetch users. ${result.error}`)
         }
-
       } catch (err) {
         toast.error('Failed to fetch users. Please try again.')
-      } finally {
-        setLoading(false)
       }
     },
     [page],
@@ -327,90 +284,84 @@ function AdminUsers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
-                  <TableSkeleton />
-                ) : (
-                  users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.username}
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{getRoleBadge(user.role)}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex flex-wrap gap-1">
-                            {getStatusBadges(user)}
-                          </div>
-                          {user.ban && (
-                            <span
-                              title={user.ban.reason}
-                              className="text-xs text-muted-foreground overflow-hidden text-ellipsis w-36"
-                            >
-                              {user.ban.reason}
-                            </span>
-                          )}
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">
+                      {user.username}
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{getRoleBadge(user.role)}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-wrap gap-1">
+                          {getStatusBadges(user)}
                         </div>
-                      </TableCell>
-                      <TableCell>{getTimeSince(user.created_at)}</TableCell>
-                      <TableCell>
-                        {user.last_login
-                          ? getTimeSince(user.last_login)
-                          : 'Never'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        {user.ban && (
+                          <span
+                            title={user.ban.reason}
+                            className="text-xs text-muted-foreground overflow-hidden text-ellipsis w-36"
+                          >
+                            {user.ban.reason}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{getTimeSince(user.created_at)}</TableCell>
+                    <TableCell>
+                      {user.last_login
+                        ? getTimeSince(user.last_login)
+                        : 'Never'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(user.id, Role.User)}
+                          >
+                            Set as User
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleRoleChange(user.id, Role.Premium)
+                            }
+                          >
+                            Set as Premium
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleRoleChange(user.id, Role.Moderator)
+                            }
+                          >
+                            Set as Moderator
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {user.ban ? (
                             <DropdownMenuItem
-                              onClick={() =>
-                                handleRoleChange(user.id, Role.User)
-                              }
+                              onClick={() => handleUnbanUser(user.id)}
+                              className="text-green-600"
                             >
-                              Set as User
+                              Unban User
                             </DropdownMenuItem>
+                          ) : (
                             <DropdownMenuItem
-                              onClick={() =>
-                                handleRoleChange(user.id, Role.Premium)
-                              }
+                              onClick={() => handleBanUser(user)}
+                              className="text-red-600"
                             >
-                              Set as Premium
+                              Ban User
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleRoleChange(user.id, Role.Moderator)
-                              }
-                            >
-                              Set as Moderator
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {user.ban ? (
-                              <DropdownMenuItem
-                                onClick={() => handleUnbanUser(user.id)}
-                                className="text-green-600"
-                              >
-                                Unban User
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() => handleBanUser(user)}
-                                className="text-red-600"
-                              >
-                                Ban User
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
