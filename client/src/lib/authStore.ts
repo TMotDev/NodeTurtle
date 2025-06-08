@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { checkAuthentication } from '@/services/api'
 
 export enum Role {
   User = 'user',
@@ -18,7 +19,7 @@ interface AuthState {
   user: null | User
   isLoading: boolean
   checkAuthStatus: () => void
-  setUser: (data: User|null) => void
+  setUser: (data: User | null) => void
   updateUser: (updatedData: Partial<User>) => void
 }
 
@@ -29,32 +30,23 @@ export const useAuthStore = create<AuthState>((set) => ({
   checkAuthStatus: async () => {
     set({ isLoading: true })
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/me`, {
-        credentials: 'include',
-      })
+    const result = await checkAuthentication()
 
-      if (response.ok) {
-        const data = await response.json()
-
-        const userData: User = {
-          username: data.username,
-          email: data.email,
-          id: data.id,
-          role: data.role as Role,
-        }
-
-        set({ user: userData, isLoading: false })
-      } else {
-        set({ user: null, isLoading: false })
+    if (result.success) {
+      const userData: User = {
+        username: result.data.username,
+        email: result.data.email,
+        id: result.data.id,
+        role: result.data.role as Role,
       }
-    } catch (error) {
-      console.error('Error checking authentication status:', error)
+
+      set({ user: userData, isLoading: false })
+    } else {
       set({ user: null, isLoading: false })
     }
   },
 
-  setUser: (data: User|null) => set({ user: data }),
+  setUser: (data: User | null) => set({ user: data }),
 
   updateUser: (updatedData: Partial<User>) =>
     set((state) => ({

@@ -24,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { resetPassword } from '@/services/api'
 
 export const Route = createFileRoute('/reset/$token')({
   component: PasswordResetPage,
@@ -60,41 +61,18 @@ function PasswordResetPage() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const { repeatPassword, ...submissionData } = values
+    const result = await resetPassword(token, values.password)
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/password/reset/${token}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ password: submissionData.password }),
-        },
-      )
-
-      if (!response.ok) {
-        let errorMessage = 'An unexpected error occurred. Please try again.'
-
-        const errorData = await response.json()
-        errorMessage = errorData.message || errorMessage
-
-        throw new Error(errorMessage)
-      }
-
+    if (result.success) {
       setFormStatus({ success: true, error: null })
-    } catch (error) {
+    } else {
       setFormStatus({
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred. Please try again.',
+        error: result.error,
       })
-    } finally {
-      setIsLoading(false)
     }
+
+    setIsLoading(false)
   }
 
   if (formStatus.success) {

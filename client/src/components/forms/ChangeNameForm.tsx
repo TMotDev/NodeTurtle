@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useFieldValidation } from '@/lib/utils'
 import useAuthStore from '@/lib/authStore'
+import { changeUsername } from '@/services/api'
 
 const changeUsernameSchema = z.object({
   username: usernameSchema,
@@ -65,40 +66,22 @@ export default function ChangeUsernameForm() {
       return
     }
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/me`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(values),
-      })
+    const result = await changeUsername(values.username, values.password)
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-
-        setFormStatus({
-          success: false,
-          error:
-            errorData.message ||
-            'An unexpected error occurred. Please try again.',
-        })
-      } else {
-        const data = await response.json()
-        updateUser({username: data.username})
-        setFormStatus({ success: true, error: null })
-        form.reset()
-        setValidationState({ username: 'idle', email: 'idle' })
-      }
-    } catch (error) {
+    if (result.success) {
+      updateUser({ username: result.data.username })
+      setFormStatus({ success: true, error: null })
+      form.reset()
+      setValidationState({ username: 'idle', email: 'idle' })
+    } else {
       setFormStatus({
         success: false,
-        error: 'An unexpected error occurred. Please try again.',
+        error:
+          result.error ||
+          'An unexpected error occurred. Please try again.',
       })
-    } finally {
-      setIsLoading(false)
     }
+    setIsLoading(false)
   }
 
   return (

@@ -32,7 +32,7 @@ export default function UserMenu() {
     const result = await logout()
 
     if(result.error){
-      console.warn('Logout request failed, but continuing with local logout:', result.error.message)
+      console.warn('Logout request failed, but continuing with local logout:', result.error)
     }
 
     setUser(null)

@@ -59,7 +59,7 @@ export default function LoginForm() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const result = await login(values)
+    const result = await login(values.email, values.password)
 
     if (result.success) {
       const userData: User = {
@@ -75,7 +75,7 @@ export default function LoginForm() {
       setFormStatus({
         success: false,
         error:
-          result.error.message ||
+          result.error ||
           'An unexpected error occurred. Please try again.',
       })
     }

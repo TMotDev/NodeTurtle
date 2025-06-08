@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { activateAccount } from '@/services/api'
 
 export const Route = createFileRoute('/activate/$token')({
   component: ActivationPage,
@@ -39,38 +40,18 @@ function ActivationPage() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/users/activate/${token}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      )
+    const result = await activateAccount(token)
 
-      if (!response.ok) {
-        let errorMessage = 'An unexpected error occurred. Please try again.'
-
-        const errorData = await response.json()
-        errorMessage = errorData.message || errorMessage
-
-        throw new Error(errorMessage)
-      }
-
+    if (result.success) {
       setFormStatus({ success: true, error: null })
-    } catch (error) {
+    } else {
       setFormStatus({
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred. Please try again.',
+        error: result.error,
       })
-    } finally {
-      setIsLoading(false)
     }
+
+    setIsLoading(false)
   }
 
   if (formStatus.success) {

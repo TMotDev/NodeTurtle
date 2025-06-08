@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { deactivateAccount } from '@/services/api'
 
 export const Route = createFileRoute('/deactivate/$token')({
   component: DeactivationPage,
@@ -49,58 +50,18 @@ function DeactivationPage() {
     setFormStatus({ success: false, error: null })
     setShowConfirmDialog(false)
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/deactivate/${token}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      )
+    const result = await deactivateAccount(token)
 
-      if (!response.ok) {
-        let errorMessage =
-          'Unable to deactivate account. Please try again or contact support.'
-
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.message || errorMessage
-        } catch {
-          if (response.status >= 500) {
-            errorMessage = 'Server error occurred. Please try again later.'
-          } else if (response.status === 404) {
-            errorMessage = 'Invalid or expired deactivation link.'
-          } else if (response.status === 429) {
-            errorMessage = 'Too many requests. Please try again later.'
-          }
-        }
-
-        throw new Error(errorMessage)
-      }
-
+    if (result.success) {
       setFormStatus({ success: true, error: null })
-    } catch (error) {
-      let errorMessage =
-        'Unable to deactivate account. Please try again or contact support.'
-
-      if (error instanceof Error) {
-        if (error.message === 'Failed to fetch') {
-          errorMessage =
-            'Network error. Please check your connection and try again.'
-        } else {
-          errorMessage = error.message
-        }
-      }
-
+    } else {
       setFormStatus({
         success: false,
-        error: errorMessage,
+        error: result.error,
       })
-    } finally {
-      setIsLoading(false)
     }
+
+    setIsLoading(false)
   }
 
   const handleFormSubmit = (e: React.FormEvent) => {

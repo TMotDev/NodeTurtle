@@ -120,7 +120,7 @@ function AdminUsers() {
           setTotalPages(Math.ceil(result.data.meta.total / 10))
         }
         else{
-          toast.error(`Failed to fetch users. ${result.error.message}`)
+          toast.error(`Failed to fetch users. ${result.error}`)
         }
 
       } catch (err) {
@@ -222,7 +222,7 @@ function AdminUsers() {
     if (result.success) {
       toast.success(`User role updated`)
     } else {
-      toast.error(`Error when updating role: ${result.error.message}`)
+      toast.error(`Error when updating role: ${result.error}`)
     }
 
     fetchUsers(filters)
@@ -249,7 +249,7 @@ function AdminUsers() {
     if (result.success) {
       toast.success(`User successfully unbanned`)
     } else {
-      toast.error(`Error when unbanning a user: ${result.error.message}`)
+      toast.error(`Error when unbanning a user: ${result.error}`)
     }
 
     fetchUsers(filters)

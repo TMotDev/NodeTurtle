@@ -24,6 +24,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { requestAccountDeactivation } from '@/services/api'
 
 const deactivateAccountSchema = z.object({
   password: z.string().min(1, 'Password is required'),
@@ -53,39 +54,21 @@ export default function DeactivateAccountForm({
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/users/me/deactivate`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(values),
-        },
-      )
+    const result = await requestAccountDeactivation(values.password)
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        setFormStatus({
-          success: false,
-          error:
-            errorData.message ||
-            'Failed to request account deactivation. Please try again.',
-        })
-      } else {
-        setFormStatus({ success: true, error: null })
-        form.reset()
-      }
-    } catch (error) {
+    if (result.success) {
+      setFormStatus({ success: true, error: null })
+      form.reset()
+    } else {
       setFormStatus({
         success: false,
-        error: 'An unexpected error occurred. Please try again.',
+        error:
+          result.error ||
+          'Failed to request account deactivation. Please try again.',
       })
-    } finally {
-      setIsLoading(false)
     }
+
+    setIsLoading(false)
   }
 
   const handleOpenChange = (open: boolean) => {

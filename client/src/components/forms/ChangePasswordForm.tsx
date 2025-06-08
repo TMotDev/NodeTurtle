@@ -16,6 +16,7 @@ import { passwordSchema } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { changePassword } from '@/services/api'
 
 const changePasswordSchema = z
   .object({
@@ -50,42 +51,26 @@ export default function ChangePasswordForm() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const { repeat_new_password, ...data } = values
+    const result = await changePassword(
+      values.old_password,
+      values.new_password,
+    )
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/users/me/password`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(data),
-        },
-      )
+    console.log(result)
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-
-        setFormStatus({
-          success: false,
-          error:
-            errorData.message ||
-            'An unexpected error occurred. Please try again.',
-        })
-      } else {
-        setFormStatus({ success: true, error: null })
-        form.reset()
-      }
-    } catch (error) {
+    if (result.success) {
+      setFormStatus({ success: true, error: null })
+      form.reset()
+    } else {
       setFormStatus({
         success: false,
-        error: 'An unexpected error occurred. Please try again.',
+        error:
+          result.error ||
+          'An unexpected error occurred. Please try again.',
       })
-    } finally {
-      setIsLoading(false)
     }
+
+    setIsLoading(false)
   }
 
   return (

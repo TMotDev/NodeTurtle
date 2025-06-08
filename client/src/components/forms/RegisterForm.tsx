@@ -34,6 +34,7 @@ import {
   usernameSchema,
 } from '@/lib/schemas'
 import { useFieldValidation } from '@/lib/utils'
+import { register } from '@/services/api'
 
 const registrationSchema = z
   .object({
@@ -96,39 +97,26 @@ export default function RegisterForm() {
       return
     }
 
-    const { repeatPassword, ...data } = values
+    const result = await register(
+      values.username,
+      values.email,
+      values.password,
+    )
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-
-        setFormStatus({
-          success: false,
-          error:
-            errorData.message ||
-            'An unexpected error occurred. Please try again.',
-        })
-      } else {
-        setFormStatus({ success: true, error: null })
-        form.reset()
-        setValidationState({ username: 'idle', email: 'idle' })
-      }
-    } catch (error) {
+    if (result.success) {
+      setFormStatus({ success: true, error: null })
+      form.reset()
+      setValidationState({ username: 'idle', email: 'idle' })
+    } else {
       setFormStatus({
         success: false,
-        error: 'An unexpected error occurred. Please try again.',
+        error:
+          result.error ||
+          'An unexpected error occurred. Please try again.',
       })
-    } finally {
-      setIsLoading(false)
     }
+
+    setIsLoading(false)
   }
 
   return (

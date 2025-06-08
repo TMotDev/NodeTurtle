@@ -3,6 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import { useCallback, useState } from 'react'
 import type { ClassValue } from 'clsx'
 import type z from 'zod'
+import { checkEmailAvailablity, checkUsernameAvailablity } from '@/services/api'
 
 export function cn(...inputs: Array<ClassValue>) {
   return twMerge(clsx(inputs))
@@ -95,16 +96,16 @@ export async function validateUserField(
   value: string,
 ): Promise<{ exists: boolean; error?: string }> {
   try {
-    const endpoint =
-      field === 'username'
-        ? `/users/username/${encodeURIComponent(value)}`
-        : `/users/email/${encodeURIComponent(value)}`
+    let result
+    if(field === 'username'){
+      result = await checkUsernameAvailablity(encodeURIComponent(value))
+    }
+    else{
+      result = await checkEmailAvailablity(encodeURIComponent(value))
+    }
 
-    const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`)
-
-    if (response.ok) {
-      const data = await response.json()
-      return { exists: data.exists || false }
+    if (result.success) {
+      return { exists: result.exists}
     } else {
       return { exists: false, error: 'Validation service unavailable' }
     }
@@ -125,10 +126,8 @@ export function getTimeUntil(dateString: string): string {
   const now = new Date();
   const futureDate = new Date(dateString);
 
-  // --- THE KEY CHANGE: Calculate time from now UNTIL the future date ---
   const diffInMs = futureDate.getTime() - now.getTime();
 
-  // --- New Edge Case: Handle dates that have already passed ---
   if (diffInMs <= 0) {
     return 'Expired';
   }
@@ -147,10 +146,8 @@ export function getTimeSince(dateString: string): string {
   const now = new Date();
   const pastDate = new Date(dateString);
 
-  // --- Calculate time from the past date UNTIL now ---
   const diffInMs = now.getTime() - pastDate.getTime();
 
-  // --- Handle dates that are in the future ---
   if (diffInMs <= 0) {
     return 'Unknown';
   }
@@ -167,42 +164,33 @@ export function getTimeSince(dateString: string): string {
  * @returns A formatted duration string without "ago" suffix
  */
 function formatTimeDifference(diffInMs: number, laterDate: Date, earlierDate: Date): string {
-  // --- Time Constants for Readability ---
   const MS_PER_MINUTE = 1000 * 60;
   const MS_PER_HOUR = MS_PER_MINUTE * 60;
   const MS_PER_DAY = MS_PER_HOUR * 24;
   const MS_PER_WEEK = MS_PER_DAY * 7;
 
-  // --- Logic Cascade for Time Difference ---
-
-  // Return minutes for durations under an hour
   if (diffInMs < MS_PER_HOUR) {
     const diffInMinutes = Math.floor(diffInMs / MS_PER_MINUTE);
     return `${diffInMinutes} minute${diffInMinutes === 1 ? '' : 's'}`;
   }
 
-  // Return hours for durations under a day
   if (diffInMs < MS_PER_DAY) {
     const diffInHours = Math.floor(diffInMs / MS_PER_HOUR);
     return `${diffInHours} hour${diffInHours === 1 ? '' : 's'}`;
   }
 
-  // Return days for durations under a week
   if (diffInMs < MS_PER_WEEK) {
     const diffInDays = Math.floor(diffInMs / MS_PER_DAY);
     return `${diffInDays} day${diffInDays === 1 ? '' : 's'}`;
   }
 
-  // Use absolute day difference for week/month checks
   const diffInDays = Math.floor(diffInMs / MS_PER_DAY);
 
-  // Return weeks for durations less than ~a month
   if (diffInDays < 30) {
     const diffInWeeks = Math.floor(diffInDays / 7);
     return `${diffInWeeks} week${diffInWeeks === 1 ? '' : 's'}`;
   }
 
-  // Return months using a timezone-safe UTC calendar calculation
   let monthDiff = (laterDate.getUTCFullYear() - earlierDate.getUTCFullYear()) * 12;
   monthDiff -= earlierDate.getUTCMonth();
   monthDiff += laterDate.getUTCMonth();
@@ -211,7 +199,6 @@ function formatTimeDifference(diffInMs: number, laterDate: Date, earlierDate: Da
     monthDiff--;
   }
 
-  // Fallback to weeks if the calendar month difference is zero
   if (monthDiff <= 0) {
     const diffInWeeks = Math.floor(diffInDays / 7);
     return `${diffInWeeks} week${diffInWeeks === 1 ? '' : 's'}`;

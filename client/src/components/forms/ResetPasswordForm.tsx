@@ -15,6 +15,7 @@ import type { FormStatus } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { requestPasswordReset } from '@/services/api'
 
 const passwordResetSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -38,38 +39,21 @@ export default function ResetPasswordForm() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/password/request-reset`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(values),
-        },
-      )
+    const result = await requestPasswordReset(values.email)
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        setFormStatus({
-          success: false,
-          error:
-            errorData.message ||
-            'Failed to send reset email. Please try again.',
-        })
-      } else {
-        setFormStatus({ success: true, error: null })
-        form.reset()
-      }
-    } catch (error) {
+    if (result.success) {
+      setFormStatus({ success: true, error: null })
+      form.reset()
+    } else {
       setFormStatus({
         success: false,
-        error: 'An unexpected error occurred. Please try again.',
+        error:
+          result.error ||
+          'Failed to send reset email. Please try again.',
       })
-    } finally {
-      setIsLoading(false)
     }
+
+    setIsLoading(false)
   }
 
   return (
