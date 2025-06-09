@@ -102,11 +102,11 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 	}
 
 	if user.Ban.IsValid() {
-		return "", nil, fmt.Errorf("%w (reason: %v)", services.ErrAccountSuspended, user.Ban.Reason)
+		return "", nil, fmt.Errorf("%w (reason: %v, expires at: %v)", services.ErrAccountSuspended, user.Ban.Reason, user.Ban.ExpiresAt.Local().Format("2006-01-02"))
 	}
 
 	// Update last login time
-	_, err = tx.Exec("UPDATE users SET last_login = NOW() WHERE id = $1", user.ID)
+	_, err = tx.Exec("UPDATE users SET last_login = NOW() AT TIME ZONE 'UTC' WHERE id = $1", user.ID)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to update last login time: %w", err)
 	}

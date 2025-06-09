@@ -1,6 +1,10 @@
 package services
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"time"
+)
 
 var (
 	ErrInactiveAccount    = errors.New("account is not activated")
@@ -18,3 +22,7 @@ var (
 	ErrInvalidData        = errors.New("invalid data: the provided input does not match the expected format")
 	ErrNoFields           = errors.New("no fields provided")
 )
+
+func BanMessage(reason string, expiresAt time.Time) error {
+	return fmt.Errorf("account is suspended. Reason: %s. Expires at: %s", reason, expiresAt.Local().Format("2006-01-02"))
+}

@@ -80,7 +80,7 @@ func (s UserService) CreateUser(reg data.UserRegistration) (*data.User, error) {
 	var user data.User
 	query := `
 	INSERT INTO users (email, username, password, role_id, activated, created_at)
-	VALUES ($1, $2, $3, $4, $5, NOW())
+	VALUES ($1, $2, $3, $4, $5, NOW() AT TIME ZONE 'UTC')
 	RETURNING id, email, username, activated, created_at
 	`
 	err = tx.QueryRow(

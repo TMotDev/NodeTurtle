@@ -211,7 +211,7 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 	}
 
 	if user.Ban.IsValid() {
-		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
+		return echo.NewHTTPError(http.StatusForbidden, services.BanMessage(user.Ban.Reason, user.Ban.ExpiresAt))
 	}
 
 	h.tokenService.DeleteAllForUser(data.ScopeRefresh, user.ID)

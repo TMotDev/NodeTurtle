@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"NodeTurtleAPI/internal/data"
+	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
 	"NodeTurtleAPI/internal/services/users"
 
@@ -77,7 +78,7 @@ func CheckBan(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 		}
 		if user.Ban.IsValid() {
-			return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
+			return echo.NewHTTPError(http.StatusForbidden, services.BanMessage(user.Ban.Reason, user.Ban.ExpiresAt))
 		}
 		return next(c)
 	}

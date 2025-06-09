@@ -71,7 +71,7 @@ export default function Header() {
                     <li>
                       <NavigationMenuLink asChild>
                         <Link to="/admin/dashboard">
-                          <div className="font-medium">Dashbaord</div>
+                          <div className="font-medium">Dashboard</div>
                           <div className="text-muted-foreground">
                             Overview and analytics
                           </div>

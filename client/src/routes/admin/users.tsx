@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { MoreHorizontal, Search } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import type { User } from '@/services/api'
-import { Role } from '@/lib/authStore'
+import useAuthStore, { Role } from '@/lib/authStore'
 import {
   Table,
   TableBody,
@@ -48,6 +48,8 @@ export const Route = createFileRoute('/admin/users')({
 })
 
 function AdminUsers() {
+
+  const contextUser = useAuthStore((state)=>state.user)
   const [users, setUsers] = useState<Array<User>>([])
 
   const [page, setPage] = useState(1)
@@ -311,7 +313,8 @@ function AdminUsers() {
                         : 'Never'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
+
+                      {contextUser?.username != user.username && <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
                             <span className="sr-only">Open menu</span>
@@ -356,7 +359,7 @@ function AdminUsers() {
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
-                      </DropdownMenu>
+                      </DropdownMenu>}
                     </TableCell>
                   </TableRow>
                 ))}

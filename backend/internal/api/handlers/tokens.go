@@ -57,7 +57,7 @@ func (h *TokenHandler) RequestActivationToken(c echo.Context) error {
 	}
 
 	if user.Ban.IsValid() {
-		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
+		return echo.NewHTTPError(http.StatusForbidden, services.BanMessage(user.Ban.Reason, user.Ban.ExpiresAt))
 	}
 
 	if user.IsActivated {
@@ -102,7 +102,7 @@ func (h *TokenHandler) ActivateAccount(c echo.Context) error {
 	}
 
 	if user.Ban.IsValid() {
-		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
+		return echo.NewHTTPError(http.StatusForbidden, services.BanMessage(user.Ban.Reason, user.Ban.ExpiresAt))
 	}
 
 	_, err = h.userService.UpdateUser(user.ID, data.UserUpdate{Activated: utils.Ptr(true)})
@@ -152,7 +152,7 @@ func (h *TokenHandler) RequestPasswordReset(c echo.Context) error {
 	}
 
 	if user.Ban.IsValid() {
-		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
+		return echo.NewHTTPError(http.StatusForbidden, services.BanMessage(user.Ban.Reason, user.Ban.ExpiresAt))
 	}
 
 	if !user.IsActivated {
@@ -214,7 +214,7 @@ func (h *TokenHandler) ResetPassword(c echo.Context) error {
 	}
 
 	if user.Ban.IsValid() {
-		return echo.NewHTTPError(http.StatusForbidden, "Account is suspended. Reason: "+user.Ban.Reason)
+		return echo.NewHTTPError(http.StatusForbidden, services.BanMessage(user.Ban.Reason, user.Ban.ExpiresAt))
 	}
 
 	if !user.IsActivated {
