@@ -28,7 +28,7 @@ import { Button } from '../ui/button'
 import type { FormStatus } from '@/lib/schemas'
 import type { Role, User } from '@/lib/authStore'
 import useAuthStore from '@/lib/authStore'
-import { login } from '@/services/api'
+import { API } from '@/services/api'
 
 const loginSchema = z.object({
   email: z.string().min(1),
@@ -59,7 +59,10 @@ export default function LoginForm() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const result = await login(values.email, values.password)
+    const result = await API.post('/auth/session', {
+      email: values.email,
+      password: values.password,
+    })
 
     if (result.success) {
       const userData: User = {
@@ -75,8 +78,7 @@ export default function LoginForm() {
       setFormStatus({
         success: false,
         error:
-          result.error ||
-          'An unexpected error occurred. Please try again.',
+          result.error,
       })
     }
     setIsLoading(false)

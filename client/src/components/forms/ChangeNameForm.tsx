@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useFieldValidation } from '@/lib/utils'
 import useAuthStore from '@/lib/authStore'
-import { changeUsername } from '@/services/api'
+import { API } from '@/services/api'
 
 const changeUsernameSchema = z.object({
   username: usernameSchema,
@@ -66,7 +66,10 @@ export default function ChangeUsernameForm() {
       return
     }
 
-    const result = await changeUsername(values.username, values.password)
+    const result = await API.put('/users/me', {
+      username: values.username,
+      password: values.password,
+    })
 
     if (result.success) {
       updateUser({ username: result.data.username })
@@ -77,8 +80,7 @@ export default function ChangeUsernameForm() {
       setFormStatus({
         success: false,
         error:
-          result.error ||
-          'An unexpected error occurred. Please try again.',
+          result.error,
       })
     }
     setIsLoading(false)

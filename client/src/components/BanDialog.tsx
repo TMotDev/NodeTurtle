@@ -5,8 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from './ui/textarea'
 import { Label } from './ui/label'
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
-import type { User } from '@/services/api'
-import { banUser } from '@/services/api'
+import type {User} from '@/services/api';
+import { API  } from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -56,7 +56,7 @@ export default function BanDialog({
   const confirmBan = async () => {
     if (selectedUser) {
       const d = getFinalDuration()
-      const result = await banUser(selectedUser.id, reason, d)
+      const result = await API.post('/admin/users/ban', { reason, user_id:selectedUser.id, d })
       if (result.success) {
         toast.success(`User successfully banned`)
       } else {

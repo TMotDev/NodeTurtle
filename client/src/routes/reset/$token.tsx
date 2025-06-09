@@ -24,7 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { resetPassword } from '@/services/api'
+import { API } from '@/services/api'
 
 export const Route = createFileRoute('/reset/$token')({
   component: PasswordResetPage,
@@ -61,7 +61,7 @@ function PasswordResetPage() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const result = await resetPassword(token, values.password)
+    const result = await API.put(`/password/reset/${token}`, {password: values.password})
 
     if (result.success) {
       setFormStatus({ success: true, error: null })

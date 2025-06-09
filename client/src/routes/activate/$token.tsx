@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { activateAccount } from '@/services/api'
+import { API } from '@/services/api'
 
 export const Route = createFileRoute('/activate/$token')({
   component: ActivationPage,
@@ -40,14 +40,14 @@ function ActivationPage() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const result = await activateAccount(token)
+    const result = await API.post(`/users/activate/${token}`)
 
     if (result.success) {
       setFormStatus({ success: true, error: null })
     } else {
       setFormStatus({
         success: false,
-        error: result.error,
+        error: result.error || 'Unexpected error occured while ',
       })
     }
 

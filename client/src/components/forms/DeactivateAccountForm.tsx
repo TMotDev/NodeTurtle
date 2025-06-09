@@ -17,14 +17,13 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { requestAccountDeactivation } from '@/services/api'
+import { API } from '@/services/api'
 
 const deactivateAccountSchema = z.object({
   password: z.string().min(1, 'Password is required'),
@@ -54,7 +53,7 @@ export default function DeactivateAccountForm({
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const result = await requestAccountDeactivation(values.password)
+    const result = await API.post('users/me/deactivate', { password:values.password })
 
     if (result.success) {
       setFormStatus({ success: true, error: null })
@@ -63,8 +62,7 @@ export default function DeactivateAccountForm({
       setFormStatus({
         success: false,
         error:
-          result.error ||
-          'Failed to request account deactivation. Please try again.',
+          result.error,
       })
     }
 

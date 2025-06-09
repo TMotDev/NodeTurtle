@@ -34,7 +34,7 @@ import {
   usernameSchema,
 } from '@/lib/schemas'
 import { useFieldValidation } from '@/lib/utils'
-import { register } from '@/services/api'
+import { API } from '@/services/api'
 
 const registrationSchema = z
   .object({
@@ -97,11 +97,7 @@ export default function RegisterForm() {
       return
     }
 
-    const result = await register(
-      values.username,
-      values.email,
-      values.password,
-    )
+    const result = await API.post(`/users`, { username:values.username, email:values.email, password:values.password })
 
     if (result.success) {
       setFormStatus({ success: true, error: null })
@@ -111,8 +107,7 @@ export default function RegisterForm() {
       setFormStatus({
         success: false,
         error:
-          result.error ||
-          'An unexpected error occurred. Please try again.',
+          result.error,
       })
     }
 

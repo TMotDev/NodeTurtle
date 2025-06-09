@@ -228,6 +228,8 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create new refresh token")
 	}
 
+	setTokenCookies(c, token, refreshToken.Plaintext)
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token":        token,
 		"refreshToekn": refreshToken.Plaintext,

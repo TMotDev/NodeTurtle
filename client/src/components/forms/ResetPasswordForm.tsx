@@ -15,7 +15,7 @@ import type { FormStatus } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { requestPasswordReset } from '@/services/api'
+import { API } from '@/services/api'
 
 const passwordResetSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -39,7 +39,7 @@ export default function ResetPasswordForm() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const result = await requestPasswordReset(values.email)
+    const result = await API.post('/password/request-reset', { email:values.email })
 
     if (result.success) {
       setFormStatus({ success: true, error: null })
@@ -48,8 +48,7 @@ export default function ResetPasswordForm() {
       setFormStatus({
         success: false,
         error:
-          result.error ||
-          'Failed to send reset email. Please try again.',
+          result.error,
       })
     }
 

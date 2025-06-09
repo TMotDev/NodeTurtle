@@ -16,7 +16,7 @@ import { passwordSchema } from '@/lib/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { changePassword } from '@/services/api'
+import { API } from '@/services/api'
 
 const changePasswordSchema = z
   .object({
@@ -51,10 +51,7 @@ export default function ChangePasswordForm() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const result = await changePassword(
-      values.old_password,
-      values.new_password,
-    )
+    const result = await API.put('/users/me/password', { old_password:values.old_password, new_password:values.new_password })
 
     console.log(result)
 
@@ -65,8 +62,7 @@ export default function ChangePasswordForm() {
       setFormStatus({
         success: false,
         error:
-          result.error ||
-          'An unexpected error occurred. Please try again.',
+          result.error,
       })
     }
 

@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import { useCallback, useState } from 'react'
 import type { ClassValue } from 'clsx'
 import type z from 'zod'
-import { checkEmailAvailablity, checkUsernameAvailablity } from '@/services/api'
+import { API } from '@/services/api'
 
 export function cn(...inputs: Array<ClassValue>) {
   return twMerge(clsx(inputs))
@@ -98,14 +98,14 @@ export async function validateUserField(
   try {
     let result
     if(field === 'username'){
-      result = await checkUsernameAvailablity(encodeURIComponent(value))
+      result = await API.get(`/users/username/${encodeURIComponent(value)}`)
     }
     else{
-      result = await checkEmailAvailablity(encodeURIComponent(value))
+      result = await API.get(`/users/email/${encodeURIComponent(value)}`)
     }
 
     if (result.success) {
-      return { exists: result.exists}
+      return { exists: result.data.exists}
     } else {
       return { exists: false, error: 'Validation service unavailable' }
     }

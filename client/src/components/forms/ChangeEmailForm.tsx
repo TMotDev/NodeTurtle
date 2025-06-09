@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useFieldValidation } from '@/lib/utils'
 import useAuthStore from '@/lib/authStore'
-import { changeEmail } from '@/services/api'
+import { API } from '@/services/api'
 
 const changeEmailSchema = z.object({
   email: emailSchema,
@@ -66,7 +66,7 @@ export default function ChangeEmailForm() {
       return
     }
 
-    const result = await changeEmail(values.email, values.password)
+    const result = await API.post('/users/me', { email: values.email, password: values.password })
 
     if (result.success) {
       updateUser({ email: result.data.email })
@@ -77,8 +77,7 @@ export default function ChangeEmailForm() {
       setFormStatus({
         success: false,
         error:
-          result.error ||
-          'An unexpected error occurred. Please try again.',
+          result.error,
       })
     }
     setIsLoading(false)

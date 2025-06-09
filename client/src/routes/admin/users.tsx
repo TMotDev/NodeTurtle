@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import { MoreHorizontal, Search } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
-import type { User } from '@/services/api'
+import type {User} from '@/services/api';
 import useAuthStore, { Role } from '@/lib/authStore'
 import {
   Table,
@@ -39,9 +39,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import Header from '@/components/Header'
-import { listUsers, unbanUser, updateUserRole } from '@/services/api'
 import { getTimeSince, getTimeUntil, isBanActive } from '@/lib/utils'
 import BanDialog from '@/components/BanDialog'
+import { API  } from '@/services/api'
 
 export const Route = createFileRoute('/admin/users')({
   component: AdminUsers,
@@ -76,8 +76,10 @@ function AdminUsers() {
         if (currentFilters.search_term)
           queryParams.search_term = currentFilters.search_term
 
-        const result = await listUsers(queryParams)
+        const params = new URLSearchParams(queryParams).toString()
+        const result = await API.get(`/admin/users/all?${params}`)
 
+        console.log(result)
         if (result.success) {
           setUsers(result.data.users)
           setTotalPages(Math.ceil(result.data.meta.total / 10))
@@ -174,7 +176,7 @@ function AdminUsers() {
   }
 
   const handleRoleChange = async (userId: string, newRole: Role) => {
-    const result = await updateUserRole(userId, newRole)
+    const result = await API.put(`/admin/users/${userId}`, { role:newRole })
 
     if (result.success) {
       toast.success(`User role updated`)
@@ -202,7 +204,7 @@ function AdminUsers() {
   }
 
   const handleUnbanUser = async (userId: string) => {
-    const result = await unbanUser(userId)
+    const result = await API.delete(`/admin/users/ban/${userId}`)
     if (result.success) {
       toast.success(`User successfully unbanned`)
     } else {
