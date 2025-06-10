@@ -19,23 +19,16 @@ import {
 import { Button } from './ui/button'
 import AccountSettings from './AccountSettings'
 import useAuthStore from '@/lib/authStore'
-import { API } from '@/services/api'
 
 export default function UserMenu() {
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false)
 
-  const [setUser, isLoading, user] = useAuthStore(
-    useShallow((state) => [state.setUser, state.isLoading, state.user]),
+  const [isLoading, user, logout] = useAuthStore(
+    useShallow((state) => [state.isLoading, state.user, state.logout]),
   )
 
   async function handleLogout() {
-    const result = await API.delete('/auth/session')
-
-    if(!result.success && result.error){
-      console.warn('Logout request failed, but continuing with local logout:', result.error)
-    }
-
-    setUser(null)
+    await logout()
   }
 
   if (!user) return null

@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import { MoreHorizontal, Search } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
-import type {User} from '@/services/api';
+import type { User } from '@/services/api'
 import useAuthStore, { Role } from '@/lib/authStore'
 import {
   Table,
@@ -39,17 +39,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import Header from '@/components/Header'
-import { getTimeSince, getTimeUntil, isBanActive } from '@/lib/utils'
+import {
+  getTimeSince,
+  getTimeUntil,
+  isBanActive,
+  requireAuth,
+} from '@/lib/utils'
 import BanDialog from '@/components/BanDialog'
-import { API  } from '@/services/api'
+import { API } from '@/services/api'
 
 export const Route = createFileRoute('/admin/users')({
+  beforeLoad: requireAuth(Role.Admin),
   component: AdminUsers,
 })
 
 function AdminUsers() {
-
-  const contextUser = useAuthStore((state)=>state.user)
+  const contextUser = useAuthStore((state) => state.user)
   const [users, setUsers] = useState<Array<User>>([])
 
   const [page, setPage] = useState(1)
@@ -79,7 +84,6 @@ function AdminUsers() {
         const params = new URLSearchParams(queryParams).toString()
         const result = await API.get(`/admin/users/all?${params}`)
 
-        console.log(result)
         if (result.success) {
           setUsers(result.data.users)
           setTotalPages(Math.ceil(result.data.meta.total / 10))
@@ -176,7 +180,7 @@ function AdminUsers() {
   }
 
   const handleRoleChange = async (userId: string, newRole: Role) => {
-    const result = await API.put(`/admin/users/${userId}`, { role:newRole })
+    const result = await API.put(`/admin/users/${userId}`, { role: newRole })
 
     if (result.success) {
       toast.success(`User role updated`)
@@ -298,14 +302,15 @@ function AdminUsers() {
                         <div className="flex flex-wrap gap-1">
                           {getStatusBadges(user)}
                         </div>
-                        {user.ban && isBanActive(user.ban.expires_at as string) && (
-                          <span
-                            title={user.ban.reason}
-                            className="text-xs text-muted-foreground overflow-hidden text-ellipsis w-36"
-                          >
-                            {user.ban.reason}
-                          </span>
-                        )}
+                        {user.ban &&
+                          isBanActive(user.ban.expires_at as string) && (
+                            <span
+                              title={user.ban.reason}
+                              className="text-xs text-muted-foreground overflow-hidden text-ellipsis w-36"
+                            >
+                              {user.ban.reason}
+                            </span>
+                          )}
                       </div>
                     </TableCell>
                     <TableCell>{getTimeSince(user.created_at)}</TableCell>
@@ -315,53 +320,57 @@ function AdminUsers() {
                         : 'Never'}
                     </TableCell>
                     <TableCell className="text-right">
-
-                      {contextUser?.username != user.username && <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => handleRoleChange(user.id, Role.User)}
-                          >
-                            Set as User
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleRoleChange(user.id, Role.Premium)
-                            }
-                          >
-                            Set as Premium
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleRoleChange(user.id, Role.Moderator)
-                            }
-                          >
-                            Set as Moderator
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {user.ban && isBanActive(user.ban.expires_at as string) ? (
+                      {contextUser?.username != user.username && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem
-                              onClick={() => handleUnbanUser(user.id)}
-                              className="text-green-600"
+                              onClick={() =>
+                                handleRoleChange(user.id, Role.User)
+                              }
                             >
-                              Unban User
+                              Set as User
                             </DropdownMenuItem>
-                          ) : (
                             <DropdownMenuItem
-                              onClick={() => handleBanUser(user)}
-                              className="text-red-600"
+                              onClick={() =>
+                                handleRoleChange(user.id, Role.Premium)
+                              }
                             >
-                              Ban User
+                              Set as Premium
                             </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>}
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleRoleChange(user.id, Role.Moderator)
+                              }
+                            >
+                              Set as Moderator
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {user.ban &&
+                            isBanActive(user.ban.expires_at as string) ? (
+                              <DropdownMenuItem
+                                onClick={() => handleUnbanUser(user.id)}
+                                className="text-green-600"
+                              >
+                                Unban User
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => handleBanUser(user)}
+                                className="text-red-600"
+                              >
+                                Ban User
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

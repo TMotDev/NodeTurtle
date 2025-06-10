@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { deactivateAccount } from '@/services/api'
+import { API } from '@/services/api'
 
 export const Route = createFileRoute('/deactivate/$token')({
   component: DeactivationPage,
@@ -50,7 +50,7 @@ function DeactivationPage() {
     setFormStatus({ success: false, error: null })
     setShowConfirmDialog(false)
 
-    const result = await deactivateAccount(token)
+    const result = await API.post(`/auth/deactivate/${token}`)
 
     if (result.success) {
       setFormStatus({ success: true, error: null })

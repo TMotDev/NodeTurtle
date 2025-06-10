@@ -12,6 +12,7 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as RegisterImport } from './routes/register'
+import { Route as NotfoundImport } from './routes/notfound'
 import { Route as LoginImport } from './routes/login'
 import { Route as IndexImport } from './routes/index'
 import { Route as ResetTokenImport } from './routes/reset/$token'
@@ -25,6 +26,12 @@ import { Route as ActivateTokenImport } from './routes/activate/$token'
 const RegisterRoute = RegisterImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const NotfoundRoute = NotfoundImport.update({
+  id: '/notfound',
+  path: '/notfound',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -88,6 +95,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/notfound': {
+      id: '/notfound'
+      path: '/notfound'
+      fullPath: '/notfound'
+      preLoaderRoute: typeof NotfoundImport
+      parentRoute: typeof rootRoute
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -138,6 +152,7 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -149,6 +164,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -161,6 +177,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -174,6 +191,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/notfound'
     | '/register'
     | '/activate/$token'
     | '/admin/dashboard'
@@ -184,6 +202,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/notfound'
     | '/register'
     | '/activate/$token'
     | '/admin/dashboard'
@@ -194,6 +213,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
+    | '/notfound'
     | '/register'
     | '/activate/$token'
     | '/admin/dashboard'
@@ -206,6 +226,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  NotfoundRoute: typeof NotfoundRoute
   RegisterRoute: typeof RegisterRoute
   ActivateTokenRoute: typeof ActivateTokenRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
@@ -217,6 +238,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  NotfoundRoute: NotfoundRoute,
   RegisterRoute: RegisterRoute,
   ActivateTokenRoute: ActivateTokenRoute,
   AdminDashboardRoute: AdminDashboardRoute,
@@ -237,6 +259,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/login",
+        "/notfound",
         "/register",
         "/activate/$token",
         "/admin/dashboard",
@@ -250,6 +273,9 @@ export const routeTree = rootRoute
     },
     "/login": {
       "filePath": "login.tsx"
+    },
+    "/notfound": {
+      "filePath": "notfound.tsx"
     },
     "/register": {
       "filePath": "register.tsx"

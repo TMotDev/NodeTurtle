@@ -53,7 +53,9 @@ export default function DeactivateAccountForm({
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const result = await API.post('users/me/deactivate', { password:values.password })
+    const result = await API.post('/users/me/deactivate', {
+      password: values.password,
+    })
 
     if (result.success) {
       setFormStatus({ success: true, error: null })
@@ -61,8 +63,7 @@ export default function DeactivateAccountForm({
     } else {
       setFormStatus({
         success: false,
-        error:
-          result.error,
+        error: result.error,
       })
     }
 

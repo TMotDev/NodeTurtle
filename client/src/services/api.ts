@@ -1,4 +1,4 @@
-import type { Role } from '@/lib/authStore';
+import type { Role } from '@/lib/authStore'
 import useAuthStore from '@/lib/authStore'
 
 export type Ban = {
@@ -23,7 +23,6 @@ export type User = {
 type ApiResponse<T = any> =
   | { success: true; data: T }
   | { success: false; error: string }
-
 
 type QueuedRequest = {
   resolve: (value: any) => void
@@ -91,10 +90,10 @@ class FetchHandler {
         credentials: 'include',
       })
 
-      // Handle 401 - Token expired
+      // Handle status 401 - Token expired
       if (response.status === 401 && !isRetry) {
         if (this.isRefreshing) {
-          // If refresh is in progress, queue this request
+          // If refresh is in progress, queue the request
           return new Promise((resolve, reject) => {
             this.requestQueue.push({
               resolve,
@@ -118,7 +117,7 @@ class FetchHandler {
           this.isRefreshing = false
 
           // Process queued requests
-          await this.processQueue(refreshSuccess)
+          this.processQueue(refreshSuccess)
 
           if (refreshSuccess) {
             // Retry the original request
@@ -144,7 +143,7 @@ class FetchHandler {
         }
       }
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
       return { success: true, data }
     } catch (error) {
       console.error('API request failed:', error)
@@ -158,10 +157,7 @@ class FetchHandler {
     }
   }
 
-  async get<T>(
-    url: string,
-    options: RequestInit = {},
-  ): Promise<ApiResponse> {
+  async get<T>(url: string, options: RequestInit = {}): Promise<ApiResponse> {
     return this.makeRequest<T>(url, { ...options, method: 'GET' })
   }
 

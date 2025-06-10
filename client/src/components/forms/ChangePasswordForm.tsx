@@ -51,9 +51,10 @@ export default function ChangePasswordForm() {
     setIsLoading(true)
     setFormStatus({ success: false, error: null })
 
-    const result = await API.put('/users/me/password', { old_password:values.old_password, new_password:values.new_password })
-
-    console.log(result)
+    const result = await API.put('/users/me/password', {
+      old_password: values.old_password,
+      new_password: values.new_password,
+    })
 
     if (result.success) {
       setFormStatus({ success: true, error: null })
@@ -61,8 +62,7 @@ export default function ChangePasswordForm() {
     } else {
       setFormStatus({
         success: false,
-        error:
-          result.error,
+        error: result.error,
       })
     }
 

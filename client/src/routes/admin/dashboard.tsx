@@ -19,12 +19,14 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import Header from '@/components/Header'
+import { requireAuth } from '@/lib/utils'
+import { Role } from '@/lib/authStore'
 
 export const Route = createFileRoute('/admin/dashboard')({
+  beforeLoad: requireAuth(Role.Admin),
   component: AdminDashboard,
 })
 
-// Mock data - replace with real API calls
 const mockStats = {
   totalUsers: 1243,
   newUsers: 89,

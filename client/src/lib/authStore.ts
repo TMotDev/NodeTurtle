@@ -19,7 +19,6 @@ export type User = {
 interface AuthState {
   user: null | User
   isLoading: boolean
-  isAuthenticated: boolean
   checkAuthStatus: () => Promise<void>
   setUser: (data: User | null) => void
   updateUser: (updatedData: Partial<User>) => void
@@ -30,7 +29,6 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
-  isAuthenticated: false,
 
   checkAuthStatus: async () => {
     set({ isLoading: true })
@@ -48,13 +46,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         user: userData,
         isLoading: false,
-        isAuthenticated: true
       })
     } else {
       set({
         user: null,
         isLoading: false,
-        isAuthenticated: false
       })
     }
   },
@@ -62,7 +58,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (data: User | null) =>
     set({
       user: data,
-      isAuthenticated: !!data
     }),
 
   updateUser: (updatedData: Partial<User>) =>
@@ -73,8 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearAuth: () =>
     set({
       user: null,
-      isAuthenticated: false,
-      isLoading: false
+      isLoading: false,
     }),
 
   logout: async () => {
@@ -85,7 +79,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } finally {
       get().clearAuth()
     }
-  }
+  },
 }))
 
 export default useAuthStore
