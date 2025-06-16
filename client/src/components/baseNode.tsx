@@ -1,13 +1,22 @@
 import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
 import { Rocket } from "lucide-react";
-import { memo } from "react";
-import {  Position } from "@xyflow/react";
+import { memo, useCallback } from "react";
+import {  Position, useNodeId, useReactFlow } from "@xyflow/react";
 import  { BaseNode } from "./base-node";
 import { NodeHeader, NodeHeaderActions, NodeHeaderDeleteAction, NodeHeaderIcon, NodeHeaderMenuAction, NodeHeaderTitle } from "./node-header";
 import { BaseHandle } from "./base-handle";
 import type {NodeProps} from "@xyflow/react";
 
 const NodeBase = memo(({ selected }: NodeProps) => {
+
+    const id = useNodeId();
+    const { setNodes } = useReactFlow();
+
+    const handleDelete = useCallback(() => {
+      setNodes((prevNodes) => prevNodes.filter((node) => node.id !== id));
+    }, [id, setNodes]);
+
+
   return (
     <BaseNode selected={selected} className="px-3 py-2">
         <BaseHandle id="target-1" type="target" position={Position.Left} />
@@ -18,15 +27,10 @@ const NodeBase = memo(({ selected }: NodeProps) => {
         </NodeHeaderIcon>
         <NodeHeaderTitle>Node Title</NodeHeaderTitle>
         <NodeHeaderActions>
-          <NodeHeaderMenuAction label="Expand account options">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuItem>Team</DropdownMenuItem>
-            <DropdownMenuItem>Subscription</DropdownMenuItem>
+          <NodeHeaderMenuAction label="Expand node options">
+            <DropdownMenuItem className="px-2 py-1 cursor-pointer text-xl hover:bg-gray-200">Duplicate</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleDelete} className="px-2 py-1 cursor-pointer text-xl hover:bg-gray-200">Delete</DropdownMenuItem>
           </NodeHeaderMenuAction>
-          <NodeHeaderDeleteAction />
         </NodeHeaderActions>
       </NodeHeader>
       <div className="mt-2">Node Content</div>

@@ -10,7 +10,7 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react'
-import { useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type {
   Edge,
   Node,
@@ -20,8 +20,8 @@ import type {
 } from '@xyflow/react'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { DnDProvider, useDnD } from '@/hooks/DnDContext'
-import NodeSiderbar from '@/components/nodeSiderbar'
 import NodeBase from '@/components/baseNode'
+import NodeSiderbar from '@/components/nodeSiderbar'
 
 export const Route = createFileRoute('/new')({
   component: Flow,
@@ -35,12 +35,13 @@ const NODE_TYPES = {
   move: { label: 'Process', color: 'bg-blue-500', executable: true },
 }
 
+// TODO: nodeData types
 const NODE_EXECUTORS = {
-  start: (nodeData) => {
+  start: (nodeData: any) => {
     console.log('Executing Start Node:', nodeData)
     return { success: true, output: 'Started' }
   },
-  move: (nodeData) => {
+  move: (nodeData: any) => {
     console.log('Executing Move Node:', nodeData)
 
     return {
@@ -48,7 +49,6 @@ const NODE_EXECUTORS = {
       output: `Processed: ${nodeData.value || 'default'}`,
     }
   },
-
 }
 
 const initialNodes: Array<Node> = [
@@ -94,10 +94,20 @@ function FlowEditor() {
     [setEdges],
   )
 
-const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     event.dataTransfer.dropEffect = 'move'
-}, [])
+  }, [])
+
+  const onNodeContextMenu = useCallback(
+    (event:React.MouseEvent, node:Node) => {
+      event.preventDefault()
+
+
+
+    },
+    [],
+  )
 
   const onDrop = useCallback(
     (event: { preventDefault: () => void; clientX: any; clientY: any }) => {
@@ -144,8 +154,12 @@ const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
           onDrop={onDrop}
           onDragStart={onDragStart}
           onDragOver={onDragOver}
+          onNodeContextMenu={onNodeContextMenu}
           fitView
           nodeTypes={nodeTypes}
+          panOnScroll
+          panOnDrag={[1, 2]}
+          selectionOnDrag
         >
           <Background />
         </ReactFlow>
