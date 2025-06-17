@@ -31,7 +31,7 @@ export const Route = createFileRoute('/new')({
 })
 
 let id = 0
-const getId = () => `dndnode_${id++}`
+const getId = () => `n_${id++}`
 
 const NODE_TYPES = {
   start: { label: 'Start', color: 'bg-green-500', executable: true },
@@ -138,6 +138,14 @@ function FlowEditor() {
   const duplicateNode = useCallback(
     (nodeId: string) => {
       const node = getNodes().find((n) => n.id === nodeId)
+      const selectedNodes = getNodes().filter((n) => n.selected)
+
+      // check if nodes are selected using shift button
+      if (selectedNodes.length > 1) {
+        duplicateSelection()
+        return
+      }
+
       if (node) {
         const newNode = {
           ...node,
@@ -158,6 +166,13 @@ function FlowEditor() {
 
   const deleteNode = useCallback(
     (nodeId: string) => {
+      const selectedNodes = getNodes().filter((n) => n.selected)
+
+      if (selectedNodes.length > 1) {
+        deleteSelection()
+        return
+      }
+
       deleteElements({ nodes: [{ id: nodeId }] })
     },
     [deleteElements],
@@ -173,7 +188,6 @@ function FlowEditor() {
   const duplicateSelection = useCallback(() => {
     const selectedNodes = getNodes().filter((n) => n.selected)
     const selectedNodeIds = new Set(selectedNodes.map((n) => n.id))
-
     const selectedEdges = getEdges().filter(
       (edge) =>
         selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target),
@@ -257,6 +271,7 @@ function FlowEditor() {
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
@@ -267,11 +282,11 @@ function FlowEditor() {
           onPaneClick={onPaneClick}
           onSelectionContextMenu={onSelectionContextMenu}
           fitView
-          selectionMode={SelectionMode.Partial}
-          nodeTypes={nodeTypes}
           panOnScroll
           panOnDrag={[1, 2]}
           selectionOnDrag
+          selectionMode={SelectionMode.Partial}
+          multiSelectionKeyCode={'Shift'}
         >
           <Background />
           <DevTools position="top-left" />
