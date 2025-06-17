@@ -2,8 +2,8 @@ import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@rad
 import { Rocket } from "lucide-react";
 import { memo, useCallback } from "react";
 import {  Position, useNodeId, useReactFlow } from "@xyflow/react";
-import  { BaseNode } from "./base-node";
 import { NodeHeader, NodeHeaderActions, NodeHeaderDeleteAction, NodeHeaderIcon, NodeHeaderMenuAction, NodeHeaderTitle } from "./node-header";
+import  { BaseNode } from "./base-node";
 import { BaseHandle } from "./base-handle";
 import type {NodeProps} from "@xyflow/react";
 

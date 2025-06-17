@@ -19,11 +19,11 @@ import type {
   OnEdgesChange,
   OnNodesChange,
 } from '@xyflow/react'
-import { ContextMenu } from '@/components/ContextMenu'
+import { ContextMenu } from '@/components/node-flow/ContextMenu'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { DnDProvider, useDnD } from '@/hooks/DnDContext'
-import NodeBase from '@/components/baseNode'
-import NodeSiderbar from '@/components/NodeSiderbar'
+import NodeBase from '@/components/node-flow/baseNode'
+import NodeSiderbar from '@/components/node-flow/NodeSiderbar'
 import { DevTools } from '@/components/devtools'
 
 export const Route = createFileRoute('/new')({
