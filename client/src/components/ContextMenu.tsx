@@ -2,7 +2,6 @@ import { Copy, Trash2 } from 'lucide-react'
 import { Button } from './ui/button'
 
 export type contextMenuProps = {
-  id: string
   top: number
   left: number
 }
@@ -15,8 +14,8 @@ export const ContextMenu = ({
 }: {
   data: contextMenuProps
   onClose: () => void
-  onDuplicate: (id: string) => void
-  onDelete: (id: string) => void
+  onDuplicate: () => void
+  onDelete: () => void
 }) => (
   <div
     style={{ top: data.top, left: data.left }}
@@ -29,7 +28,7 @@ export const ContextMenu = ({
         size="sm"
         className="w-full justify-start px-3 py-1 h-8"
         onClick={() => {
-          onDuplicate(data.id)
+          onDuplicate()
           onClose()
         }}
       >
@@ -41,7 +40,7 @@ export const ContextMenu = ({
         size="sm"
         className="w-full justify-start px-3 py-1 h-8 text-red-600 hover:text-red-700"
         onClick={() => {
-          onDelete(data.id)
+          onDelete()
           onClose()
         }}
       >

@@ -3,6 +3,7 @@ import {
   Background,
   ReactFlow,
   ReactFlowProvider,
+  SelectionMode,
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
@@ -10,8 +11,7 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react'
-import { useCallback, useRef, useState } from 'react'
-import { Copy, Trash2 } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import type {
   Edge,
   Node,
@@ -19,13 +19,12 @@ import type {
   OnEdgesChange,
   OnNodesChange,
 } from '@xyflow/react'
-import type { contextMenuProps } from '@/components/ContextMenu'
 import { ContextMenu } from '@/components/ContextMenu'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { DnDProvider, useDnD } from '@/hooks/DnDContext'
 import NodeBase from '@/components/baseNode'
-import NodeSiderbar from '@/components/nodeSiderbar'
-import { Button } from '@/components/ui/button'
+import NodeSiderbar from '@/components/NodeSiderbar'
+import { DevTools } from '@/components/devtools'
 
 export const Route = createFileRoute('/new')({
   component: Flow,
@@ -69,7 +68,15 @@ const initialEdges: Array<Edge> = []
 function FlowEditor() {
   const [nodes, setNodes] = useNodesState(initialNodes)
   const [edges, setEdges] = useEdgesState(initialEdges)
-  const [contextMenu, setContextMenu] = useState<contextMenuProps | null>(null)
+  const [contextMenu, setContextMenu] = useState<{
+    id: string
+    top: number
+    left: number
+  } | null>(null)
+  const [selectionContextMenu, setSelectionContextMenu] = useState<{
+    top: number
+    left: number
+  } | null>(null)
 
   const {
     screenToFlowPosition,
@@ -130,11 +137,11 @@ function FlowEditor() {
 
   const duplicateNode = useCallback(
     (nodeId: string) => {
-      const node = nodes.find((n) => n.id === nodeId)
+      const node = getNodes().find((n) => n.id === nodeId)
       if (node) {
         const newNode = {
           ...node,
-          id: `${node.type}_${Date.now()}`,
+          id: getId(),
           position: {
             x: node.position.x + 50,
             y: node.position.y + 50,
@@ -146,10 +153,9 @@ function FlowEditor() {
         )
       }
     },
-    [nodes, setNodes],
+    [getNodes, setNodes],
   )
 
-  // Delete node
   const deleteNode = useCallback(
     (nodeId: string) => {
       deleteElements({ nodes: [{ id: nodeId }] })
@@ -157,17 +163,84 @@ function FlowEditor() {
     [deleteElements],
   )
 
+  const deleteSelection = useCallback(() => {
+    const selectedNodes = getNodes().filter((n) => n.selected)
+    const selectedEdges = getEdges().filter((e) => e.selected)
+    deleteElements({ nodes: selectedNodes, edges: selectedEdges })
+    setSelectionContextMenu(null)
+  }, [getNodes, getEdges, deleteElements])
+
+  const duplicateSelection = useCallback(() => {
+    const selectedNodes = getNodes().filter((n) => n.selected)
+    const selectedNodeIds = new Set(selectedNodes.map((n) => n.id))
+
+    const selectedEdges = getEdges().filter(
+      (edge) =>
+        selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target),
+    )
+
+    if (selectedNodes.length === 0) return
+
+    const nodeIdMap: Record<string, string> = {}
+    const newNodes = selectedNodes.map((node) => {
+      const newId = getId()
+      nodeIdMap[node.id] = newId
+      return {
+        ...node,
+        id: newId,
+        position: { x: node.position.x + 50, y: node.position.y + 50 },
+        selected: true,
+      }
+    })
+
+    const newEdges = selectedEdges.map((edge) => ({
+      ...edge,
+      id: `e${nodeIdMap[edge.source]}-${nodeIdMap[edge.target]}`,
+      source: nodeIdMap[edge.source],
+      target: nodeIdMap[edge.target],
+      selected: true,
+    }))
+
+    setNodes((nds) => [
+      ...nds.map((n) => ({ ...n, selected: false })),
+      ...newNodes,
+    ])
+    setEdges((eds) => [
+      ...eds.map((e) => ({ ...e, selected: false })),
+      ...newEdges,
+    ])
+    setSelectionContextMenu(null)
+  }, [getNodes, getEdges, setNodes, setEdges])
+
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault()
+      setSelectionContextMenu(null)
       setContextMenu({
         id: node.id,
         top: event.clientY,
         left: event.clientX,
       })
     },
-    [],
+    [setContextMenu],
   )
+
+  const onSelectionContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault()
+      setContextMenu(null)
+      setSelectionContextMenu({
+        top: event.clientY,
+        left: event.clientX,
+      })
+    },
+    [setSelectionContextMenu],
+  )
+
+  const onPaneClick = useCallback(() => {
+    setContextMenu(null)
+    setSelectionContextMenu(null)
+  }, [])
 
   const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
     const nodeType = event.dataTransfer.getData('text/plain')
@@ -191,21 +264,33 @@ function FlowEditor() {
           onDragStart={onDragStart}
           onDragOver={onDragOver}
           onNodeContextMenu={onNodeContextMenu}
+          onPaneClick={onPaneClick}
+          onSelectionContextMenu={onSelectionContextMenu}
           fitView
+          selectionMode={SelectionMode.Partial}
           nodeTypes={nodeTypes}
           panOnScroll
           panOnDrag={[1, 2]}
           selectionOnDrag
         >
           <Background />
+          <DevTools position="top-left" />
         </ReactFlow>
       </main>
       {contextMenu && (
         <ContextMenu
           onClose={() => setContextMenu(null)}
-          onDuplicate={duplicateNode}
-          onDelete={deleteNode}
+          onDuplicate={() => duplicateNode(contextMenu.id)}
+          onDelete={() => deleteNode(contextMenu.id)}
           data={contextMenu}
+        />
+      )}
+      {selectionContextMenu && (
+        <ContextMenu
+          onClose={() => setSelectionContextMenu(null)}
+          onDuplicate={duplicateSelection}
+          onDelete={deleteSelection}
+          data={selectionContextMenu}
         />
       )}
     </SidebarProvider>
