@@ -8,10 +8,11 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
   useEdgesState,
+  useKeyPress,
   useNodesState,
   useReactFlow,
 } from '@xyflow/react'
-import { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   Edge,
   Node,
@@ -25,6 +26,7 @@ import { DnDProvider, useDnD } from '@/hooks/DnDContext'
 import NodeBase from '@/components/node-flow/baseNode'
 import NodeSiderbar from '@/components/node-flow/NodeSiderbar'
 import { DevTools } from '@/components/devtools'
+import { getNodeGroupCenter } from '@/lib/flowUtils'
 
 export const Route = createFileRoute('/new')({
   component: Flow,
@@ -68,6 +70,24 @@ const initialEdges: Array<Edge> = []
 function FlowEditor() {
   const [nodes, setNodes] = useNodesState(initialNodes)
   const [edges, setEdges] = useEdgesState(initialEdges)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const reactFlowWrapper = useRef<HTMLDivElement>(null)
+
+  const handleMouseMove = useCallback((event: React.MouseEvent) => {
+    if (reactFlowWrapper.current) {
+      const rect = reactFlowWrapper.current.getBoundingClientRect()
+      setMousePosition({
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      })
+    }
+  }, [])
+
+  const [copiedElements, setCopiedElements] = useState<{
+    nodes: Array<Node>
+    edges: Array<Edge>
+  }>({ nodes: [], edges: [] })
+
   const [contextMenu, setContextMenu] = useState<{
     id: string
     top: number
@@ -92,6 +112,108 @@ function FlowEditor() {
   const nodeTypes = {
     nodeBase: NodeBase,
   }
+
+  const copyElements = useCallback(() => {
+    const selectedNodes = nodes.filter((node) => node.selected)
+    const selectedEdges = edges.filter((edge) => edge.selected)
+
+    // Get edges that connect selected nodes
+    const selectedNodeIds = new Set(selectedNodes.map((node) => node.id))
+    const connectedEdges = edges.filter(
+      (edge) =>
+        selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target),
+    )
+
+    const allEdgesToCopy = new Map()
+
+    // Add explicitly selected edges
+    selectedEdges.forEach((edge) => {
+      allEdgesToCopy.set(edge.id, edge)
+    })
+
+    // Add connected edges
+    connectedEdges.forEach((edge) => {
+      allEdgesToCopy.set(edge.id, edge)
+    })
+
+    setCopiedElements({
+      nodes: selectedNodes,
+      edges: Array.from(allEdgesToCopy.values()),
+    })
+  }, [nodes, edges])
+
+  const pasteElements = useCallback(() => {
+    if (copiedElements.edges.length === 0 && copiedElements.nodes.length === 0)
+      return
+
+    const position = screenToFlowPosition({
+      x: mousePosition.x,
+      y: mousePosition.y,
+    })
+
+    const groupCenter = getNodeGroupCenter(copiedElements.nodes)
+
+    const nodeIdMap: Record<string, string> = {}
+    const newNodes = copiedElements.nodes.map((node) => {
+      const newId = getId()
+      nodeIdMap[node.id] = newId
+
+      // Calculate offset from group center to individual node
+      const offsetFromCenter = {
+        x: node.position.x - groupCenter.x,
+        y: node.position.y - groupCenter.y,
+      }
+
+      // Position the node relative to the mouse cursor
+      const newPosition = {
+        x: position.x + offsetFromCenter.x,
+        y: position.y + offsetFromCenter.y,
+      }
+
+      return {
+        ...node,
+        id: newId,
+        position: newPosition,
+        selected: true,
+      }
+    })
+
+    const newEdges = copiedElements.edges
+      .map((edge) => {
+        return {
+          ...edge,
+          id: `edge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          source: nodeIdMap[edge.source],
+          target: nodeIdMap[edge.target],
+          selected: true,
+        }
+      })
+      .filter((edge) => edge.source && edge.target)
+
+    setNodes((nds) =>
+      nds.map((n) => ({ ...n, selected: false })).concat(newNodes),
+    )
+    setEdges((eds) =>
+      eds.map((e) => ({ ...e, selected: false })).concat(newEdges),
+    )
+  }, [copiedElements, setNodes, setEdges])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        if (event.key === 'c') {
+          event.preventDefault()
+          copyElements()
+        } else if (event.key === 'v') {
+          event.preventDefault()
+          pasteElements()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [copyElements, pasteElements])
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -215,14 +337,13 @@ function FlowEditor() {
       selected: true,
     }))
 
-    setNodes((nds) => [
-      ...nds.map((n) => ({ ...n, selected: false })),
-      ...newNodes,
-    ])
-    setEdges((eds) => [
-      ...eds.map((e) => ({ ...e, selected: false })),
-      ...newEdges,
-    ])
+    setNodes((nds) =>
+      nds.map((n) => ({ ...n, selected: false })).concat(newNodes),
+    )
+    setEdges((eds) =>
+      eds.map((e) => ({ ...e, selected: false })).concat(newEdges),
+    )
+
     setSelectionContextMenu(null)
   }, [getNodes, getEdges, setNodes, setEdges])
 
@@ -268,29 +389,36 @@ function FlowEditor() {
       <NodeSiderbar />
       <main className="w-screen h-screen">
         <SidebarTrigger />
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onDrop={onDrop}
-          onDragStart={onDragStart}
-          onDragOver={onDragOver}
-          onNodeContextMenu={onNodeContextMenu}
-          onPaneClick={onPaneClick}
-          onSelectionContextMenu={onSelectionContextMenu}
-          fitView
-          panOnScroll
-          panOnDrag={[1, 2]}
-          selectionOnDrag
-          selectionMode={SelectionMode.Partial}
-          multiSelectionKeyCode={'Shift'}
+        <div
+          ref={reactFlowWrapper}
+          onMouseMove={handleMouseMove}
+          className="w-full h-full"
         >
-          <Background />
-          <DevTools position="top-left" />
-        </ReactFlow>
+          {mousePosition.x + ' ' + mousePosition.y}
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onDrop={onDrop}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onNodeContextMenu={onNodeContextMenu}
+            onPaneClick={onPaneClick}
+            onSelectionContextMenu={onSelectionContextMenu}
+            fitView
+            panOnScroll
+            panOnDrag={[1, 2]}
+            selectionOnDrag
+            selectionMode={SelectionMode.Partial}
+            multiSelectionKeyCode={'Shift'}
+          >
+            <Background />
+            <DevTools position="top-left" />
+          </ReactFlow>
+        </div>
       </main>
       {contextMenu && (
         <ContextMenu
