@@ -1,17 +1,17 @@
-import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import z from 'zod'
-import { useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertTriangle, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import z from "zod";
+import { useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../ui/card'
-import { Alert, AlertDescription } from '../ui/alert'
+} from "../ui/card";
+import { Alert, AlertDescription } from "../ui/alert";
 
 import {
   Form,
@@ -20,49 +20,49 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../ui/form'
-import { Input } from '../ui/input'
+} from "../ui/form";
+import { Input } from "../ui/input";
 
-import { Button } from '../ui/button'
+import { Button } from "../ui/button";
 
-import type { FormStatus } from '@/lib/schemas'
-import type { Role, User } from '@/lib/authStore'
-import useAuthStore from '@/lib/authStore'
-import { API } from '@/services/api'
+import type { FormStatus } from "@/lib/schemas";
+import type { Role, User } from "@/lib/authStore";
+import useAuthStore from "@/lib/authStore";
+import { API } from "@/services/api";
 
 const loginSchema = z.object({
   email: z.string().min(1),
   password: z.string(),
-})
+});
 
 export default function LoginForm() {
-  const navigate = useNavigate()
-  const setUser = useAuthStore((state) => state.setUser)
+  const navigate = useNavigate();
+  const setUser = useAuthStore((state) => state.setUser);
 
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
     error: null,
-  })
+  });
 
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
-    setIsLoading(true)
-    setFormStatus({ success: false, error: null })
+    setIsLoading(true);
+    setFormStatus({ success: false, error: null });
 
-    const result = await API.post('/auth/session', {
+    const result = await API.post("/auth/session", {
       email: values.email,
       password: values.password,
-    })
+    });
 
     if (result.success) {
       const userData: User = {
@@ -70,18 +70,17 @@ export default function LoginForm() {
         email: result.data.user.email,
         id: result.data.user.id,
         role: result.data.user.role as Role,
-      }
-      setUser(userData)
-      setFormStatus({ success: true, error: null })
-      navigate({ to: '/' })
+      };
+      setUser(userData);
+      setFormStatus({ success: true, error: null });
+      navigate({ to: "/" });
     } else {
       setFormStatus({
         success: false,
-        error:
-          result.error,
-      })
+        error: result.error,
+      });
     }
-    setIsLoading(false)
+    setIsLoading(false);
   }
 
   return (
@@ -126,7 +125,7 @@ export default function LoginForm() {
                   <FormControl>
                     <div className="relative">
                       <Input
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         {...field}
                       />
@@ -161,7 +160,7 @@ export default function LoginForm() {
                   Signing in...
                 </>
               ) : (
-                'Continue'
+                "Continue"
               )}
             </Button>
           </form>
@@ -176,5 +175,5 @@ export default function LoginForm() {
         </p>
       </CardFooter>
     </Card>
-  )
+  );
 }

@@ -1,21 +1,28 @@
-import { useState } from 'react'
+import { useState } from "react";
 
-import { toast } from 'sonner'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
-import { Textarea } from './ui/textarea'
-import { Label } from './ui/label'
-import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
-import type {User} from '@/services/api';
-import { API  } from '@/services/api'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { Textarea } from "./ui/textarea";
+import { Label } from "./ui/label";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
+import type { User } from "@/services/api";
+import { API } from "@/services/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type BanDialogProps = {
-  isOpen: boolean
-  selectedUser: User | null
-  onSubmit: () => void
-  onClose: () => void
-}
+  isOpen: boolean;
+  selectedUser: User | null;
+  onSubmit: () => void;
+  onClose: () => void;
+};
 
 export default function BanDialog({
   isOpen,
@@ -23,54 +30,58 @@ export default function BanDialog({
   onSubmit,
   onClose,
 }: BanDialogProps) {
-  const [duration, setDuration] = useState('24') // Default to 1 day
-  const [customDuration, setCustomDuration] = useState('')
-  const [showCustomInput, setShowCustomInput] = useState(false)
-  const [reason, setReason] = useState('')
+  const [duration, setDuration] = useState("24"); // Default to 1 day
+  const [customDuration, setCustomDuration] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [reason, setReason] = useState("");
 
   const durationPresets = [
-    { label: '1 Day', value: '24' },
-    { label: '1 Week', value: '168' },
-    { label: '1 Month', value: '730' },
-    { label: 'Permanent', value: '999999' },
-    { label: 'Custom', value: 'custom' },
-  ]
+    { label: "1 Day", value: "24" },
+    { label: "1 Week", value: "168" },
+    { label: "1 Month", value: "730" },
+    { label: "Permanent", value: "999999" },
+    { label: "Custom", value: "custom" },
+  ];
 
   const handleDurationChange = (value: string) => {
-    setDuration(value)
-    if (value === 'custom') {
-      setShowCustomInput(true)
+    setDuration(value);
+    if (value === "custom") {
+      setShowCustomInput(true);
     } else {
-      setShowCustomInput(false)
-      setCustomDuration('')
+      setShowCustomInput(false);
+      setCustomDuration("");
     }
-  }
+  };
 
   const getFinalDuration = () => {
-    if (duration === 'custom') {
-      return parseInt(customDuration) || 0
+    if (duration === "custom") {
+      return parseInt(customDuration) || 0;
     }
-    return parseInt(duration)
-  }
+    return parseInt(duration);
+  };
 
   const confirmBan = async () => {
     if (selectedUser) {
-      const d = getFinalDuration()
-      const result = await API.post('/admin/users/ban', { reason, user_id:selectedUser.id, d })
+      const d = getFinalDuration();
+      const result = await API.post("/admin/users/ban", {
+        reason,
+        user_id: selectedUser.id,
+        d,
+      });
       if (result.success) {
-        toast.success(`User successfully banned`)
+        toast.success(`User successfully banned`);
       } else {
-        toast.error(`Error when banning a user: ${result.error}`)
+        toast.error(`Error when banning a user: ${result.error}`);
       }
 
-      setReason('')
-      setDuration('24')
-      setCustomDuration('')
-      setShowCustomInput(false)
+      setReason("");
+      setDuration("24");
+      setCustomDuration("");
+      setShowCustomInput(false);
 
-      onSubmit()
+      onSubmit();
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -101,10 +112,10 @@ export default function BanDialog({
             <div className="col-span-3 space-y-3">
               <ToggleGroup
                 type="single"
-                variant='outline'
+                variant="outline"
                 value={duration}
                 onValueChange={handleDurationChange}
-                className={`flex flex-row ${!showCustomInput && 'mb-12'} flex-wrap`}
+                className={`flex flex-row ${!showCustomInput && "mb-12"} flex-wrap`}
               >
                 {durationPresets.map((preset) => (
                   <ToggleGroupItem
@@ -130,7 +141,6 @@ export default function BanDialog({
                   <span className="text-sm text-muted-foreground">hours</span>
                 </div>
               )}
-
             </div>
           </div>
         </div>
@@ -142,7 +152,7 @@ export default function BanDialog({
             variant="destructive"
             onClick={confirmBan}
             disabled={
-              !reason.trim() || (duration === 'custom' && !customDuration)
+              !reason.trim() || (duration === "custom" && !customDuration)
             }
           >
             Ban User
@@ -150,5 +160,5 @@ export default function BanDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

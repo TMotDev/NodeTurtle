@@ -1,10 +1,10 @@
-import { AlertTriangle, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { AlertTriangle, CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Link } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import z from 'zod'
+import { Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import z from "zod";
 import {
   Form,
   FormControl,
@@ -12,7 +12,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../ui/form'
+} from "../ui/form";
 import {
   Card,
   CardContent,
@@ -20,21 +20,21 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../ui/card'
-import { Alert, AlertDescription } from '../ui/alert'
+} from "../ui/card";
+import { Alert, AlertDescription } from "../ui/alert";
 
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import type { FormStatus } from '@/lib/schemas'
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import type { FormStatus } from "@/lib/schemas";
 import {
   emailSchema,
   getValidationIcon,
   getValidationMessage,
   passwordSchema,
   usernameSchema,
-} from '@/lib/schemas'
-import { useFieldValidation } from '@/lib/utils'
-import { API } from '@/services/api'
+} from "@/lib/schemas";
+import { useFieldValidation } from "@/lib/utils";
+import { API } from "@/services/api";
 
 const registrationSchema = z
   .object({
@@ -45,73 +45,76 @@ const registrationSchema = z
   })
   .refine((data) => data.password === data.repeatPassword, {
     message: "Passwords don't match.",
-    path: ['repeatPassword'],
-  })
+    path: ["repeatPassword"],
+  });
 
 export default function RegisterForm() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
     error: null,
-  })
+  });
 
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
 
   const { validationState, validateField, setValidationState } =
-    useFieldValidation()
+    useFieldValidation();
 
   const form = useForm<z.infer<typeof registrationSchema>>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
-      username: '',
-      email: '',
-      password: '',
-      repeatPassword: '',
+      username: "",
+      email: "",
+      password: "",
+      repeatPassword: "",
     },
-  })
+  });
 
-  const watchedUsername = form.watch('username')
-  const watchedEmail = form.watch('email')
+  const watchedUsername = form.watch("username");
+  const watchedEmail = form.watch("email");
 
   useEffect(() => {
     if (watchedUsername) {
-      validateField('username', watchedUsername, usernameSchema)
+      validateField("username", watchedUsername, usernameSchema);
     }
-  }, [watchedUsername, validateField])
+  }, [watchedUsername, validateField]);
 
   useEffect(() => {
     if (watchedEmail) {
-      validateField('email', watchedEmail, emailSchema)
+      validateField("email", watchedEmail, emailSchema);
     }
-  }, [watchedEmail, validateField])
+  }, [watchedEmail, validateField]);
 
   async function onSubmit(values: z.infer<typeof registrationSchema>) {
-    setIsLoading(true)
-    setFormStatus({ success: false, error: null })
+    setIsLoading(true);
+    setFormStatus({ success: false, error: null });
 
     if (
-      validationState.username === 'taken' ||
-      validationState.email === 'taken'
+      validationState.username === "taken" ||
+      validationState.email === "taken"
     ) {
-      setIsLoading(false)
-      return
+      setIsLoading(false);
+      return;
     }
 
-    const result = await API.post(`/users`, { username:values.username, email:values.email, password:values.password })
+    const result = await API.post(`/users`, {
+      username: values.username,
+      email: values.email,
+      password: values.password,
+    });
 
     if (result.success) {
-      setFormStatus({ success: true, error: null })
-      form.reset()
-      setValidationState({ username: 'idle', email: 'idle' })
+      setFormStatus({ success: true, error: null });
+      form.reset();
+      setValidationState({ username: "idle", email: "idle" });
     } else {
       setFormStatus({
         success: false,
-        error:
-          result.error,
-      })
+        error: result.error,
+      });
     }
 
-    setIsLoading(false)
+    setIsLoading(false);
   }
 
   return (
@@ -159,18 +162,18 @@ export default function RegisterForm() {
                     </div>
                   </FormControl>
                   <FormMessage />
-                  {validationState.username !== 'idle' && (
+                  {validationState.username !== "idle" && (
                     <p
                       className={`text-xs mt-1 ${
-                        validationState.username === 'available'
-                          ? 'text-green-600'
-                          : validationState.username === 'taken'
-                            ? 'text-red-600'
-                            : 'text-muted-foreground'
+                        validationState.username === "available"
+                          ? "text-green-600"
+                          : validationState.username === "taken"
+                            ? "text-red-600"
+                            : "text-muted-foreground"
                       }`}
                     >
                       {getValidationMessage(
-                        'username',
+                        "username",
                         validationState.username,
                       )}
                     </p>
@@ -197,17 +200,17 @@ export default function RegisterForm() {
                     </div>
                   </FormControl>
                   <FormMessage />
-                  {validationState.email !== 'idle' && (
+                  {validationState.email !== "idle" && (
                     <p
                       className={`text-xs mt-1 ${
-                        validationState.email === 'available'
-                          ? 'text-green-600'
-                          : validationState.email === 'taken'
-                            ? 'text-red-600'
-                            : 'text-muted-foreground'
+                        validationState.email === "available"
+                          ? "text-green-600"
+                          : validationState.email === "taken"
+                            ? "text-red-600"
+                            : "text-muted-foreground"
                       }`}
                     >
-                      {getValidationMessage('email', validationState.email)}
+                      {getValidationMessage("email", validationState.email)}
                     </p>
                   )}
                 </FormItem>
@@ -222,7 +225,7 @@ export default function RegisterForm() {
                   <FormControl>
                     <div className="relative">
                       <Input
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         {...field}
                       />
@@ -254,7 +257,7 @@ export default function RegisterForm() {
                   <FormControl>
                     <div className="relative">
                       <Input
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         {...field}
                       />
@@ -281,10 +284,10 @@ export default function RegisterForm() {
               size="lg"
               disabled={
                 isLoading ||
-                validationState.username === 'taken' ||
-                validationState.email === 'taken' ||
-                validationState.username === 'checking' ||
-                validationState.email === 'checking'
+                validationState.username === "taken" ||
+                validationState.email === "taken" ||
+                validationState.username === "checking" ||
+                validationState.email === "checking"
               }
               type="submit"
               className="w-full"
@@ -295,7 +298,7 @@ export default function RegisterForm() {
                   Submitting...
                 </>
               ) : (
-                'Continue'
+                "Continue"
               )}
             </Button>
           </form>
@@ -310,5 +313,5 @@ export default function RegisterForm() {
         </p>
       </CardFooter>
     </Card>
-  )
+  );
 }

@@ -1,21 +1,21 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { z } from 'zod'
-import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import type { FormStatus } from '@/lib/schemas'
-import { Button } from '@/components/ui/button'
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { z } from "zod";
+import { AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import type { FormStatus } from "@/lib/schemas";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { passwordSchema } from '@/lib/schemas'
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { passwordSchema } from "@/lib/schemas";
 import {
   Form,
   FormControl,
@@ -23,12 +23,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { API } from '@/services/api'
+} from "@/components/ui/form";
+import { API } from "@/services/api";
 
-export const Route = createFileRoute('/reset/$token')({
+export const Route = createFileRoute("/reset/$token")({
   component: PasswordResetPage,
-})
+});
 
 const passwordResetSchema = z
   .object({
@@ -37,43 +37,45 @@ const passwordResetSchema = z
   })
   .refine((data) => data.password === data.repeatPassword, {
     message: "Passwords don't match.",
-    path: ['repeatPassword'],
-  })
+    path: ["repeatPassword"],
+  });
 
 function PasswordResetPage() {
-  const { token } = Route.useParams()
+  const { token } = Route.useParams();
 
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
     error: null,
-  })
+  });
 
   const form = useForm<z.infer<typeof passwordResetSchema>>({
     resolver: zodResolver(passwordResetSchema),
     defaultValues: {
-      password: '',
-      repeatPassword: '',
+      password: "",
+      repeatPassword: "",
     },
-  })
+  });
 
   const onSubmit = async (values: z.infer<typeof passwordResetSchema>) => {
-    setIsLoading(true)
-    setFormStatus({ success: false, error: null })
+    setIsLoading(true);
+    setFormStatus({ success: false, error: null });
 
-    const result = await API.put(`/password/reset/${token}`, {password: values.password})
+    const result = await API.put(`/password/reset/${token}`, {
+      password: values.password,
+    });
 
     if (result.success) {
-      setFormStatus({ success: true, error: null })
+      setFormStatus({ success: true, error: null });
     } else {
       setFormStatus({
         success: false,
         error: result.error,
-      })
+      });
     }
 
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   if (formStatus.success) {
     return (
@@ -95,7 +97,7 @@ function PasswordResetPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -160,7 +162,7 @@ function PasswordResetPage() {
                     Submitting...
                   </>
                 ) : (
-                  'Continue'
+                  "Continue"
                 )}
               </Button>
             </form>
@@ -168,5 +170,5 @@ function PasswordResetPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

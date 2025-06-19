@@ -2,8 +2,7 @@
 
 import type { Node } from "@xyflow/react";
 
-
-export function getNodeGroupCenter(nodes: Array<Node>){
+export function getNodeGroupCenter(nodes: Array<Node>) {
   if (nodes.length === 0) return { x: 0, y: 0 };
 
   const bounds = nodes.reduce(
@@ -18,11 +17,11 @@ export function getNodeGroupCenter(nodes: Array<Node>){
       maxX: -Infinity,
       minY: Infinity,
       maxY: -Infinity,
-    }
+    },
   );
 
   return {
     x: (bounds.minX + bounds.maxX) / 2,
     y: (bounds.minY + bounds.maxY) / 2,
   };
-};
+}

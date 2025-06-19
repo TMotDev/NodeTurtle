@@ -1,16 +1,16 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
-import type { FormStatus } from '@/lib/schemas'
-import { Button } from '@/components/ui/button'
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import type { FormStatus } from "@/lib/schemas";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,53 +21,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { API } from '@/services/api'
+} from "@/components/ui/alert-dialog";
+import { API } from "@/services/api";
 
-export const Route = createFileRoute('/deactivate/$token')({
+export const Route = createFileRoute("/deactivate/$token")({
   component: DeactivationPage,
-})
+});
 
 function DeactivationPage() {
-  const { token } = Route.useParams()
-  const [isLoading, setIsLoading] = useState(false)
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const { token } = Route.useParams();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
     error: null,
-  })
+  });
 
   const handleDeactivation = async () => {
     if (!token) {
       setFormStatus({
         success: false,
-        error: 'No deactivation token found in URL',
-      })
-      return
+        error: "No deactivation token found in URL",
+      });
+      return;
     }
 
-    setIsLoading(true)
-    setFormStatus({ success: false, error: null })
-    setShowConfirmDialog(false)
+    setIsLoading(true);
+    setFormStatus({ success: false, error: null });
+    setShowConfirmDialog(false);
 
-    const result = await API.post(`/auth/deactivate/${token}`)
+    const result = await API.post(`/auth/deactivate/${token}`);
 
     if (result.success) {
-      setFormStatus({ success: true, error: null })
+      setFormStatus({ success: true, error: null });
     } else {
       setFormStatus({
         success: false,
         error: result.error,
-      })
+      });
     }
 
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setShowConfirmDialog(true)
-  }
+    e.preventDefault();
+    setShowConfirmDialog(true);
+  };
 
   if (formStatus.success) {
     return (
@@ -96,7 +96,7 @@ function DeactivationPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -154,7 +154,7 @@ function DeactivationPage() {
                       Deactivating...
                     </>
                   ) : (
-                    'Deactivate Account'
+                    "Deactivate Account"
                   )}
                 </Button>
               </AlertDialogTrigger>
@@ -183,7 +183,7 @@ function DeactivationPage() {
                         Deactivating...
                       </>
                     ) : (
-                      'Yes, deactivate my account'
+                      "Yes, deactivate my account"
                     )}
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -193,5 +193,5 @@ function DeactivationPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
