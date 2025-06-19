@@ -11,6 +11,7 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import React, { useCallback, useEffect, useState } from "react";
+import { v4 as idv4 } from "uuid";
 import type {
   Edge,
   Node,
@@ -29,17 +30,11 @@ import {
 } from "@/hooks/flowMousePositionContext";
 import { useClipboard } from "@/hooks/flowClipBoardContext";
 import { useNodeOperations } from "@/hooks/nodeActionsContext";
-import {
-  DnDProvider,
-  useDragDrop,
-} from "@/hooks/flowDragAndDropContext";
+import { DnDProvider, useDragDrop } from "@/hooks/flowDragAndDropContext";
 
 export const Route = createFileRoute("/new")({
   component: Flow,
 });
-
-let id = 0;
-const getId = () => `n_${id++}`;
 
 const NODE_TYPES = {
   start: { label: "Start", color: "bg-green-500", executable: true },
@@ -64,7 +59,7 @@ const NODE_EXECUTORS = {
 
 const initialNodes: Array<Node> = [
   {
-    id: "1",
+    id: idv4(),
     type: "nodeBase",
     position: { x: 300, y: 300 },
     data: {},
@@ -77,16 +72,11 @@ function FlowEditor() {
   const [nodes, setNodes] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);
 
-  const { copyElements, pasteElements } = useClipboard(
-    nodes,
-    edges,
-    setNodes,
-    setEdges,
-  );
+  const { copyElements, pasteElements } = useClipboard();
   const { reactFlowWrapper, handleMouseMove } = useMousePosition();
 
   const { duplicateNode, deleteNode, deleteSelection, duplicateSelection } =
-    useNodeOperations(setNodes, setEdges);
+    useNodeOperations();
 
   const { onDragOver, onDrop, onDragStart } = useDragDrop(setNodes);
 
@@ -121,19 +111,6 @@ function FlowEditor() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [copyElements, pasteElements]);
 
-  const onNodesChange: OnNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    [setNodes],
-  );
-  const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setEdges],
-  );
-  const onConnect: OnConnect = useCallback(
-    (connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges],
-  );
-
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       event.preventDefault();
@@ -163,6 +140,19 @@ function FlowEditor() {
     setContextMenu(null);
     setSelectionContextMenu(null);
   }, []);
+
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    [setNodes],
+  );
+  const onEdgesChange: OnEdgesChange = useCallback(
+    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    [setEdges],
+  );
+  const onConnect: OnConnect = useCallback(
+    (connection) => setEdges((eds) => addEdge(connection, eds)),
+    [setEdges],
+  );
 
   return (
     <SidebarProvider>

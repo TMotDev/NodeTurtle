@@ -1,13 +1,12 @@
 // src/hooks/useNodeOperations.ts
 import { useCallback } from "react";
 import { useReactFlow } from "@xyflow/react";
+import { v4 as idv4 } from "uuid";
 import type { Edge, Node } from "@xyflow/react";
 
-let id = 0;
-const getId = () => `n_${id++}`;
-
-export const useNodeOperations = (setNodes: any, setEdges: any) => {
-  const { deleteElements, getNodes, getEdges } = useReactFlow();
+export const useNodeOperations = () => {
+  const { deleteElements, getNodes, getEdges, setNodes, setEdges } =
+    useReactFlow();
 
   const duplicateNode = useCallback(
     (nodeId: string) => {
@@ -23,7 +22,7 @@ export const useNodeOperations = (setNodes: any, setEdges: any) => {
       if (node) {
         const newNode = {
           ...node,
-          id: getId(),
+          id: `node_${idv4()}`,
           position: {
             x: node.position.x + 50,
             y: node.position.y + 50,
@@ -70,7 +69,7 @@ export const useNodeOperations = (setNodes: any, setEdges: any) => {
 
     const nodeIdMap: Record<string, string> = {};
     const newNodes = selectedNodes.map((node) => {
-      const newId = getId();
+      const newId = idv4();
       nodeIdMap[node.id] = newId;
       return {
         ...node,
@@ -82,7 +81,7 @@ export const useNodeOperations = (setNodes: any, setEdges: any) => {
 
     const newEdges = selectedEdges.map((edge) => ({
       ...edge,
-      id: `e${nodeIdMap[edge.source]}-${nodeIdMap[edge.target]}`,
+      id: `edge_${idv4()}`,
       source: nodeIdMap[edge.source],
       target: nodeIdMap[edge.target],
       selected: true,

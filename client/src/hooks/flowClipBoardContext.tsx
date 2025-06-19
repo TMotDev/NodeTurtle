@@ -1,24 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import { useReactFlow } from "@xyflow/react";
+import { v4 as idv4 } from "uuid";
 import { useMousePosition } from "./flowMousePositionContext";
 import type { Edge, Node } from "@xyflow/react";
 import { getNodeGroupCenter } from "@/lib/flowUtils";
 
-let id = 0;
-const getId = () => `n_${id++}`;
-
-export const useClipboard = (
-  nodes: Array<Node>,
-  edges: Array<Edge>,
-  setNodes: any,
-  setEdges: any,
-) => {
+export const useClipboard = () => {
   const [copiedElements, setCopiedElements] = useState<{
     nodes: Array<Node>;
     edges: Array<Edge>;
   }>({ nodes: [], edges: [] });
 
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getNodes, getEdges, setNodes, setEdges } =
+    useReactFlow();
+
+  const nodes = getNodes();
+  const edges = getEdges();
+
   const { mousePosition } = useMousePosition();
 
   const copyElements = useCallback(() => {
@@ -63,7 +61,7 @@ export const useClipboard = (
 
     const nodeIdMap: Record<string, string> = {};
     const newNodes = copiedElements.nodes.map((node) => {
-      const newId = getId();
+      const newId = `node_${idv4()}`;
       nodeIdMap[node.id] = newId;
 
       // Calculate offset from group center to individual node
@@ -90,7 +88,7 @@ export const useClipboard = (
       .map((edge) => {
         return {
           ...edge,
-          id: `edge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `edge_${idv4}`,
           source: nodeIdMap[edge.source],
           target: nodeIdMap[edge.target],
           selected: true,
