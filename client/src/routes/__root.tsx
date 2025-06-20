@@ -1,23 +1,23 @@
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { useEffect } from 'react'
-import useAuthStore from '@/lib/authStore'
+import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
+import useAuthStore from "@/lib/authStore";
 
 export const Route = createRootRoute({
   component: Root,
-})
+});
 
 function Root() {
-  const { checkAuthStatus, user } = useAuthStore()
+  const { checkAuthStatus, user } = useAuthStore();
 
   useEffect(() => {
     if (!user) {
-      checkAuthStatus()
+      checkAuthStatus();
     }
-  }, [checkAuthStatus])
+  }, [checkAuthStatus]);
 
   return (
     <div className="h-screen w-screen overflow-x-hidden">
       <Outlet />
     </div>
-  )
+  );
 }

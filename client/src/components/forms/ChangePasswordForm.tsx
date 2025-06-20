@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { z } from 'zod'
-import { AlertTriangle, Check, Eye, EyeOff, Loader2 } from 'lucide-react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useState } from "react";
+import { z } from "zod";
+import { AlertTriangle, Check, Eye, EyeOff, Loader2 } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -10,63 +10,63 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../ui/form'
-import type { FormStatus } from '@/lib/schemas'
-import { passwordSchema } from '@/lib/schemas'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { API } from '@/services/api'
+} from "../ui/form";
+import type { FormStatus } from "@/lib/schemas";
+import { passwordSchema } from "@/lib/schemas";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { API } from "@/services/api";
 
 const changePasswordSchema = z
   .object({
-    old_password: z.string().min(1, 'Current password is required'),
+    old_password: z.string().min(1, "Current password is required"),
     new_password: passwordSchema,
     repeat_new_password: z.string(),
   })
   .refine((data) => data.new_password === data.repeat_new_password, {
     message: "Passwords don't match.",
-    path: ['repeat_new_password'],
-  })
+    path: ["repeat_new_password"],
+  });
 
 export default function ChangePasswordForm() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
     error: null,
-  })
+  });
 
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof changePasswordSchema>>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: {
-      old_password: '',
-      new_password: '',
-      repeat_new_password: '',
+      old_password: "",
+      new_password: "",
+      repeat_new_password: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof changePasswordSchema>) {
-    setIsLoading(true)
-    setFormStatus({ success: false, error: null })
+    setIsLoading(true);
+    setFormStatus({ success: false, error: null });
 
-    const result = await API.put('/users/me/password', {
+    const result = await API.put("/users/me/password", {
       old_password: values.old_password,
       new_password: values.new_password,
-    })
+    });
 
     if (result.success) {
-      setFormStatus({ success: true, error: null })
-      form.reset()
+      setFormStatus({ success: true, error: null });
+      form.reset();
     } else {
       setFormStatus({
         success: false,
         error: result.error,
-      })
+      });
     }
 
-    setIsLoading(false)
+    setIsLoading(false);
   }
 
   return (
@@ -106,7 +106,7 @@ export default function ChangePasswordForm() {
                     <FormControl>
                       <div className="relative">
                         <Input
-                          type={showPassword ? 'text' : 'password'}
+                          type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           {...field}
                         />
@@ -138,7 +138,7 @@ export default function ChangePasswordForm() {
                     <FormControl>
                       <div className="relative">
                         <Input
-                          type={showPassword ? 'text' : 'password'}
+                          type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           {...field}
                         />
@@ -176,7 +176,7 @@ export default function ChangePasswordForm() {
                     Changing...
                   </>
                 ) : (
-                  'Change Password'
+                  "Change Password"
                 )}
               </Button>
             </form>
@@ -184,5 +184,5 @@ export default function ChangePasswordForm() {
         </>
       )}
     </>
-  )
+  );
 }

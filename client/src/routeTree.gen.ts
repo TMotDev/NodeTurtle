@@ -13,7 +13,9 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as RegisterImport } from './routes/register'
 import { Route as NotfoundImport } from './routes/notfound'
+import { Route as NewImport } from './routes/new'
 import { Route as LoginImport } from './routes/login'
+import { Route as CreateImport } from './routes/create'
 import { Route as IndexImport } from './routes/index'
 import { Route as ResetTokenImport } from './routes/reset/$token'
 import { Route as DeactivateTokenImport } from './routes/deactivate/$token'
@@ -35,9 +37,21 @@ const NotfoundRoute = NotfoundImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const NewRoute = NewImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const LoginRoute = LoginImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const CreateRoute = CreateImport.update({
+  id: '/create',
+  path: '/create',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -88,11 +102,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/create': {
+      id: '/create'
+      path: '/create'
+      fullPath: '/create'
+      preLoaderRoute: typeof CreateImport
+      parentRoute: typeof rootRoute
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
+    '/new': {
+      id: '/new'
+      path: '/new'
+      fullPath: '/new'
+      preLoaderRoute: typeof NewImport
       parentRoute: typeof rootRoute
     }
     '/notfound': {
@@ -151,7 +179,9 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/new': typeof NewRoute
   '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
@@ -163,7 +193,9 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/new': typeof NewRoute
   '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
@@ -176,7 +208,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/new': typeof NewRoute
   '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
@@ -190,7 +224,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/create'
     | '/login'
+    | '/new'
     | '/notfound'
     | '/register'
     | '/activate/$token'
@@ -201,7 +237,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/create'
     | '/login'
+    | '/new'
     | '/notfound'
     | '/register'
     | '/activate/$token'
@@ -212,7 +250,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/create'
     | '/login'
+    | '/new'
     | '/notfound'
     | '/register'
     | '/activate/$token'
@@ -225,7 +265,9 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CreateRoute: typeof CreateRoute
   LoginRoute: typeof LoginRoute
+  NewRoute: typeof NewRoute
   NotfoundRoute: typeof NotfoundRoute
   RegisterRoute: typeof RegisterRoute
   ActivateTokenRoute: typeof ActivateTokenRoute
@@ -237,7 +279,9 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CreateRoute: CreateRoute,
   LoginRoute: LoginRoute,
+  NewRoute: NewRoute,
   NotfoundRoute: NotfoundRoute,
   RegisterRoute: RegisterRoute,
   ActivateTokenRoute: ActivateTokenRoute,
@@ -258,7 +302,9 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/create",
         "/login",
+        "/new",
         "/notfound",
         "/register",
         "/activate/$token",
@@ -271,8 +317,14 @@ export const routeTree = rootRoute
     "/": {
       "filePath": "index.tsx"
     },
+    "/create": {
+      "filePath": "create.tsx"
+    },
     "/login": {
       "filePath": "login.tsx"
+    },
+    "/new": {
+      "filePath": "new.tsx"
     },
     "/notfound": {
       "filePath": "notfound.tsx"

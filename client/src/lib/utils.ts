@@ -1,117 +1,117 @@
-import { clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
-import { useCallback, useState } from 'react'
-import { redirect } from '@tanstack/react-router'
-import useAuthStore, { Role } from './authStore'
-import type { ClassValue } from 'clsx'
-import type z from 'zod'
-import { API } from '@/services/api'
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { useCallback, useState } from "react";
+import { redirect } from "@tanstack/react-router";
+import useAuthStore, { Role } from "./authStore";
+import type { ClassValue } from "clsx";
+import type z from "zod";
+import { API } from "@/services/api";
 
 export function cn(...inputs: Array<ClassValue>) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export type ValidationStatus =
-  | 'idle'
-  | 'checking'
-  | 'available'
-  | 'taken'
-  | 'error'
+  | "idle"
+  | "checking"
+  | "available"
+  | "taken"
+  | "error";
 
 export interface ValidationState {
-  username: ValidationStatus
-  email: ValidationStatus
+  username: ValidationStatus;
+  email: ValidationStatus;
 }
 
 // Exportable hook for field validation
 export function useFieldValidation() {
   const [validationState, setValidationState] = useState<ValidationState>({
-    username: 'idle',
-    email: 'idle',
-  })
+    username: "idle",
+    email: "idle",
+  });
 
   const validateField = useCallback(
     debounce(
       async (
-        field: 'username' | 'email',
+        field: "username" | "email",
         value: string,
         schema?: z.ZodSchema,
       ) => {
         if (!value || value.length < 3) {
-          setValidationState((prev) => ({ ...prev, [field]: 'idle' }))
-          return
+          setValidationState((prev) => ({ ...prev, [field]: "idle" }));
+          return;
         }
 
         // validates against a schema first
         if (schema) {
           try {
-            schema.parse(value)
+            schema.parse(value);
           } catch (error) {
-            setValidationState((prev) => ({ ...prev, [field]: 'idle' }))
-            return
+            setValidationState((prev) => ({ ...prev, [field]: "idle" }));
+            return;
           }
         }
 
-        setValidationState((prev) => ({ ...prev, [field]: 'checking' }))
+        setValidationState((prev) => ({ ...prev, [field]: "checking" }));
 
-        const result = await validateUserField(field, value)
+        const result = await validateUserField(field, value);
 
         if (result.error) {
-          setValidationState((prev) => ({ ...prev, [field]: 'error' }))
+          setValidationState((prev) => ({ ...prev, [field]: "error" }));
         } else {
           setValidationState((prev) => ({
             ...prev,
-            [field]: result.exists ? 'taken' : 'available',
-          }))
+            [field]: result.exists ? "taken" : "available",
+          }));
         }
       },
       500,
     ),
     [],
-  )
+  );
 
   return {
     validationState,
     validateField,
     setValidationState,
-  }
+  };
 }
 
 function debounce<T extends (...args: Array<any>) => any>(
   func: T,
   wait: number,
 ): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null
+  let timeout: ReturnType<typeof setTimeout> | null = null;
   return (...args: Parameters<T>) => {
     if (timeout) {
-      clearTimeout(timeout)
+      clearTimeout(timeout);
     }
-    timeout = setTimeout(() => func(...args), wait)
-  }
+    timeout = setTimeout(() => func(...args), wait);
+  };
 }
 
 /**
  * Validates and checks availability of user or email in API
  */
 export async function validateUserField(
-  field: 'username' | 'email',
+  field: "username" | "email",
   value: string,
 ): Promise<{ exists: boolean; error?: string }> {
   try {
-    let result
-    if (field === 'username') {
-      result = await API.get(`/users/username/${encodeURIComponent(value)}`)
+    let result;
+    if (field === "username") {
+      result = await API.get(`/users/username/${encodeURIComponent(value)}`);
     } else {
-      result = await API.get(`/users/email/${encodeURIComponent(value)}`)
+      result = await API.get(`/users/email/${encodeURIComponent(value)}`);
     }
 
     if (result.success) {
-      return { exists: result.data.exists }
+      return { exists: result.data.exists };
     } else {
-      return { exists: false, error: 'Validation service unavailable' }
+      return { exists: false, error: "Validation service unavailable" };
     }
   } catch (error) {
-    return { exists: false, error: 'Network error during validation' }
+    return { exists: false, error: "Network error during validation" };
   }
 }
 
@@ -123,16 +123,16 @@ export async function validateUserField(
  * @returns A formatted duration string (e.g., "2 months", "7 days"). Returns "Expired" if the date is in the past.
  */
 export function getTimeUntil(dateString: string): string {
-  const now = new Date()
-  const futureDate = new Date(dateString)
+  const now = new Date();
+  const futureDate = new Date(dateString);
 
-  const diffInMs = futureDate.getTime() - now.getTime()
+  const diffInMs = futureDate.getTime() - now.getTime();
 
   if (diffInMs <= 0) {
-    return 'Expired'
+    return "Expired";
   }
 
-  return formatTimeDifference(diffInMs, futureDate, now)
+  return formatTimeDifference(diffInMs, futureDate, now);
 }
 
 /**
@@ -143,16 +143,16 @@ export function getTimeUntil(dateString: string): string {
  * @returns A formatted duration string (e.g., "2 months ago", "7 days ago"). Returns "Unknown" if the date is in the future.
  */
 export function getTimeSince(dateString: string): string {
-  const now = new Date()
-  const pastDate = new Date(dateString)
+  const now = new Date();
+  const pastDate = new Date(dateString);
 
-  const diffInMs = now.getTime() - pastDate.getTime()
+  const diffInMs = now.getTime() - pastDate.getTime();
 
   if (diffInMs <= 0) {
-    return 'Unknown'
+    return "Unknown";
   }
 
-  return formatTimeDifference(diffInMs, now, pastDate) + ' ago'
+  return formatTimeDifference(diffInMs, now, pastDate) + " ago";
 }
 
 /**
@@ -168,48 +168,48 @@ function formatTimeDifference(
   laterDate: Date,
   earlierDate: Date,
 ): string {
-  const MS_PER_MINUTE = 1000 * 60
-  const MS_PER_HOUR = MS_PER_MINUTE * 60
-  const MS_PER_DAY = MS_PER_HOUR * 24
-  const MS_PER_WEEK = MS_PER_DAY * 7
+  const MS_PER_MINUTE = 1000 * 60;
+  const MS_PER_HOUR = MS_PER_MINUTE * 60;
+  const MS_PER_DAY = MS_PER_HOUR * 24;
+  const MS_PER_WEEK = MS_PER_DAY * 7;
 
   if (diffInMs < MS_PER_HOUR) {
-    const diffInMinutes = Math.floor(diffInMs / MS_PER_MINUTE)
-    return `${diffInMinutes} minute${diffInMinutes === 1 ? '' : 's'}`
+    const diffInMinutes = Math.floor(diffInMs / MS_PER_MINUTE);
+    return `${diffInMinutes} minute${diffInMinutes === 1 ? "" : "s"}`;
   }
 
   if (diffInMs < MS_PER_DAY) {
-    const diffInHours = Math.floor(diffInMs / MS_PER_HOUR)
-    return `${diffInHours} hour${diffInHours === 1 ? '' : 's'}`
+    const diffInHours = Math.floor(diffInMs / MS_PER_HOUR);
+    return `${diffInHours} hour${diffInHours === 1 ? "" : "s"}`;
   }
 
   if (diffInMs < MS_PER_WEEK) {
-    const diffInDays = Math.floor(diffInMs / MS_PER_DAY)
-    return `${diffInDays} day${diffInDays === 1 ? '' : 's'}`
+    const diffInDays = Math.floor(diffInMs / MS_PER_DAY);
+    return `${diffInDays} day${diffInDays === 1 ? "" : "s"}`;
   }
 
-  const diffInDays = Math.floor(diffInMs / MS_PER_DAY)
+  const diffInDays = Math.floor(diffInMs / MS_PER_DAY);
 
   if (diffInDays < 30) {
-    const diffInWeeks = Math.floor(diffInDays / 7)
-    return `${diffInWeeks} week${diffInWeeks === 1 ? '' : 's'}`
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    return `${diffInWeeks} week${diffInWeeks === 1 ? "" : "s"}`;
   }
 
   let monthDiff =
-    (laterDate.getUTCFullYear() - earlierDate.getUTCFullYear()) * 12
-  monthDiff -= earlierDate.getUTCMonth()
-  monthDiff += laterDate.getUTCMonth()
+    (laterDate.getUTCFullYear() - earlierDate.getUTCFullYear()) * 12;
+  monthDiff -= earlierDate.getUTCMonth();
+  monthDiff += laterDate.getUTCMonth();
 
   if (laterDate.getUTCDate() < earlierDate.getUTCDate()) {
-    monthDiff--
+    monthDiff--;
   }
 
   if (monthDiff <= 0) {
-    const diffInWeeks = Math.floor(diffInDays / 7)
-    return `${diffInWeeks} week${diffInWeeks === 1 ? '' : 's'}`
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    return `${diffInWeeks} week${diffInWeeks === 1 ? "" : "s"}`;
   }
 
-  return `${monthDiff} month${monthDiff === 1 ? '' : 's'}`
+  return `${monthDiff} month${monthDiff === 1 ? "" : "s"}`;
 }
 
 /**
@@ -219,29 +219,29 @@ function formatTimeDifference(
  * @returns `true` if the ban is active (not expired), `false` otherwise.
  */
 export function isBanActive(expiresAt: string): boolean {
-  const now = new Date()
-  const expirationDate = new Date(expiresAt)
+  const now = new Date();
+  const expirationDate = new Date(expiresAt);
 
-  return expirationDate > now
+  return expirationDate > now;
 }
 
 export const requireAuth = (requiredRole?: Role) => {
   return async () => {
-    const { user, isLoading, checkAuthStatus } = useAuthStore.getState()
+    const { user, isLoading, checkAuthStatus } = useAuthStore.getState();
 
     if (user) {
-      return
+      return;
     }
 
     if (isLoading) {
-      await checkAuthStatus()
+      await checkAuthStatus();
     }
 
-    const updatedUser = useAuthStore.getState().user
+    const updatedUser = useAuthStore.getState().user;
     if (!updatedUser) {
       throw redirect({
-        to: '/login',
-      })
+        to: "/login",
+      });
     }
 
     if (requiredRole) {
@@ -250,13 +250,13 @@ export const requireAuth = (requiredRole?: Role) => {
         [Role.Premium]: 1,
         [Role.Moderator]: 2,
         [Role.Admin]: 3,
-      }
+      };
 
       if (roleHierarchy[updatedUser.role] < roleHierarchy[requiredRole]) {
         throw redirect({
-          to: '/notfound',
-        })
+          to: "/notfound",
+        });
       }
     }
-  }
-}
+  };
+};

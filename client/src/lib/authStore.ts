@@ -1,29 +1,29 @@
 // authStore.ts
-import { create } from 'zustand'
-import { API } from '@/services/api'
+import { create } from "zustand";
+import { API } from "@/services/api";
 
 export enum Role {
-  User = 'user',
-  Premium = 'premium',
-  Moderator = 'moderator',
-  Admin = 'admin',
+  User = "user",
+  Premium = "premium",
+  Moderator = "moderator",
+  Admin = "admin",
 }
 
 export type User = {
-  username: string
-  email: string
-  id: string
-  role: Role
-}
+  username: string;
+  email: string;
+  id: string;
+  role: Role;
+};
 
 interface AuthState {
-  user: null | User
-  isLoading: boolean
-  checkAuthStatus: () => Promise<void>
-  setUser: (data: User | null) => void
-  updateUser: (updatedData: Partial<User>) => void
-  clearAuth: () => void
-  logout: () => Promise<void>
+  user: null | User;
+  isLoading: boolean;
+  checkAuthStatus: () => Promise<void>;
+  setUser: (data: User | null) => void;
+  updateUser: (updatedData: Partial<User>) => void;
+  clearAuth: () => void;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -31,9 +31,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
 
   checkAuthStatus: async () => {
-    set({ isLoading: true })
+    set({ isLoading: true });
 
-    const result = await API.get('/users/me')
+    const result = await API.get("/users/me");
 
     if (result.success) {
       const userData: User = {
@@ -41,17 +41,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         email: result.data.email,
         id: result.data.id,
         role: result.data.role as Role,
-      }
+      };
 
       set({
         user: userData,
         isLoading: false,
-      })
+      });
     } else {
       set({
         user: null,
         isLoading: false,
-      })
+      });
     }
   },
 
@@ -73,13 +73,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     try {
-      await API.delete('/auth/session')
+      await API.delete("/auth/session");
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     } finally {
-      get().clearAuth()
+      get().clearAuth();
     }
   },
-}))
+}));
 
-export default useAuthStore
+export default useAuthStore;

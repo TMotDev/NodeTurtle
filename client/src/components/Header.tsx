@@ -1,8 +1,8 @@
-import { Link } from '@tanstack/react-router'
-import { ChevronDown, Turtle } from 'lucide-react'
-import { useShallow } from 'zustand/react/shallow'
-import UserMenu from './UserMenu'
-import { navigationMenuTriggerStyle } from './ui/navigation-menu'
+import { Link } from "@tanstack/react-router";
+import { ChevronDown, Turtle } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+import UserMenu from "./UserMenu";
+import { navigationMenuTriggerStyle } from "./ui/navigation-menu";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -10,13 +10,13 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from '@/components/ui/navigation-menu'
-import useAuthStore, { Role } from '@/lib/authStore'
+} from "@/components/ui/navigation-menu";
+import useAuthStore, { Role } from "@/lib/authStore";
 
 export default function Header() {
   const [isLoading, user] = useAuthStore(
     useShallow((state) => [state.isLoading, state.user]),
-  )
+  );
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -103,5 +103,5 @@ export default function Header() {
         <UserMenu />
       </div>
     </header>
-  )
+  );
 }

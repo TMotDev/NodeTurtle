@@ -1,58 +1,58 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
-import type { FormStatus } from '@/lib/schemas'
-import { Button } from '@/components/ui/button'
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import type { FormStatus } from "@/lib/schemas";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { API } from '@/services/api'
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { API } from "@/services/api";
 
-export const Route = createFileRoute('/activate/$token')({
+export const Route = createFileRoute("/activate/$token")({
   component: ActivationPage,
-})
+});
 
 function ActivationPage() {
-  const { token } = Route.useParams()
-  const [isLoading, setIsLoading] = useState(false)
+  const { token } = Route.useParams();
+  const [isLoading, setIsLoading] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
     error: null,
-  })
+  });
 
   const handleActivation = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!token) {
       setFormStatus({
         success: false,
-        error: 'No activation token found in URL',
-      })
-      setIsLoading(false)
-      return
+        error: "No activation token found in URL",
+      });
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(true)
-    setFormStatus({ success: false, error: null })
+    setIsLoading(true);
+    setFormStatus({ success: false, error: null });
 
-    const result = await API.post(`/users/activate/${token}`)
+    const result = await API.post(`/users/activate/${token}`);
 
     if (result.success) {
-      setFormStatus({ success: true, error: null })
+      setFormStatus({ success: true, error: null });
     } else {
       setFormStatus({
         success: false,
-        error: result.error || 'Unexpected error occured while ',
-      })
+        error: result.error || "Unexpected error occured while ",
+      });
     }
 
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   if (formStatus.success) {
     return (
@@ -74,7 +74,7 @@ function ActivationPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -104,12 +104,12 @@ function ActivationPage() {
                   Activating...
                 </>
               ) : (
-                'Activate Account'
+                "Activate Account"
               )}
             </Button>
           </form>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

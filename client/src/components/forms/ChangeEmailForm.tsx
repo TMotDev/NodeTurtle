@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
-import { z } from 'zod'
-import { AlertTriangle, Check, Loader2 } from 'lucide-react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useEffect, useState } from "react";
+import { z } from "zod";
+import { AlertTriangle, Check, Loader2 } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -10,77 +10,79 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../ui/form'
-import type { FormStatus } from '@/lib/schemas'
+} from "../ui/form";
+import type { FormStatus } from "@/lib/schemas";
 import {
   emailSchema,
   getValidationIcon,
   getValidationMessage,
-} from '@/lib/schemas'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useFieldValidation } from '@/lib/utils'
-import useAuthStore from '@/lib/authStore'
-import { API } from '@/services/api'
+} from "@/lib/schemas";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useFieldValidation } from "@/lib/utils";
+import useAuthStore from "@/lib/authStore";
+import { API } from "@/services/api";
 
 const changeEmailSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, 'Password is required'),
-})
+  password: z.string().min(1, "Password is required"),
+});
 
 export default function ChangeEmailForm() {
-  const updateUser = useAuthStore((state) => state.updateUser)
+  const updateUser = useAuthStore((state) => state.updateUser);
 
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
     error: null,
-  })
+  });
 
   const { validationState, validateField, setValidationState } =
-    useFieldValidation()
+    useFieldValidation();
 
   const form = useForm<z.infer<typeof changeEmailSchema>>({
     resolver: zodResolver(changeEmailSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
-  })
+  });
 
-  const watchedEmail = form.watch('email')
+  const watchedEmail = form.watch("email");
 
   useEffect(() => {
     if (watchedEmail) {
-      validateField('email', watchedEmail, emailSchema)
+      validateField("email", watchedEmail, emailSchema);
     }
-  }, [watchedEmail, validateField])
+  }, [watchedEmail, validateField]);
 
   async function onSubmit(values: z.infer<typeof changeEmailSchema>) {
-    setIsLoading(true)
-    setFormStatus({ success: false, error: null })
+    setIsLoading(true);
+    setFormStatus({ success: false, error: null });
 
-    if (validationState.email === 'taken') {
-      setIsLoading(false)
-      return
+    if (validationState.email === "taken") {
+      setIsLoading(false);
+      return;
     }
 
-    const result = await API.post('/users/me', { email: values.email, password: values.password })
+    const result = await API.post("/users/me", {
+      email: values.email,
+      password: values.password,
+    });
 
     if (result.success) {
-      updateUser({ email: result.data.email })
-      form.reset()
-      setFormStatus({ success: true, error: null })
-      setValidationState({ username: 'idle', email: 'idle' })
+      updateUser({ email: result.data.email });
+      form.reset();
+      setFormStatus({ success: true, error: null });
+      setValidationState({ username: "idle", email: "idle" });
     } else {
       setFormStatus({
         success: false,
-        error:
-          result.error,
-      })
+        error: result.error,
+      });
     }
-    setIsLoading(false)
+    setIsLoading(false);
   }
 
   return (
@@ -109,17 +111,17 @@ export default function ChangeEmailForm() {
                       </div>
                     </FormControl>
                     <FormMessage />
-                    {validationState.email !== 'idle' && (
+                    {validationState.email !== "idle" && (
                       <p
                         className={`text-xs mt-1 ${
-                          validationState.email === 'available'
-                            ? 'text-green-600'
-                            : validationState.email === 'taken'
-                              ? 'text-red-600'
-                              : 'text-muted-foreground'
+                          validationState.email === "available"
+                            ? "text-green-600"
+                            : validationState.email === "taken"
+                              ? "text-red-600"
+                              : "text-muted-foreground"
                         }`}
                       >
-                        {getValidationMessage('email', validationState.email)}
+                        {getValidationMessage("email", validationState.email)}
                       </p>
                     )}
                   </FormItem>
@@ -157,7 +159,7 @@ export default function ChangeEmailForm() {
                     Changing...
                   </>
                 ) : (
-                  'Change Email'
+                  "Change Email"
                 )}
               </Button>
             </form>
@@ -165,5 +167,5 @@ export default function ChangeEmailForm() {
         </div>
       )}
     </>
-  )
+  );
 }

@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { z } from 'zod'
-import { AlertTriangle, Check, Loader2 } from 'lucide-react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useState } from "react";
+import { z } from "zod";
+import { AlertTriangle, Check, Loader2 } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -10,73 +10,73 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../ui/form' // Assuming path is correct
-import type { Dispatch, SetStateAction } from 'react'
-import type { FormStatus } from '@/lib/schemas' // Assuming FormStatus type is defined here
+} from "../ui/form"; // Assuming path is correct
+import type { Dispatch, SetStateAction } from "react";
+import type { FormStatus } from "@/lib/schemas"; // Assuming FormStatus type is defined here
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { API } from '@/services/api'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { API } from "@/services/api";
 
 const deactivateAccountSchema = z.object({
-  password: z.string().min(1, 'Password is required'),
-})
+  password: z.string().min(1, "Password is required"),
+});
 
 export default function DeactivateAccountForm({
   isOpen,
   onOpenChange,
 }: {
-  isOpen: boolean
-  onOpenChange: Dispatch<SetStateAction<boolean>>
+  isOpen: boolean;
+  onOpenChange: Dispatch<SetStateAction<boolean>>;
 }) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
     error: null,
-  })
+  });
 
   const form = useForm<z.infer<typeof deactivateAccountSchema>>({
     resolver: zodResolver(deactivateAccountSchema),
     defaultValues: {
-      password: '',
+      password: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof deactivateAccountSchema>) {
-    setIsLoading(true)
-    setFormStatus({ success: false, error: null })
+    setIsLoading(true);
+    setFormStatus({ success: false, error: null });
 
-    const result = await API.post('/users/me/deactivate', {
+    const result = await API.post("/users/me/deactivate", {
       password: values.password,
-    })
+    });
 
     if (result.success) {
-      setFormStatus({ success: true, error: null })
-      form.reset()
+      setFormStatus({ success: true, error: null });
+      form.reset();
     } else {
       setFormStatus({
         success: false,
         error: result.error,
-      })
+      });
     }
 
-    setIsLoading(false)
+    setIsLoading(false);
   }
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      form.reset()
-      setFormStatus({ success: false, error: null })
+      form.reset();
+      setFormStatus({ success: false, error: null });
     }
-    onOpenChange(open)
-  }
+    onOpenChange(open);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -153,7 +153,7 @@ export default function DeactivateAccountForm({
                       Processing...
                     </>
                   ) : (
-                    'Deactivate Account'
+                    "Deactivate Account"
                   )}
                 </Button>
               </form>
@@ -162,5 +162,5 @@ export default function DeactivateAccountForm({
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

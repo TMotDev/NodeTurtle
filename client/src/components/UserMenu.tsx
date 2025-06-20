@@ -1,6 +1,6 @@
-import { LogOut, Settings } from 'lucide-react'
-import { useState } from 'react'
-import { useShallow } from 'zustand/react/shallow'
+import { LogOut, Settings } from "lucide-react";
+import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,36 +8,36 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu'
+} from "./ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from './ui/dialog'
-import { Button } from './ui/button'
-import AccountSettings from './AccountSettings'
-import useAuthStore from '@/lib/authStore'
+} from "./ui/dialog";
+import { Button } from "./ui/button";
+import AccountSettings from "./AccountSettings";
+import useAuthStore from "@/lib/authStore";
 
 export default function UserMenu() {
-  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false)
+  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
 
   const [isLoading, user, logout] = useAuthStore(
     useShallow((state) => [state.isLoading, state.user, state.logout]),
-  )
+  );
 
   async function handleLogout() {
-    await logout()
+    await logout();
   }
 
-  if (!user) return null
+  if (!user) return null;
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger>
-          {isLoading ? 'Loading...' : 'Account'}
+          {isLoading ? "Loading..." : "Account"}
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           {isLoading ? (
@@ -92,5 +92,5 @@ export default function UserMenu() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

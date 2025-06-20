@@ -1,11 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
 
-import Header from '@/components/Header'
-import RegisterForm from '@/components/forms/RegisterForm'
+import Header from "@/components/Header";
+import RegisterForm from "@/components/forms/RegisterForm";
 
-export const Route = createFileRoute('/register')({
+export const Route = createFileRoute("/register")({
   component: RegisterPage,
-})
+});
 
 function RegisterPage() {
   return (
@@ -15,5 +15,5 @@ function RegisterPage() {
         <RegisterForm />
       </main>
     </div>
-  )
+  );
 }

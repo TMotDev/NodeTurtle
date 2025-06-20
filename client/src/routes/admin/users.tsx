@@ -1,9 +1,9 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useCallback, useEffect, useState } from 'react'
-import { MoreHorizontal, Search } from 'lucide-react'
-import { Toaster, toast } from 'sonner'
-import type { User } from '@/services/api'
-import useAuthStore, { Role } from '@/lib/authStore'
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import { MoreHorizontal, Search } from "lucide-react";
+import { Toaster, toast } from "sonner";
+import type { User } from "@/services/api";
+import useAuthStore, { Role } from "@/lib/authStore";
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,14 +19,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Pagination,
   PaginationContent,
@@ -34,108 +34,108 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import Header from '@/components/Header'
+} from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import Header from "@/components/Header";
 import {
   getTimeSince,
   getTimeUntil,
   isBanActive,
   requireAuth,
-} from '@/lib/utils'
-import BanDialog from '@/components/BanDialog'
-import { API } from '@/services/api'
+} from "@/lib/utils";
+import BanDialog from "@/components/BanDialog";
+import { API } from "@/services/api";
 
-export const Route = createFileRoute('/admin/users')({
+export const Route = createFileRoute("/admin/users")({
   beforeLoad: requireAuth(Role.Admin),
   component: AdminUsers,
-})
+});
 
 function AdminUsers() {
-  const contextUser = useAuthStore((state) => state.user)
-  const [users, setUsers] = useState<Array<User>>([])
+  const contextUser = useAuthStore((state) => state.user);
+  const [users, setUsers] = useState<Array<User>>([]);
 
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [filters, setFilters] = useState({
-    role: 'all',
-    status: 'all',
-  })
-  const [searchTerm, setSearchTerm] = useState('')
+    role: "all",
+    status: "all",
+  });
+  const [searchTerm, setSearchTerm] = useState("");
 
   // dialog states
-  const [banDialogOpen, setBanDialogOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const fetchUsers = useCallback(
     async (currentFilters: any) => {
       try {
-        const queryParams: any = { page, limit: 10 }
-        if (currentFilters.role !== 'all')
-          queryParams.role = currentFilters.role
-        if (currentFilters.status !== 'all') {
-          queryParams.activated = currentFilters.status === 'activated'
+        const queryParams: any = { page, limit: 10 };
+        if (currentFilters.role !== "all")
+          queryParams.role = currentFilters.role;
+        if (currentFilters.status !== "all") {
+          queryParams.activated = currentFilters.status === "activated";
         }
         if (currentFilters.search_term)
-          queryParams.search_term = currentFilters.search_term
+          queryParams.search_term = currentFilters.search_term;
 
-        const params = new URLSearchParams(queryParams).toString()
-        const result = await API.get(`/admin/users/all?${params}`)
+        const params = new URLSearchParams(queryParams).toString();
+        const result = await API.get(`/admin/users/all?${params}`);
 
         if (result.success) {
-          setUsers(result.data.users)
-          setTotalPages(Math.ceil(result.data.meta.total / 10))
+          setUsers(result.data.users);
+          setTotalPages(Math.ceil(result.data.meta.total / 10));
         } else {
-          toast.error(`Failed to fetch users. ${result.error}`)
+          toast.error(`Failed to fetch users. ${result.error}`);
         }
       } catch (err) {
-        toast.error('Failed to fetch users. Please try again.')
+        toast.error("Failed to fetch users. Please try again.");
       }
     },
     [page],
-  )
+  );
 
   useEffect(() => {
-    fetchUsers(filters)
-  }, [filters, page, fetchUsers])
+    fetchUsers(filters);
+  }, [filters, page, fetchUsers]);
 
   const handleSearch = () => {
-    setPage(1)
-    fetchUsers({ ...filters, search_term: searchTerm })
-  }
+    setPage(1);
+    fetchUsers({ ...filters, search_term: searchTerm });
+  };
 
-  const handleFilterChange = (key: 'role' | 'status', value: string) => {
-    setPage(1)
-    setFilters((prev) => ({ ...prev, [key]: value }))
-  }
+  const handleFilterChange = (key: "role" | "status", value: string) => {
+    setPage(1);
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
 
   const getStatusBadges = (user: User) => {
-    const badges = []
+    const badges = [];
 
     if (user.activated) {
       badges.push(
         <Badge key="activated" variant="default" className="bg-green-500">
           Activated
         </Badge>,
-      )
+      );
     } else {
       badges.push(
         <Badge key="not-activated" variant="secondary">
           Not Activated
         </Badge>,
-      )
+      );
     }
 
     if (user.ban) {
       if (isBanActive(user.ban.expires_at as string)) {
-        const timeRemaining = getTimeUntil(user.ban.expires_at as string)
+        const timeRemaining = getTimeUntil(user.ban.expires_at as string);
         badges.push(
           <Badge key="banned" variant="destructive">
             Banned ({timeRemaining})
           </Badge>,
-        )
+        );
       } else {
         badges.push(
           <Badge
@@ -145,78 +145,78 @@ function AdminUsers() {
             title={user.ban.reason}
           >
             Ban Expired (
-            {new Intl.DateTimeFormat('en-CA').format(
+            {new Intl.DateTimeFormat("en-CA").format(
               new Date(user.ban.expires_at as string),
             )}
             )
           </Badge>,
-        )
+        );
       }
     }
-    return badges
-  }
+    return badges;
+  };
 
   const getRoleBadge = (role: Role) => {
     const roleColors: Record<Role, string> = {
-      admin: 'bg-purple-500',
-      moderator: 'bg-blue-500',
-      premium: 'bg-yellow-500',
-      user: 'outline',
-    }
+      admin: "bg-purple-500",
+      moderator: "bg-blue-500",
+      premium: "bg-yellow-500",
+      user: "outline",
+    };
     const roleName: Record<Role, string> = {
-      admin: 'Admin',
-      moderator: 'Moderator',
-      premium: 'Premium',
-      user: 'User',
-    }
+      admin: "Admin",
+      moderator: "Moderator",
+      premium: "Premium",
+      user: "User",
+    };
     return (
       <Badge
-        variant={role === 'user' ? 'outline' : 'default'}
+        variant={role === "user" ? "outline" : "default"}
         className={roleColors[role]}
       >
         {roleName[role]}
       </Badge>
-    )
-  }
+    );
+  };
 
   const handleRoleChange = async (userId: string, newRole: Role) => {
-    const result = await API.put(`/admin/users/${userId}`, { role: newRole })
+    const result = await API.put(`/admin/users/${userId}`, { role: newRole });
 
     if (result.success) {
-      toast.success(`User role updated`)
+      toast.success(`User role updated`);
     } else {
-      toast.error(`Error when updating role: ${result.error}`)
+      toast.error(`Error when updating role: ${result.error}`);
     }
 
-    fetchUsers(filters)
-  }
+    fetchUsers(filters);
+  };
 
   const handleBanUser = (user: User) => {
-    setSelectedUser(user)
-    setBanDialogOpen(true)
-  }
+    setSelectedUser(user);
+    setBanDialogOpen(true);
+  };
 
   const handleBanDialogClose = () => {
-    setBanDialogOpen(false)
-    setSelectedUser(null)
-  }
+    setBanDialogOpen(false);
+    setSelectedUser(null);
+  };
 
   const handleBanSubmit = () => {
-    setBanDialogOpen(false)
-    setSelectedUser(null)
-    fetchUsers(filters)
-  }
+    setBanDialogOpen(false);
+    setSelectedUser(null);
+    fetchUsers(filters);
+  };
 
   const handleUnbanUser = async (userId: string) => {
-    const result = await API.delete(`/admin/users/ban/${userId}`)
+    const result = await API.delete(`/admin/users/ban/${userId}`);
     if (result.success) {
-      toast.success(`User successfully unbanned`)
+      toast.success(`User successfully unbanned`);
     } else {
-      toast.error(`Error when unbanning a user: ${result.error}`)
+      toast.error(`Error when unbanning a user: ${result.error}`);
     }
 
-    fetchUsers(filters)
-  }
+    fetchUsers(filters);
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -240,14 +240,14 @@ function AdminUsers() {
                 placeholder="Search by username..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="pl-8"
               />
               <Button onClick={handleSearch}>Search</Button>
             </div>
             <Select
               value={filters.status}
-              onValueChange={(value) => handleFilterChange('status', value)}
+              onValueChange={(value) => handleFilterChange("status", value)}
             >
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
@@ -260,7 +260,7 @@ function AdminUsers() {
             </Select>
             <Select
               value={filters.role}
-              onValueChange={(value) => handleFilterChange('role', value)}
+              onValueChange={(value) => handleFilterChange("role", value)}
             >
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by role" />
@@ -317,7 +317,7 @@ function AdminUsers() {
                     <TableCell>
                       {user.last_login
                         ? getTimeSince(user.last_login)
-                        : 'Never'}
+                        : "Never"}
                     </TableCell>
                     <TableCell className="text-right">
                       {contextUser?.username != user.username && (
@@ -417,5 +417,5 @@ function AdminUsers() {
         </div>
       </main>
     </div>
-  )
+  );
 }
