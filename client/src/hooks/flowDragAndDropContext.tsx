@@ -1,12 +1,11 @@
-// src/hooks/useDragDrop.ts
 import { createContext, useCallback, useContext, useState } from "react";
 import { useReactFlow } from "@xyflow/react";
 
 let id = 0;
 const getId = () => `n_${id++}`;
 
-export const useDragDrop = (setNodes: any) => {
-  const { screenToFlowPosition } = useReactFlow();
+export const useDragDrop = () => {
+  const { screenToFlowPosition, setNodes } = useReactFlow();
   const [type, setType] = useDnD();
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {

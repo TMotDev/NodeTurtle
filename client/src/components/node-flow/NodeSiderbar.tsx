@@ -1,3 +1,4 @@
+import { Button } from "../ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -5,10 +6,14 @@ import {
   SidebarGroup,
   SidebarHeader,
 } from "../ui/sidebar";
+import { useSaveLoad } from "@/hooks/flowSaveLoad";
 import { useDnD } from "@/hooks/flowDragAndDropContext";
 
 export default function NodeSiderbar() {
   const [_, setType] = useDnD();
+
+    const {save, load} = useSaveLoad();
+
 
   function onDragStart(
     event: React.DragEvent<HTMLDivElement>,
@@ -45,6 +50,14 @@ export default function NodeSiderbar() {
           >
             Output Node
           </div>
+        </SidebarGroup>
+        <SidebarGroup>
+          <Button onClick={save}>
+            Save
+          </Button>
+          <Button onClick={load}>
+            Load
+          </Button>
         </SidebarGroup>
         <SidebarGroup />
       </SidebarContent>

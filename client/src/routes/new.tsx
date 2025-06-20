@@ -78,7 +78,7 @@ function FlowEditor() {
   const { duplicateNode, deleteNode, deleteSelection, duplicateSelection } =
     useNodeOperations();
 
-  const { onDragOver, onDrop, onDragStart } = useDragDrop(setNodes);
+  const { onDragOver, onDrop, onDragStart } = useDragDrop();
 
   const [contextMenu, setContextMenu] = useState<{
     id: string;
