@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { FolderOpen, TrendingUp, UserPlus, Users } from 'lucide-react'
+import { createFileRoute } from "@tanstack/react-router";
+import { FolderOpen, TrendingUp, UserPlus, Users } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -10,44 +10,44 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts'
+} from "recharts";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import Header from '@/components/Header'
-import { requireAuth } from '@/lib/utils'
-import { Role } from '@/lib/authStore'
+} from "@/components/ui/card";
+import Header from "@/components/Header";
+import { requireAuth } from "@/lib/utils";
+import { Role } from "@/lib/authStore";
 
-export const Route = createFileRoute('/admin/dashboard')({
+export const Route = createFileRoute("/admin/dashboard")({
   beforeLoad: requireAuth(Role.Admin),
   component: AdminDashboard,
-})
+});
 
 const mockStats = {
   totalUsers: 1243,
   newUsers: 89,
   totalProjects: 456,
   newProjects: 23,
-}
+};
 
 const mockUserGrowthData = [
-  { name: 'Jan', users: 400, newUsers: 24 },
-  { name: 'Feb', users: 450, newUsers: 50 },
-  { name: 'Mar', users: 520, newUsers: 70 },
-  { name: 'Apr', users: 680, newUsers: 160 },
-  { name: 'May', users: 890, newUsers: 210 },
-  { name: 'Jun', users: 1243, newUsers: 353 },
-]
+  { name: "Jan", users: 400, newUsers: 24 },
+  { name: "Feb", users: 450, newUsers: 50 },
+  { name: "Mar", users: 520, newUsers: 70 },
+  { name: "Apr", users: 680, newUsers: 160 },
+  { name: "May", users: 890, newUsers: 210 },
+  { name: "Jun", users: 1243, newUsers: 353 },
+];
 
 const mockProjectData = [
-  { name: 'Active', count: 320, fill: '#10b981' },
-  { name: 'Suspended', count: 89, fill: '#f59e0b' },
-  { name: 'Removed', count: 47, fill: '#ef4444' },
-]
+  { name: "Active", count: 320, fill: "#10b981" },
+  { name: "Suspended", count: 89, fill: "#f59e0b" },
+  { name: "Removed", count: 47, fill: "#ef4444" },
+];
 
 function AdminDashboard() {
   return (
@@ -229,5 +229,5 @@ function AdminDashboard() {
         </div>
       </main>
     </div>
-  )
+  );
 }

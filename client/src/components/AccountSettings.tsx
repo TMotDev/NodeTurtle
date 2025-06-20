@@ -1,30 +1,30 @@
-import { useState } from 'react'
-import { Loader, User } from 'lucide-react'
+import { useState } from "react";
+import { Loader, User } from "lucide-react";
 
-import ChangeEmailForm from './forms/ChangeEmailForm'
-import ChangeNameForm from './forms/ChangeNameForm'
-import ChangePasswordForm from './forms/ChangePasswordForm'
-import DeactivateAccountForm from './forms/DeactivateAccountForm'
-import ResetPasswordForm from './forms/ResetPasswordForm'
+import ChangeEmailForm from "./forms/ChangeEmailForm";
+import ChangeNameForm from "./forms/ChangeNameForm";
+import ChangePasswordForm from "./forms/ChangePasswordForm";
+import DeactivateAccountForm from "./forms/DeactivateAccountForm";
+import ResetPasswordForm from "./forms/ResetPasswordForm";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import useAuthStore from '@/lib/authStore'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import useAuthStore from "@/lib/authStore";
 
 export default function AccountSettings() {
-  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false)
-  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false)
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
-  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false)
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
+  const [isNameDialogOpen, setIsNameDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
-  const user = useAuthStore((state) => state.user)
+  const user = useAuthStore((state) => state.user);
 
   return (
     <>
@@ -158,5 +158,5 @@ export default function AccountSettings() {
         onOpenChange={setIsDeactivateDialogOpen}
       />
     </>
-  )
+  );
 }

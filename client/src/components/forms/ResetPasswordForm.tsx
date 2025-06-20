@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { z } from 'zod'
-import { AlertTriangle, Check, Loader2 } from 'lucide-react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useState } from "react";
+import { z } from "zod";
+import { AlertTriangle, Check, Loader2 } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -10,49 +10,50 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../ui/form'
-import type { FormStatus } from '@/lib/schemas'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { API } from '@/services/api'
+} from "../ui/form";
+import type { FormStatus } from "@/lib/schemas";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { API } from "@/services/api";
 
 const passwordResetSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-})
+  email: z.string().email("Please enter a valid email"),
+});
 
 export default function ResetPasswordForm() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     success: false,
     error: null,
-  })
+  });
 
   const form = useForm<z.infer<typeof passwordResetSchema>>({
     resolver: zodResolver(passwordResetSchema),
     defaultValues: {
-      email: '',
+      email: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof passwordResetSchema>) {
-    setIsLoading(true)
-    setFormStatus({ success: false, error: null })
+    setIsLoading(true);
+    setFormStatus({ success: false, error: null });
 
-    const result = await API.post('/password/request-reset', { email:values.email })
+    const result = await API.post("/password/request-reset", {
+      email: values.email,
+    });
 
     if (result.success) {
-      setFormStatus({ success: true, error: null })
-      form.reset()
+      setFormStatus({ success: true, error: null });
+      form.reset();
     } else {
       setFormStatus({
         success: false,
-        error:
-          result.error,
-      })
+        error: result.error,
+      });
     }
 
-    setIsLoading(false)
+    setIsLoading(false);
   }
 
   return (
@@ -102,7 +103,7 @@ export default function ResetPasswordForm() {
                     Sending...
                   </>
                 ) : (
-                  'Send Reset Link'
+                  "Send Reset Link"
                 )}
               </Button>
             </form>
@@ -110,5 +111,5 @@ export default function ResetPasswordForm() {
         </>
       )}
     </>
-  )
+  );
 }
