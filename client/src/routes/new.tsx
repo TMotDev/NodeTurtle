@@ -11,13 +11,13 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import React, { useCallback, useEffect, useState } from "react";
-import { v4 as idv4 } from "uuid";
+import { v4 as uuidv4 } from "uuid";
 import type {
+  Connection,
   Edge,
+  EdgeChange,
   Node,
-  OnConnect,
-  OnEdgesChange,
-  OnNodesChange,
+  NodeChange,
 } from "@xyflow/react";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -27,10 +27,14 @@ import { DevTools } from "@/components/devtools";
 import {
   MouseProvider,
   useMousePosition,
-} from "@/hooks/flowMousePositionContext";
+} from "@/hooks/flowMousePosition";
 import { useClipboard } from "@/hooks/flowClipBoardContext";
 import { useNodeOperations } from "@/hooks/nodeActionsContext";
 import { DnDProvider, useDragDrop } from "@/hooks/flowDragAndDropContext";
+import {
+  FlowManagerProvider,
+  useFlowManagerContext,
+} from "@/hooks/FlowManager";
 
 export const Route = createFileRoute("/new")({
   component: Flow,
@@ -59,7 +63,7 @@ const NODE_EXECUTORS = {
 
 const initialNodes: Array<Node> = [
   {
-    id: idv4(),
+    id: uuidv4(),
     type: "nodeBase",
     position: { x: 300, y: 300 },
     data: {},
@@ -72,6 +76,7 @@ function FlowEditor() {
   const [nodes, setNodes] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);
 
+  const { markAsModified } = useFlowManagerContext();
   const { copyElements, pasteElements } = useClipboard();
   const { reactFlowWrapper, handleMouseMove } = useMousePosition();
 
@@ -141,24 +146,35 @@ function FlowEditor() {
     setSelectionContextMenu(null);
   }, []);
 
-  const onNodesChange: OnNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    [setNodes],
+  const onNodesChange = useCallback(
+    (changes: Array<NodeChange<Node>>) => {
+      setNodes((nds) => applyNodeChanges(changes, nds));
+      markAsModified();
+    },
+    [setNodes, markAsModified],
   );
-  const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setEdges],
+
+  const onEdgesChange = useCallback(
+    (changes: Array<EdgeChange<Edge>>) => {
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+      markAsModified();
+    },
+    [setEdges, markAsModified],
   );
-  const onConnect: OnConnect = useCallback(
-    (connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges],
+
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      setEdges((eds) => addEdge(connection, eds));
+      markAsModified();
+    },
+    [setEdges, markAsModified],
   );
 
   return (
     <SidebarProvider>
       <NodeSiderbar />
+      <SidebarTrigger />
       <main className="w-screen h-screen">
-        <SidebarTrigger />
         <div
           ref={reactFlowWrapper}
           onMouseMove={handleMouseMove}
@@ -180,6 +196,7 @@ function FlowEditor() {
             fitView
             panOnScroll
             panOnDrag={[1, 2]}
+            deleteKeyCode={"Delete"}
             selectionOnDrag
             selectionMode={SelectionMode.Partial}
             multiSelectionKeyCode={"Shift"}
@@ -212,11 +229,13 @@ function FlowEditor() {
 function Flow() {
   return (
     <ReactFlowProvider>
-      <DnDProvider>
-        <MouseProvider>
-          <FlowEditor />
-        </MouseProvider>
-      </DnDProvider>
+      <FlowManagerProvider>
+        <DnDProvider>
+          <MouseProvider>
+            <FlowEditor />
+          </MouseProvider>
+        </DnDProvider>
+      </FlowManagerProvider>
     </ReactFlowProvider>
   );
 }

@@ -1,3 +1,4 @@
+import { FolderOpen, Plus, Save } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Sidebar,
@@ -6,27 +7,40 @@ import {
   SidebarGroup,
   SidebarHeader,
 } from "../ui/sidebar";
-import { useSaveLoad } from "@/hooks/flowSaveLoad";
+import { LoadFlowDialog } from "./LoadFlowDialog";
+import { FlowTitle } from "./FlowTitle";
 import { useDnD } from "@/hooks/flowDragAndDropContext";
+import { useFlowManagerContext } from "@/hooks/FlowManager";
 
-export default function NodeSiderbar() {
+export default function NodeSidebar() {
   const [_, setType] = useDnD();
-
-    const {save, load} = useSaveLoad();
-
+   const {
+    currentFlowTitle,
+    hasUnsavedChanges,
+    saveCurrentFlow,
+    loadFlow,
+    createNewFlow,
+    deleteFlow,
+    updateFlowTitle,
+  } = useFlowManagerContext();
 
   function onDragStart(
     event: React.DragEvent<HTMLDivElement>,
     nodeType: string,
   ) {
     setType(nodeType);
-
     event.dataTransfer.effectAllowed = "move";
   }
 
   return (
     <Sidebar>
-      <SidebarHeader />
+      <SidebarHeader>
+        <FlowTitle
+          title={currentFlowTitle}
+          onTitleChange={updateFlowTitle}
+          hasUnsavedChanges={hasUnsavedChanges}
+        />
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <div
@@ -52,14 +66,29 @@ export default function NodeSiderbar() {
           </div>
         </SidebarGroup>
         <SidebarGroup>
-          <Button onClick={save}>
+          <Button onClick={createNewFlow} variant="outline" className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            New Flow
+          </Button>
+          <Button onClick={saveCurrentFlow} className="w-full">
+            <Save className="w-4 h-4 mr-2" />
             Save
+            {hasUnsavedChanges && (
+              <span className="ml-2 w-2 h-2 bg-white rounded-full" />
+            )}
           </Button>
-          <Button onClick={load}>
-            Load
-          </Button>
+          <LoadFlowDialog
+            onLoadFlow={loadFlow}
+            onDeleteFlow={deleteFlow}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onSaveCurrentFlow={saveCurrentFlow}
+          >
+            <Button variant="outline" className="w-full">
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Load Flow
+            </Button>
+          </LoadFlowDialog>
         </SidebarGroup>
-        <SidebarGroup />
       </SidebarContent>
       <SidebarFooter />
     </Sidebar>
