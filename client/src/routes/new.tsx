@@ -7,8 +7,10 @@ import {
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
+  getOutgoers,
   useEdgesState,
   useNodesState,
+  useReactFlow,
 } from "@xyflow/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -16,8 +18,10 @@ import type {
   Connection,
   Edge,
   EdgeChange,
+  IsValidConnection,
   Node,
   NodeChange,
+  NodeConnection,
 } from "@xyflow/react";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -32,8 +36,9 @@ import {
   FlowManagerProvider,
   useFlowManagerContext,
 } from "@/hooks/FlowManager";
-import MoveNode from "@/components/node-flow/MoveNode";
 import StartNode from "@/components/node-flow/StartNode";
+import LoopNode from "@/components/node-flow/LoopNode";
+import MoveNode from "@/components/node-flow/MoveNode";
 
 export const Route = createFileRoute("/new")({
   component: Flow,
@@ -50,10 +55,11 @@ const initialNodes: Array<Node> = [
 
 const initialEdges: Array<Edge> = [];
 
-const nodeTypes = {
+export const nodeTypes = {
   nodeBase: NodeBase,
   startNode: StartNode,
   moveNode: MoveNode,
+  loopNode: LoopNode,
 };
 
 function FlowEditor() {
@@ -66,6 +72,8 @@ function FlowEditor() {
 
   const { duplicateNode, deleteNode, deleteSelection, duplicateSelection } =
     useNodeOperations();
+
+  const { getNodes, getEdges } = useReactFlow();
 
   const { onDragOver, onDrop, onDragStart } = useDragDrop();
 
@@ -142,6 +150,37 @@ function FlowEditor() {
     [setEdges, markAsModified],
   );
 
+  const isValidConnection = useCallback(
+    (connectionOrEdge: Edge | Connection) => {
+      if (
+        typeof connectionOrEdge.source === "string" &&
+        typeof connectionOrEdge.target === "string"
+      ) {
+        const connection = connectionOrEdge as Connection;
+        const n = getNodes();
+        const e = getEdges();
+        const target = n.find((node) => node.id === connection.target);
+        const hasCycle = (node: Node, visited = new Set<string>()) => {
+          if (visited.has(node.id)) return false;
+
+          visited.add(node.id);
+
+          for (const outgoer of getOutgoers(node, n, e)) {
+            if (outgoer.id === connection.source) return true;
+            if (hasCycle(outgoer, visited)) return true;
+          }
+        };
+
+        if (!target) return false;
+        if (target.id === connection.source) return false;
+
+        return !hasCycle(target);
+      }
+      return false;
+    },
+    [getNodes, getEdges],
+  );
+
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge(connection, eds));
@@ -170,6 +209,7 @@ function FlowEditor() {
             onDrop={onDrop}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
+            isValidConnection={isValidConnection}
             onNodeContextMenu={onNodeContextMenu}
             onPaneClick={onPaneClick}
             onSelectionContextMenu={onSelectionContextMenu}

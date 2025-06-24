@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Repeat2 } from "lucide-react";
 import React, { memo, useCallback, useRef, useState } from "react";
 
 import { Position, useReactFlow } from "@xyflow/react";
@@ -8,21 +8,21 @@ import { NodeHeader, NodeHeaderIcon, NodeHeaderTitle } from "./node-header";
 import { BaseNode } from "./base-node";
 import { BaseHandle } from "./base-handle";
 import type { KeyboardEvent } from "react";
-import type { MoveNodeProps } from "@/lib/flowUtils";
+import type { LoopNodeProps } from "@/lib/flowUtils";
 
-const MoveNode = memo(({ selected, data, id }: MoveNodeProps) => {
+const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
   const { updateNodeData } = useReactFlow();
 
-  const [distance, setDistance] = useState(data.distance);
+  const [loopCount, setLoopCount] = useState(data.loopCount);
 
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
   const startValue = useRef(0);
 
-  const handleDistanceChange = useCallback(
+  const handleLoopChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseInt(e.target.value) || 0;
-      setDistance(value);
+      setLoopCount(value);
       updateNodeData(id, { distance: value });
     },
     [id, updateNodeData],
@@ -33,10 +33,10 @@ const MoveNode = memo(({ selected, data, id }: MoveNodeProps) => {
       e.preventDefault();
       setIsDragging(true);
       startX.current = e.clientX;
-      startValue.current = distance;
+      startValue.current = loopCount;
       document.body.style.cursor = "ew-resize";
     },
-    [distance],
+    [loopCount],
   );
 
   const handleMouseMove = useCallback(
@@ -45,10 +45,10 @@ const MoveNode = memo(({ selected, data, id }: MoveNodeProps) => {
 
       const deltaX = e.clientX - startX.current;
       const sensitivity = 0.2;
-      const newDistance = Math.round(startValue.current + deltaX * sensitivity);
+      const newLoop = Math.round(startValue.current + deltaX * sensitivity);
 
-      setDistance(newDistance);
-      updateNodeData(id, { distance: newDistance });
+      setLoopCount(newLoop);
+      updateNodeData(id, { loopCount: newLoop });
     },
     [id, isDragging, updateNodeData],
   );
@@ -76,44 +76,50 @@ const MoveNode = memo(({ selected, data, id }: MoveNodeProps) => {
     (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        const newDistance = distance + 1;
-        setDistance(newDistance);
+        const newDistance = loopCount + 1;
+        setLoopCount(newDistance);
         updateNodeData(id, { distance: newDistance });
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        const newDistance = distance - 1;
-        setDistance(newDistance);
+        const newDistance = loopCount - 1;
+        setLoopCount(newDistance);
         updateNodeData(id, { distance: newDistance });
       }
     },
-    [distance, id, updateNodeData],
+    [loopCount, id, updateNodeData],
   );
 
   return (
     <BaseNode selected={selected} className="px-3 py-2 w-40">
       <BaseHandle id="in" type="target" position={Position.Left} />
       <BaseHandle id="out" type="source" position={Position.Right} />
+      <BaseHandle
+        id="loop"
+        className="!border-orange-300"
+        type="source"
+        position={Position.Bottom}
+      />
 
-      <NodeHeader className="-mx-3 -mt-2 border-b bg-blue-500 text-white rounded-t-[6px]">
+      <NodeHeader className="-mx-3 -mt-2 border-b bg-orange-500 text-white rounded-t-[6px]">
         <NodeHeaderIcon>
-          <ArrowRight className="text-white" />
+          <Repeat2 className="text-white" />
         </NodeHeaderIcon>
-        <NodeHeaderTitle className="text-white">Move</NodeHeaderTitle>
+        <NodeHeaderTitle className="text-white">Loop</NodeHeaderTitle>
       </NodeHeader>
 
       <div className="mt-3">
         <Label
-          htmlFor={`distance-${id}`}
+          htmlFor={`loop-${id}`}
           className="text-sm font-medium cursor-ew-resize select-none nodrag"
           onMouseDown={handleLabelMouseDown}
         >
-          Distance
+          Loop count
         </Label>
         <Input
-          id={`distance-${id}`}
+          id={`loop-${id}`}
           type="text"
-          value={distance}
-          onChange={handleDistanceChange}
+          value={loopCount}
+          onChange={handleLoopChange}
           onKeyDown={handleKeyDown}
           className="mt-1 text-center font-mono nodrag"
           placeholder="10"
@@ -123,6 +129,6 @@ const MoveNode = memo(({ selected, data, id }: MoveNodeProps) => {
   );
 });
 
-MoveNode.displayName = "MoveNode";
+LoopNode.displayName = "MoveNode";
 
-export default MoveNode;
+export default LoopNode;

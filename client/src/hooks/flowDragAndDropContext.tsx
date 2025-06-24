@@ -25,7 +25,7 @@ export const useDragDrop = () => {
         y: event.clientY,
       });
       const newNode = {
-        id: `node_${uuidv4()}`,
+        id: `${type}_${uuidv4()}`,
         type,
         position,
         data: INITIAL_NODE_DATA[type as keyof typeof INITIAL_NODE_DATA],

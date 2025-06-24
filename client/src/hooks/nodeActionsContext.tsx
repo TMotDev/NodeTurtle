@@ -25,7 +25,7 @@ export const useNodeOperations = () => {
       nodeIdMap[node.id] = newId;
       return {
         ...node,
-        id: `node_${uuidv4()}`,
+        id: `${node.type}_${uuidv4()}`,
         position: { x: node.position.x + 50, y: node.position.y + 50 },
         selected: true,
       };
@@ -69,7 +69,7 @@ export const useNodeOperations = () => {
       if (node) {
         const newNode = {
           ...node,
-          id: `node_${uuidv4()}`,
+          id: `${node.type}_${uuidv4()}`,
           position: {
             x: node.position.x + 50,
             y: node.position.y + 50,

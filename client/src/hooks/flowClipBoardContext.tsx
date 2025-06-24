@@ -61,7 +61,7 @@ export const useClipboard = () => {
 
     const nodeIdMap: Record<string, string> = {};
     const newNodes = copiedElements.nodes.map((node) => {
-      const newId = `node_${uuidv4()}`;
+      const newId = `${node.type}_${uuidv4()}`;
       nodeIdMap[node.id] = newId;
 
       // Calculate offset from group center to individual node

@@ -9,107 +9,21 @@ import { BaseNode } from "./base-node";
 import { BaseHandle } from "./base-handle";
 import type { NodeProps } from "@xyflow/react";
 import type { NodeTree } from "@/lib/flowUtils";
-import { NODE_EXECUTORS } from "@/lib/flowUtils";
-
-// Helper function to create ASCII tree visualization
-const createAsciiTree = (
-  nodeTree: NodeTree,
-  prefix: string = "",
-  isLast: boolean = true,
-  visited: Set<string> = new Set(),
-): Array<string> => {
-  const lines: Array<string> = [];
-  const node = nodeTree.node;
-
-  // Create the current node line
-  const connector = prefix + (isLast ? "└── " : "├── ");
-  const nodeLabel = `${node.type} ${node.data.distance} (${node.id})${nodeTree.isLoop ? " [LOOP_REF]" : ""}${node.source?.handle ? ` [${node.source.handle}]` : ""}`;
-  lines.push(connector + nodeLabel);
-
-  // Track visited nodes to detect convergence
-  if (visited.has(node.id) && !nodeTree.isLoop) {
-    lines.push(prefix + (isLast ? "    " : "│   ") + "↑ [CONVERGENCE POINT]");
-    return lines;
-  }
-
-  if (!nodeTree.isLoop) {
-    visited.add(node.id);
-  }
-
-  // Process children
-  const children = nodeTree.children;
-  children.forEach((child, index) => {
-    const isLastChild = index === children.length - 1;
-    const childPrefix = prefix + (isLast ? "    " : "│   ");
-    const childLines = createAsciiTree(
-      child,
-      childPrefix,
-      isLastChild,
-      new Set(visited),
-    );
-    lines.push(...childLines);
-  });
-
-  return lines;
-};
-
-// Helper function to create a flow summary
-const createFlowSummary = (
-  nodeTree: NodeTree,
-  results: Array<any>,
-): Array<string> => {
-  const summary: Array<string> = [];
-  const nodeCount = new Map<string, number>();
-  const loopRefs = new Set<string>();
-
-  const countNodes = (tree: NodeTree) => {
-    const type = tree.node.type;
-    nodeCount.set(type, (nodeCount.get(type) || 0) + 1);
-
-    if (tree.isLoop) {
-      loopRefs.add(tree.node.id);
-    }
-
-    tree.children.forEach(countNodes);
-  };
-
-  countNodes(nodeTree);
-
-  summary.push("=".repeat(50));
-  summary.push("FLOW ANALYSIS SUMMARY");
-  summary.push("=".repeat(50));
-  summary.push(`Total unique node types: ${nodeCount.size}`);
-
-  for (const [type, count] of nodeCount.entries()) {
-    summary.push(`  ${type}: ${count} instance(s)`);
-  }
-
-  if (loopRefs.size > 0) {
-    summary.push(`Loop references detected: ${loopRefs.size}`);
-    summary.push(`  Nodes: ${Array.from(loopRefs).join(", ")}`);
-  }
-
-  summary.push("=".repeat(50));
-
-  return summary;
-};
+import {
+  NODE_EXECUTORS,
+  createAsciiTree,
+  createFlowSummary,
+} from "@/lib/flowUtils";
 
 export const executeTurtleFlow = async (nodeTree: any) => {
-  // Initialize results array to collect output
   const results: Array<{ turtleId: string; log: string; path: Array<any> }> =
     [];
-
-  // Create and log the ASCII tree visualization
-  console.log("\n" + "=".repeat(60));
-  console.log("NODE FLOW TREE VISUALIZATION");
-  console.log("=".repeat(60));
 
   const treeLines = createAsciiTree(nodeTree);
   treeLines.forEach((line) => console.log(line));
 
   console.log("\n" + createFlowSummary(nodeTree, results).join("\n"));
 
-  // Store tree visualization in results for debugging
   results.push({
     turtleId: "debug",
     log: "tree_visualization",
@@ -131,9 +45,8 @@ export const executeTurtleFlow = async (nodeTree: any) => {
 
     // Log current execution path
     const indent = "  ".repeat(depth);
-    console.log(`${indent}→ Executing: ${node.type}(${node.id})`);
 
-    if (nodeType === "loop") {
+    if (nodeType === "loopNode") {
       const loopCount = node.data.loops || 3;
       const loopChildren = [];
       const exitChildren = [];
@@ -147,19 +60,13 @@ export const executeTurtleFlow = async (nodeTree: any) => {
       }
 
       if (loopChildren.length > 0) {
-        console.log(`${indent}  ↻ Loop executing ${loopCount} times`);
-
         for (let i = 0; i < loopCount; i++) {
-          console.log(`${indent}    Iteration ${i + 1}/${loopCount}`);
           for (const loopChild of loopChildren) {
             await processNode(loopChild, depth + 2, currentPath);
           }
         }
       }
 
-      console.log(
-        `${indent}  → Exiting loop, processing ${exitChildren.length} exit path(s)`,
-      );
       for (const exitChild of exitChildren) {
         await processNode(exitChild, depth + 1, currentPath);
       }
@@ -173,7 +80,6 @@ export const executeTurtleFlow = async (nodeTree: any) => {
     // await sleep(30);
 
     if (children.length === 0) {
-      console.log(`${indent}  ✓ End of path: ${currentPath.join(" → ")}`);
     } else if (children.length === 1) {
       await processNode(children[0], depth + 1, currentPath);
     } else {
@@ -185,12 +91,7 @@ export const executeTurtleFlow = async (nodeTree: any) => {
     }
   };
 
-  console.log("\nSTARTING EXECUTION:");
-  console.log("=".repeat(60));
   await processNode(nodeTree);
-
-  console.log("\nEXECUTION COMPLETED!");
-  console.log("=".repeat(60));
 
   return results;
 };
@@ -200,39 +101,40 @@ const StartNode = memo(({ id, selected }: NodeProps) => {
   const { getNodes, getEdges } = useReactFlow();
 
   function getNodeTree(
-    nodeID: string,
-    visited: Set<string> = new Set(),
-  ): NodeTree {
-    // Mark this node as visited
-    visited.add(nodeID);
+  nodeID: string,
+  visited: Set<string> = new Set(),
+): NodeTree {
+  visited.add(nodeID);
 
-    const node = getNodes().find((n) => n.id === nodeID);
-    const outgoers = getOutgoers({ id: nodeID }, getNodes(), getEdges());
+  const node = getNodes().find((n) => n.id === nodeID);
+  const outgoers = getOutgoers({ id: nodeID }, getNodes(), getEdges());
 
-    const nodeTree: NodeTree = {
-      node: {
-        id: nodeID,
-        type: node?.type || "",
-        data: node?.data || {},
-      },
-      children: [],
-      isLoop: false,
-    };
+  const nodeTree: NodeTree = {
+    node: {
+      id: nodeID,
+      type: node?.type || "",
+      data: node?.data || {},
+    },
+    children: [],
+    isLoop: false,
+  };
 
-    // Process each outgoing node that hasn't been visited yet
-    if (outgoers.length) {
-      outgoers.forEach((outgoer) => {
-        // Get the edge that connects this node to the outgoer
-        const edge = getEdges().find(
-          (e) => e.source === nodeID && e.target === outgoer.id,
-        );
+  // Process each outgoing node
+  if (outgoers.length) {
+    outgoers.forEach((outgoer) => {
+      const edges = getEdges().filter(
+        (e) => e.source === nodeID && e.target === outgoer.id,
+      );
 
-        // Only process this outgoer if we haven't seen it before
+      console.log(`Edges from ${nodeID} to ${outgoer.id}:`, edges);
+
+      // Process each edge separately
+      edges.forEach((edge) => {
         if (!visited.has(outgoer.id)) {
           // Recursively build the subtree and add it to children
           const childTree = getNodeTree(outgoer.id, new Set([...visited]));
           // Add source handle information to help identify loop connections
-          if (edge && edge.sourceHandle) {
+          if (edge.sourceHandle) {
             childTree.node.source = { handle: edge.sourceHandle };
           }
           nodeTree.children.push(childTree);
@@ -243,10 +145,9 @@ const StartNode = memo(({ id, selected }: NodeProps) => {
               id: outgoer.id,
               type: outgoer.type as string,
               data: outgoer.data,
-              source:
-                edge && edge.sourceHandle
-                  ? { handle: edge.sourceHandle }
-                  : undefined,
+              source: edge.sourceHandle
+                ? { handle: edge.sourceHandle }
+                : undefined,
             },
             children: [],
             isLoop: true,
@@ -254,10 +155,11 @@ const StartNode = memo(({ id, selected }: NodeProps) => {
           nodeTree.children.push(loopRef);
         }
       });
-    }
-
-    return nodeTree;
+    });
   }
+
+  return nodeTree;
+}
 
   function handleClick(): void {
     const nodeTree = getNodeTree(id);
@@ -267,7 +169,7 @@ const StartNode = memo(({ id, selected }: NodeProps) => {
 
   return (
     <BaseNode selected={selected} className="px-4 py-3 w-40 shadow-md/20">
-      <BaseHandle id="source-1" type="source" position={Position.Right} />
+      <BaseHandle id="out" type="source" position={Position.Right} />
       <NodeHeader className="-mx-3 -mt-2 border-b">
         <NodeHeaderTitle>
           <Button className="btn w-full bg-green-700" onClick={handleClick}>

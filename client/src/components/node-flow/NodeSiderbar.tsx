@@ -44,25 +44,22 @@ export default function NodeSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <div
-            className="dndnode input"
             onDragStart={(event) => onDragStart(event, "startNode")}
             draggable
           >
             Start Node
           </div>
           <div
-            className="dndnode"
-            onDragStart={(event) => onDragStart(event, "moveNode")}
+          onDragStart={(event) => onDragStart(event, "moveNode")}
             draggable
           >
             Move Node
           </div>
           <div
-            className="dndnode output"
-            onDragStart={(event) => onDragStart(event, "nodeBase")}
+            onDragStart={(event) => onDragStart(event, "loopNode")}
             draggable
           >
-            Output Node
+            Loop Node
           </div>
         </SidebarGroup>
         <SidebarGroup>

@@ -28,8 +28,8 @@ const NodeBase = memo(({ selected }: NodeProps) => {
 
   return (
     <BaseNode selected={selected} className="px-3 py-2">
-      <BaseHandle id="target-1" type="target" position={Position.Right} />
-      <BaseHandle id="source-1" type="source" position={Position.Left} />
+      <BaseHandle id="out" type="target" position={Position.Right} />
+      <BaseHandle id="in" type="source" position={Position.Left} />
       <NodeHeader className="-mx-3 -mt-2 border-b">
         <NodeHeaderIcon>
           <Rocket />
