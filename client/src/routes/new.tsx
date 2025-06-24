@@ -24,10 +24,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import NodeBase from "@/components/node-flow/baseNode";
 import NodeSiderbar from "@/components/node-flow/NodeSiderbar";
 import { DevTools } from "@/components/devtools";
-import {
-  MouseProvider,
-  useMousePosition,
-} from "@/hooks/flowMousePosition";
+import { MouseProvider, useMousePosition } from "@/hooks/flowMousePosition";
 import { useClipboard } from "@/hooks/flowClipBoardContext";
 import { useNodeOperations } from "@/hooks/nodeActionsContext";
 import { DnDProvider, useDragDrop } from "@/hooks/flowDragAndDropContext";
@@ -35,31 +32,12 @@ import {
   FlowManagerProvider,
   useFlowManagerContext,
 } from "@/hooks/FlowManager";
+import MoveNode from "@/components/node-flow/MoveNode";
+import StartNode from "@/components/node-flow/StartNode";
 
 export const Route = createFileRoute("/new")({
   component: Flow,
 });
-
-const NODE_TYPES = {
-  start: { label: "Start", color: "bg-green-500", executable: true },
-  move: { label: "Process", color: "bg-blue-500", executable: true },
-};
-
-// TODO: nodeData types
-const NODE_EXECUTORS = {
-  start: (nodeData: any) => {
-    console.log("Executing Start Node:", nodeData);
-    return { success: true, output: "Started" };
-  },
-  move: (nodeData: any) => {
-    console.log("Executing Move Node:", nodeData);
-
-    return {
-      success: true,
-      output: `Processed: ${nodeData.value || "default"}`,
-    };
-  },
-};
 
 const initialNodes: Array<Node> = [
   {
@@ -71,6 +49,12 @@ const initialNodes: Array<Node> = [
 ];
 
 const initialEdges: Array<Edge> = [];
+
+const nodeTypes = {
+  nodeBase: NodeBase,
+  startNode: StartNode,
+  moveNode: MoveNode,
+};
 
 function FlowEditor() {
   const [nodes, setNodes] = useNodesState(initialNodes);
@@ -94,10 +78,6 @@ function FlowEditor() {
     top: number;
     left: number;
   } | null>(null);
-
-  const nodeTypes = {
-    nodeBase: NodeBase,
-  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

@@ -25,3 +25,28 @@ export function getNodeGroupCenter(nodes: Array<Node>) {
     y: (bounds.minY + bounds.maxY) / 2,
   };
 }
+
+export const INITIAL_NODE_DATA = {
+  startNode: {},
+  moveNode: { distance: 10 }
+};
+
+export const NODE_EXECUTORS = {
+  startNode: (nodeData: any) => {
+    console.log("Executing Start Node:", nodeData);
+  },
+  moveNode: (nodeData: any) => {
+    console.log("Executing Move Node:", nodeData);
+  },
+};
+
+export type NodeTree = {
+  node: {
+    id: string;
+    type: string;
+    data: any;
+    source?: { handle?: string; };
+  };
+  children: Array<NodeTree>;
+  isLoop: boolean;
+};

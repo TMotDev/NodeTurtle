@@ -23,7 +23,6 @@ export const useFlowManager = () => {
 
   const getSavedFlows = useCallback((): Array<SavedFlow> => {
     const saved = localStorage.getItem(FLOWS_STORAGE_KEY);
-    console.log(saved)
     return saved ? JSON.parse(saved) : [];
   }, []);
 
@@ -117,7 +116,6 @@ export const useFlowManager = () => {
       const updatedFlows = flows.filter((f) => f.id !== flowId);
       localStorage.setItem(FLOWS_STORAGE_KEY, JSON.stringify(updatedFlows));
 
-      console.log("deleted", flowId)
       // If deleting current flow, create new one
       if (flowId === currentFlowId) {
         createNewFlow();

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useState } from "react";
 import { useReactFlow } from "@xyflow/react";
 import { v4 as uuidv4 } from "uuid";
+import { INITIAL_NODE_DATA } from "@/lib/flowUtils";
 
 export const useDragDrop = () => {
   const { screenToFlowPosition, setNodes } = useReactFlow();
@@ -14,7 +15,6 @@ export const useDragDrop = () => {
   const onDrop = useCallback(
     (event: { preventDefault: () => void; clientX: any; clientY: any }) => {
       event.preventDefault();
-      console.log("drop", type)
 
       if (!type) {
         return;
@@ -28,7 +28,7 @@ export const useDragDrop = () => {
         id: `node_${uuidv4()}`,
         type,
         position,
-        data: { label: `${type} node` },
+        data: INITIAL_NODE_DATA[type as keyof typeof INITIAL_NODE_DATA],
       };
 
       setNodes((nds: Array<any>) => nds.concat(newNode));

@@ -14,7 +14,7 @@ import { useFlowManagerContext } from "@/hooks/FlowManager";
 
 export default function NodeSidebar() {
   const [_, setType] = useDnD();
-   const {
+  const {
     currentFlowTitle,
     hasUnsavedChanges,
     saveCurrentFlow,
@@ -45,17 +45,17 @@ export default function NodeSidebar() {
         <SidebarGroup>
           <div
             className="dndnode input"
-            onDragStart={(event) => onDragStart(event, "nodeBase")}
+            onDragStart={(event) => onDragStart(event, "startNode")}
             draggable
           >
-            Input Node
+            Start Node
           </div>
           <div
             className="dndnode"
-            onDragStart={(event) => onDragStart(event, "nodeBase")}
+            onDragStart={(event) => onDragStart(event, "moveNode")}
             draggable
           >
-            Default Node
+            Move Node
           </div>
           <div
             className="dndnode output"
