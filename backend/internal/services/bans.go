@@ -20,7 +20,7 @@ type BanService struct {
 	db *sql.DB
 }
 
-// NewService creates a new AuthService with the provided database connection and JWT configuration.
+// NewBanService creates a new AuthService with the provided database connection and JWT configuration.
 func NewBanService(db *sql.DB) BanService {
 	return BanService{
 		db: db,

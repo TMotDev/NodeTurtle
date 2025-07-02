@@ -11,12 +11,7 @@ export function cn(...inputs: Array<ClassValue>) {
   return twMerge(clsx(inputs));
 }
 
-export type ValidationStatus =
-  | "idle"
-  | "checking"
-  | "available"
-  | "taken"
-  | "error";
+export type ValidationStatus = "idle" | "checking" | "available" | "taken" | "error";
 
 export interface ValidationState {
   username: ValidationStatus;
@@ -31,43 +26,42 @@ export function useFieldValidation() {
   });
 
   const validateField = useCallback(
-    debounce(
-      async (
-        field: "username" | "email",
-        value: string,
-        schema?: z.ZodSchema,
-      ) => {
-        if (!value || value.length < 3) {
-          setValidationState((prev) => ({ ...prev, [field]: "idle" }));
-          return;
-        }
-
-        // validates against a schema first
-        if (schema) {
-          try {
-            schema.parse(value);
-          } catch (error) {
+    (f: "username" | "email", v: string, sch?: z.ZodSchema) => {
+      const debouncedValidate = debounce(
+        async (field: "username" | "email", value: string, schema?: z.ZodSchema) => {
+          if (!value || value.length < 3) {
             setValidationState((prev) => ({ ...prev, [field]: "idle" }));
             return;
           }
-        }
 
-        setValidationState((prev) => ({ ...prev, [field]: "checking" }));
+          if (schema) {
+            try {
+              schema.parse(value);
+            } catch (error) {
+              setValidationState((prev) => ({ ...prev, [field]: "idle" }));
+              return;
+            }
+          }
 
-        const result = await validateUserField(field, value);
+          setValidationState((prev) => ({ ...prev, [field]: "checking" }));
 
-        if (result.error) {
-          setValidationState((prev) => ({ ...prev, [field]: "error" }));
-        } else {
-          setValidationState((prev) => ({
-            ...prev,
-            [field]: result.exists ? "taken" : "available",
-          }));
-        }
-      },
-      500,
-    ),
-    [],
+          const result = await validateUserField(field, value);
+
+          if (result.error) {
+            setValidationState((prev) => ({ ...prev, [field]: "error" }));
+          } else {
+            setValidationState((prev) => ({
+              ...prev,
+              [field]: result.exists ? "taken" : "available",
+            }));
+          }
+        },
+        500,
+      );
+
+      debouncedValidate(f, v, sch);
+    },
+    [setValidationState],
   );
 
   return {
@@ -163,11 +157,7 @@ export function getTimeSince(dateString: string): string {
  * @param earlierDate The earlier date (for month calculations)
  * @returns A formatted duration string without "ago" suffix
  */
-function formatTimeDifference(
-  diffInMs: number,
-  laterDate: Date,
-  earlierDate: Date,
-): string {
+function formatTimeDifference(diffInMs: number, laterDate: Date, earlierDate: Date): string {
   const MS_PER_MINUTE = 1000 * 60;
   const MS_PER_HOUR = MS_PER_MINUTE * 60;
   const MS_PER_DAY = MS_PER_HOUR * 24;
@@ -195,8 +185,7 @@ function formatTimeDifference(
     return `${diffInWeeks} week${diffInWeeks === 1 ? "" : "s"}`;
   }
 
-  let monthDiff =
-    (laterDate.getUTCFullYear() - earlierDate.getUTCFullYear()) * 12;
+  let monthDiff = (laterDate.getUTCFullYear() - earlierDate.getUTCFullYear()) * 12;
   monthDiff -= earlierDate.getUTCMonth();
   monthDiff += laterDate.getUTCMonth();
 

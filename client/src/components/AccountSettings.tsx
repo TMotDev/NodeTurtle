@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader, User } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import ChangeEmailForm from "./forms/ChangeEmailForm";
 import ChangeNameForm from "./forms/ChangeNameForm";
@@ -31,12 +31,8 @@ export default function AccountSettings() {
       <div className="space-y-6">
         {/* Username Section */}
         <section className="space-y-2">
-          <header className="flex items-center gap-2 text-lg font-medium">
-            Username
-          </header>
-          <div className="text-sm text-muted-foreground">
-            {user ? user.username : <Loader />}
-          </div>
+          <header className="flex items-center gap-2 text-lg font-medium">Username</header>
+          <div className="text-sm text-muted-foreground">{user ? user.username : <Loader />}</div>
           <Button
             variant="link"
             className="p-0 h-auto text-blue-600 hover:text-blue-800"
@@ -48,12 +44,8 @@ export default function AccountSettings() {
 
         {/* Email Section */}
         <section className="space-y-2">
-          <header className="flex items-center gap-2 text-lg font-medium">
-            Email
-          </header>
-          <div className="text-sm text-muted-foreground">
-            {user ? user.email : <Loader />}
-          </div>
+          <header className="flex items-center gap-2 text-lg font-medium">Email</header>
+          <div className="text-sm text-muted-foreground">{user ? user.email : <Loader />}</div>
           <Button
             variant="link"
             className="p-0 h-auto text-blue-600 hover:text-blue-800"
@@ -67,9 +59,7 @@ export default function AccountSettings() {
 
         {/* Security Section */}
         <section className="space-y-4">
-          <header className="flex items-center gap-2 text-lg font-medium">
-            Security
-          </header>
+          <header className="flex items-center gap-2 text-lg font-medium">Security</header>
           <div className="space-y-2 flex flex-col items-start">
             <Button
               variant="link"
@@ -126,16 +116,11 @@ export default function AccountSettings() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={isPasswordDialogOpen}
-        onOpenChange={setIsPasswordDialogOpen}
-      >
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Change Password</DialogTitle>
-            <DialogDescription>
-              Enter your current and new password.
-            </DialogDescription>
+            <DialogDescription>Enter your current and new password.</DialogDescription>
           </DialogHeader>
           <ChangePasswordForm />
         </DialogContent>

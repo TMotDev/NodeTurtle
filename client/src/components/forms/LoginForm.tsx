@@ -4,23 +4,10 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Alert, AlertDescription } from "../ui/alert";
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
 
 import { Button } from "../ui/button";
@@ -92,9 +79,7 @@ export default function LoginForm() {
         {formStatus.error && (
           <Alert className="mb-4 border-red-200 bg-red-50">
             <AlertTriangle className="h-4 w-4 stroke-destructive" />
-            <AlertDescription className="text-destructive">
-              {formStatus.error}
-            </AlertDescription>
+            <AlertDescription className="text-destructive">{formStatus.error}</AlertDescription>
           </Alert>
         )}
         <Form {...form}>
@@ -106,11 +91,7 @@ export default function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="m@example.com"
-                      {...field}
-                    />
+                    <Input type="email" placeholder="m@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,12 +129,7 @@ export default function LoginForm() {
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -166,14 +142,6 @@ export default function LoginForm() {
           </form>
         </Form>
       </CardContent>
-      <CardFooter className="flex justify-center text-sm">
-        <p className="flex gap-2">
-          Don't have an account?
-          <Link to="/register" className="font-medium text-primary underline">
-            Register
-          </Link>
-        </p>
-      </CardFooter>
     </Card>
   );
 }
