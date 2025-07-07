@@ -39,6 +39,7 @@ import {
 import StartNode from "@/components/node-flow/StartNode";
 import LoopNode from "@/components/node-flow/LoopNode";
 import MoveNode from "@/components/node-flow/MoveNode";
+import MultiNode from "@/components/node-flow/MultiNode";
 
 export const Route = createFileRoute("/new")({
   component: Flow,
@@ -60,6 +61,7 @@ export const nodeTypes = {
   startNode: StartNode,
   moveNode: MoveNode,
   loopNode: LoopNode,
+  multiNode: MultiNode,
 };
 
 function FlowEditor() {
@@ -70,8 +72,14 @@ function FlowEditor() {
   const { copyElements, pasteElements } = useClipboard();
   const { reactFlowWrapper, handleMouseMove } = useMousePosition();
 
-  const { duplicateNode, deleteNode, deleteSelection, duplicateSelection } =
-    useNodeOperations();
+  const {
+    duplicateNode,
+    deleteNode,
+    deleteSelection,
+    duplicateSelection,
+    combineIntoMultiNode,
+    explodeMultiNode,
+  } = useNodeOperations();
 
   const { getNodes, getEdges } = useReactFlow();
 
@@ -189,6 +197,20 @@ function FlowEditor() {
     [setEdges, markAsModified],
   );
 
+  // Helper function to check if multiple nodes are selected
+  const hasMultipleSelectedNodes = useCallback(() => {
+    const selectedNodes = getNodes().filter(node => node.selected);
+    return selectedNodes.length > 1;
+  }, [getNodes]);
+
+  // Helper function to check if selected nodes can be combined
+  const canCombineSelectedNodes = useCallback(() => {
+    const selectedNodes = getNodes().filter(node => node.selected);
+    // Filter out start nodes from selection for validation
+    const validNodes = selectedNodes.filter(node => node.type !== 'startNode');
+    return validNodes.length > 1;
+  }, [getNodes]);
+
   return (
     <SidebarProvider>
       <NodeSiderbar />
@@ -231,7 +253,9 @@ function FlowEditor() {
           onClose={() => setContextMenu(null)}
           onDuplicate={() => duplicateNode(contextMenu.id)}
           onDelete={() => deleteNode(contextMenu.id)}
+          onExplode={explodeMultiNode}
           data={contextMenu}
+          isMultiSelection={false}
         />
       )}
       {selectionContextMenu && (
@@ -239,7 +263,9 @@ function FlowEditor() {
           onClose={() => setSelectionContextMenu(null)}
           onDuplicate={duplicateSelection}
           onDelete={deleteSelection}
+          onCombine={canCombineSelectedNodes() ? combineIntoMultiNode : undefined}
           data={selectionContextMenu}
+          isMultiSelection={true}
         />
       )}
     </SidebarProvider>
