@@ -9,8 +9,8 @@ import {
 } from "../ui/sidebar";
 import { LoadFlowDialog } from "./LoadFlowDialog";
 import { FlowTitle } from "./FlowTitle";
-import { useDnD } from "@/hooks/flowDragAndDropContext";
 import { useFlowManagerContext } from "@/hooks/FlowManager";
+import { useDnD } from "@/hooks/FlowDragAndDropContext";
 
 export default function NodeSidebar() {
   const [_, setType] = useDnD();

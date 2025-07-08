@@ -1,7 +1,5 @@
 import {
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
 } from "@radix-ui/react-dropdown-menu";
 import { Rocket } from "lucide-react";
 import { memo, useCallback } from "react";
@@ -9,7 +7,6 @@ import { Position, useNodeId, useReactFlow } from "@xyflow/react";
 import {
   NodeHeader,
   NodeHeaderActions,
-  NodeHeaderDeleteAction,
   NodeHeaderIcon,
   NodeHeaderMenuAction,
   NodeHeaderTitle,

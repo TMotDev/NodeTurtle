@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useReactFlow } from "@xyflow/react";
 import { v4 as uuidv4 } from "uuid";
-import { useMousePosition } from "./flowMousePosition";
+import { useMousePosition } from "./FlowMousePosition";
 import type { Edge, Node } from "@xyflow/react";
 import { getNodeGroupCenter } from "@/lib/flowUtils";
 

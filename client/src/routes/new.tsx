@@ -12,33 +12,26 @@ import {
   useNodesState,
   useReactFlow,
 } from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+
 import React, { useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type {
-  Connection,
-  Edge,
-  EdgeChange,
-  IsValidConnection,
-  Node,
-  NodeChange,
-  NodeConnection,
-} from "@xyflow/react";
+import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import NodeBase from "@/components/node-flow/baseNode";
 import NodeSiderbar from "@/components/node-flow/NodeSiderbar";
 import { DevTools } from "@/components/devtools";
-import { MouseProvider, useMousePosition } from "@/hooks/flowMousePosition";
-import { useClipboard } from "@/hooks/flowClipBoardContext";
-import { useNodeOperations } from "@/hooks/nodeActionsContext";
-import { DnDProvider, useDragDrop } from "@/hooks/flowDragAndDropContext";
-import {
-  FlowManagerProvider,
-  useFlowManagerContext,
-} from "@/hooks/FlowManager";
+import { MouseProvider, useMousePosition } from "@/hooks/FlowMousePosition";
+import { useClipboard } from "@/hooks/FlowClipBoardContext";
+import { useNodeOperations } from "@/hooks/NodeActionsContext";
+import { FlowManagerProvider, useFlowManagerContext } from "@/hooks/FlowManager";
 import StartNode from "@/components/node-flow/StartNode";
 import LoopNode from "@/components/node-flow/LoopNode";
 import MoveNode from "@/components/node-flow/MoveNode";
+import { DnDProvider, useDragDrop } from "@/hooks/FlowDragAndDropContext";
+import { useCutTool } from "@/hooks/CutTool";
+import { MouseTrail } from "@/components/node-flow/MouseTrail";
 
 export const Route = createFileRoute("/new")({
   component: Flow,
@@ -69,13 +62,24 @@ function FlowEditor() {
   const { markAsModified } = useFlowManagerContext();
   const { copyElements, pasteElements } = useClipboard();
   const { reactFlowWrapper, handleMouseMove } = useMousePosition();
-
-  const { duplicateNode, deleteNode, deleteSelection, duplicateSelection } =
-    useNodeOperations();
-
+  const { duplicateNode, deleteNode, deleteSelection, duplicateSelection } = useNodeOperations();
   const { getNodes, getEdges } = useReactFlow();
-
   const { onDragOver, onDrop, onDragStart } = useDragDrop();
+
+  const { isActive: cutActive, handleEdgeMouseEnter } = useCutTool({
+    onEdgesCut: (edgeIds) => {
+      setEdges((e) => e.filter((edge) => !edgeIds.includes(edge.id)));
+      markAsModified();
+    },
+  });
+
+  const [lazyConnectActive, setLazyConnectActive] = useState(false);
+
+  const getTrailVariant = () => {
+    if (cutActive) return "cut";
+    if (lazyConnectActive) return "lazy-connect";
+    return "none";
+  };
 
   const [contextMenu, setContextMenu] = useState<{
     id: string;
@@ -106,6 +110,8 @@ function FlowEditor() {
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
+      if (cutActive) return;
+
       event.preventDefault();
       setSelectionContextMenu(null);
       setContextMenu({
@@ -114,7 +120,7 @@ function FlowEditor() {
         left: event.clientX,
       });
     },
-    [setContextMenu],
+    [cutActive],
   );
 
   const onSelectionContextMenu = useCallback(
@@ -193,11 +199,11 @@ function FlowEditor() {
     <SidebarProvider>
       <NodeSiderbar />
       <SidebarTrigger />
-      <main className="w-screen h-screen">
+      <main className="w-screen h-screen relative">
         <div
           ref={reactFlowWrapper}
           onMouseMove={handleMouseMove}
-          className="w-full h-full"
+          className={`w-full h-full ${cutActive ? "cursor-crosshair" : "cursor-default"}`}
         >
           <ReactFlow
             nodes={nodes}
@@ -209,23 +215,32 @@ function FlowEditor() {
             onDrop={onDrop}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
+            onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
             isValidConnection={isValidConnection}
             onNodeContextMenu={onNodeContextMenu}
             onPaneClick={onPaneClick}
             onSelectionContextMenu={onSelectionContextMenu}
             fitView
-            panOnScroll
-            panOnDrag={[1, 2]}
+            panOnDrag={!cutActive && [1, 2]}
+            panOnScroll={!cutActive}
+            selectionOnDrag={!cutActive}
             deleteKeyCode={"Delete"}
-            selectionOnDrag
+            onPaneContextMenu={(e) => {
+              e.preventDefault();
+            }}
             selectionMode={SelectionMode.Partial}
             multiSelectionKeyCode={"Shift"}
           >
             <Background />
             <DevTools position="top-left" />
           </ReactFlow>
+           <MouseTrail
+            variant={getTrailVariant()}
+            isActive={cutActive || lazyConnectActive}
+          />
         </div>
       </main>
+
       {contextMenu && (
         <ContextMenu
           onClose={() => setContextMenu(null)}

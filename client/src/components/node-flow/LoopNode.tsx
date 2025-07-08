@@ -1,4 +1,4 @@
-import { ArrowRight, Repeat2 } from "lucide-react";
+import { Repeat2 } from "lucide-react";
 import React, { memo, useCallback, useRef, useState } from "react";
 
 import { Position, useReactFlow } from "@xyflow/react";
