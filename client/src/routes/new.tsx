@@ -16,7 +16,7 @@ import "@xyflow/react/dist/style.css";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
+import type { Connection, Edge, EdgeChange, Node, NodeChange, XYPosition } from "@xyflow/react";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import NodeBase from "@/components/node-flow/baseNode";
@@ -31,7 +31,8 @@ import LoopNode from "@/components/node-flow/LoopNode";
 import MoveNode from "@/components/node-flow/MoveNode";
 import { DnDProvider, useDragDrop } from "@/hooks/FlowDragAndDropContext";
 import { useCutTool } from "@/hooks/CutTool";
-import { MouseTrail } from "@/components/node-flow/MouseTrail";
+import { useLazyConnect } from "@/hooks/LazyConnect";
+import MouseTrail from "@/components/node-flow/MouseTrail";
 
 export const Route = createFileRoute("/new")({
   component: Flow,
@@ -73,13 +74,17 @@ function FlowEditor() {
     },
   });
 
-  const [lazyConnectActive, setLazyConnectActive] = useState(false);
+  const onConnection = useCallback(
+    (connection: Connection) => {
+      setEdges((eds) => addEdge(connection, eds));
+      markAsModified();
+    },
+    [setEdges, markAsModified],
+  );
 
-  const getTrailVariant = () => {
-    if (cutActive) return "cut";
-    if (lazyConnectActive) return "lazy-connect";
-    return "none";
-  };
+  const { isActive: lazyConnectActive } = useLazyConnect({
+    onConnection,
+  });
 
   const [contextMenu, setContextMenu] = useState<{
     id: string;
@@ -110,7 +115,7 @@ function FlowEditor() {
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      if (cutActive) return;
+      if (cutActive || lazyConnectActive) return;
 
       event.preventDefault();
       setSelectionContextMenu(null);
@@ -120,7 +125,7 @@ function FlowEditor() {
         left: event.clientX,
       });
     },
-    [cutActive],
+    [cutActive, lazyConnectActive],
   );
 
   const onSelectionContextMenu = useCallback(
@@ -200,12 +205,10 @@ function FlowEditor() {
       <NodeSiderbar />
       <SidebarTrigger />
       <main className="w-screen h-screen relative">
-        <div
-          ref={reactFlowWrapper}
-          onMouseMove={handleMouseMove}
-          className={`w-full h-full ${cutActive ? "cursor-crosshair" : "cursor-default"}`}
-        >
+        <div className={`w-full h-full ${cutActive ? "cursor-crosshair" : "cursor-default"}`}>
           <ReactFlow
+            ref={reactFlowWrapper}
+            onMouseMove={handleMouseMove}
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
@@ -221,9 +224,9 @@ function FlowEditor() {
             onPaneClick={onPaneClick}
             onSelectionContextMenu={onSelectionContextMenu}
             fitView
-            panOnDrag={!cutActive && [1, 2]}
-            panOnScroll={!cutActive}
-            selectionOnDrag={!cutActive}
+            panOnDrag={!cutActive && !lazyConnectActive && [1, 2]}
+            panOnScroll={!cutActive && !lazyConnectActive}
+            selectionOnDrag={!cutActive && !lazyConnectActive}
             deleteKeyCode={"Delete"}
             onPaneContextMenu={(e) => {
               e.preventDefault();
@@ -233,11 +236,8 @@ function FlowEditor() {
           >
             <Background />
             <DevTools position="top-left" />
+            <MouseTrail isActive={cutActive} />
           </ReactFlow>
-           <MouseTrail
-            variant={getTrailVariant()}
-            isActive={cutActive || lazyConnectActive}
-          />
         </div>
       </main>
 

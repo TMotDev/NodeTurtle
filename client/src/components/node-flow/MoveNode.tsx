@@ -30,6 +30,7 @@ const MoveNode = memo(({ selected, data, id }: MoveNodeProps) => {
 
   const handleLabelMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0) return; // only allow LMB dragging
       e.preventDefault();
       setIsDragging(true);
       startX.current = e.clientX;
@@ -104,7 +105,7 @@ const MoveNode = memo(({ selected, data, id }: MoveNodeProps) => {
       <div className="mt-3">
         <Label
           htmlFor={`distance-${id}`}
-          className="text-sm font-medium cursor-ew-resize select-none nodrag"
+          className="text-sm font-medium cursor-ew-resize select-none nodrag w-max"
           onMouseDown={handleLabelMouseDown}
         >
           Distance

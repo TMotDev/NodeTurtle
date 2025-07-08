@@ -23,13 +23,14 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseInt(e.target.value) || 0;
       setLoopCount(value);
-      updateNodeData(id, { distance: value });
+      updateNodeData(id, { loopCount: value });
     },
     [id, updateNodeData],
   );
 
   const handleLabelMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0) return; // only allow LMB dragging
       e.preventDefault();
       setIsDragging(true);
       startX.current = e.clientX;
@@ -76,14 +77,14 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
     (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        const newDistance = loopCount + 1;
-        setLoopCount(newDistance);
-        updateNodeData(id, { distance: newDistance });
+        const newLoopCount = loopCount + 1;
+        setLoopCount(newLoopCount);
+        updateNodeData(id, { loopCount: newLoopCount });
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        const newDistance = loopCount - 1;
-        setLoopCount(newDistance);
-        updateNodeData(id, { distance: newDistance });
+        const newLoopCount = loopCount - 1;
+        setLoopCount(newLoopCount);
+        updateNodeData(id, { loopCount: newLoopCount });
       }
     },
     [loopCount, id, updateNodeData],
@@ -110,7 +111,7 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
       <div className="mt-3">
         <Label
           htmlFor={`loop-${id}`}
-          className="text-sm font-medium cursor-ew-resize select-none nodrag"
+          className="text-sm font-medium cursor-ew-resize select-none nodrag w-max"
           onMouseDown={handleLabelMouseDown}
         >
           Loop count

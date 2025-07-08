@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useRef,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useRef, useState } from "react";
 
 interface MousePosition {
   x: number;
@@ -35,19 +29,14 @@ export function MouseProvider({ children }: { children: React.ReactNode }) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = useCallback((event: React.MouseEvent) => {
-    if (reactFlowWrapper.current) {
-      const rect = reactFlowWrapper.current.getBoundingClientRect();
-      setMousePosition({
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-      });
-    }
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
   }, []);
 
   return (
-    <MouseContext.Provider
-      value={{ mousePosition, reactFlowWrapper, handleMouseMove }}
-    >
+    <MouseContext.Provider value={{ mousePosition, reactFlowWrapper, handleMouseMove }}>
       {children}
     </MouseContext.Provider>
   );
