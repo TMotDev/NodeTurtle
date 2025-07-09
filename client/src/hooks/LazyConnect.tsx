@@ -87,8 +87,6 @@ export function useLazyConnect({
       const sourceNode = findClosestNode(startPoint, nodes);
       const targetNode = findClosestNode(endPoint, nodes);
 
-      console.log(targetNode?.position, endPoint);
-
       if (sourceNode && targetNode && sourceNode.id !== targetNode.id) {
         const connection: Connection = {
           source: sourceNode.id,
@@ -105,7 +103,8 @@ export function useLazyConnect({
   );
 
   const updateLazyConnectState = useCallback(() => {
-    const shouldActivate = inputStateRef.current.isAltPressed && inputStateRef.current.isRightMouseDown;
+    const shouldActivate =
+      inputStateRef.current.isAltPressed && inputStateRef.current.isRightMouseDown;
 
     if (shouldActivate && !state.isActive) {
       const nodes = getNodes();
@@ -119,7 +118,6 @@ export function useLazyConnect({
         targetNodeId: null,
       });
     } else if (!shouldActivate && state.isActive) {
-
       if (state.startPos && state.endPos) {
         connectNodes(screenToFlowPosition(state.startPos), screenToFlowPosition(state.endPos));
       }
@@ -251,5 +249,10 @@ export function useLazyConnect({
     isActive: state.isActive,
     startPos: state.startPos,
     endPos: state.endPos,
+    connectionValid: !!(
+      state.sourceNodeId &&
+      state.targetNodeId &&
+      state.sourceNodeId != state.targetNodeId
+    ),
   };
 }

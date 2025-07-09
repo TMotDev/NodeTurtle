@@ -11,7 +11,7 @@ interface CutToolState {
   edgesToCut: Set<string>;
 }
 
-export function useCutTool({ onEdgesCut}: UseCutToolOptions = {}) {
+export function useCutTool({ onEdgesCut }: UseCutToolOptions = {}) {
   const [cutState, setCutState] = useState<CutToolState>({
     isActive: false,
     edgesToCut: new Set(),
@@ -27,17 +27,13 @@ export function useCutTool({ onEdgesCut}: UseCutToolOptions = {}) {
 
   const updateKnifeState = useCallback(() => {
     const shouldActivate =
-      inputStateRef.current.isCtrlPressed &&
-      inputStateRef.current.isRightMouseDown;
+      inputStateRef.current.isCtrlPressed && inputStateRef.current.isRightMouseDown;
 
     setCutState((prev) => {
       if (shouldActivate && !prev.isActive) {
-        console.log("Knife activated");
         return { ...prev, isActive: true };
       } else if (!shouldActivate && prev.isActive) {
-        console.log("Knife deactivated");
-
-        // Call the callback with the edges to cut
+        // Call the callback
         if (onEdgesCut && edgesToCutRef.current.size > 0) {
           onEdgesCut(Array.from(edgesToCutRef.current));
         }
@@ -49,56 +45,67 @@ export function useCutTool({ onEdgesCut}: UseCutToolOptions = {}) {
     });
   }, [onEdgesCut]);
 
-  const handleMouseDown = useCallback((event: MouseEvent) => {
-    if (event.button === 2) {
-      inputStateRef.current.isRightMouseDown = true;
-      console.log("mouse down");
-      updateKnifeState();
-    }
-  }, [updateKnifeState]);
+  const handleMouseDown = useCallback(
+    (event: MouseEvent) => {
+      if (event.button === 2) {
+        inputStateRef.current.isRightMouseDown = true;
+        updateKnifeState();
+      }
+    },
+    [updateKnifeState],
+  );
 
-  const handleMouseUp = useCallback((event: MouseEvent) => {
-    if (event.button === 2 || inputStateRef.current.isRightMouseDown) {
-      inputStateRef.current.isRightMouseDown = false;
-      console.log("mouse up");
-      updateKnifeState();
-    }
-  }, [updateKnifeState]);
+  const handleMouseUp = useCallback(
+    (event: MouseEvent) => {
+      if (event.button === 2 || inputStateRef.current.isRightMouseDown) {
+        inputStateRef.current.isRightMouseDown = false;
+        updateKnifeState();
+      }
+    },
+    [updateKnifeState],
+  );
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if ((event.ctrlKey || event.metaKey) && !inputStateRef.current.isCtrlPressed) {
-      inputStateRef.current.isCtrlPressed = true;
-      console.log("keydown");
-      updateKnifeState();
-    }
-  }, [updateKnifeState]);
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && !inputStateRef.current.isCtrlPressed) {
+        inputStateRef.current.isCtrlPressed = true;
+        updateKnifeState();
+      }
+    },
+    [updateKnifeState],
+  );
 
-  const handleKeyUp = useCallback((event: KeyboardEvent) => {
-    if (!event.ctrlKey && !event.metaKey && inputStateRef.current.isCtrlPressed) {
-      inputStateRef.current.isCtrlPressed = false;
-      console.log("keyup");
-      updateKnifeState();
-    }
-  }, [updateKnifeState]);
+  const handleKeyUp = useCallback(
+    (event: KeyboardEvent) => {
+      if (!event.ctrlKey && !event.metaKey && inputStateRef.current.isCtrlPressed) {
+        inputStateRef.current.isCtrlPressed = false;
+        updateKnifeState();
+      }
+    },
+    [updateKnifeState],
+  );
 
-  const handleEdgeMouseEnter = useCallback((edge: Edge) => {
-    if (!cutState.isActive) return;
+  const handleEdgeMouseEnter = useCallback(
+    (edge: Edge) => {
+      if (!cutState.isActive) return;
 
-    edgesToCutRef.current.add(edge.id);
-    updateEdge(edge.id, { style: { strokeDasharray: "4 2" } });
-  }, [cutState.isActive, updateEdge]);
+      edgesToCutRef.current.add(edge.id);
+      updateEdge(edge.id, { style: { strokeDasharray: "4 2", stroke: "crimson" } });
+    },
+    [cutState.isActive, updateEdge],
+  );
 
   useEffect(() => {
     document.addEventListener("mousedown", handleMouseDown, true);
     document.addEventListener("mouseup", handleMouseUp, true);
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("keyup", handleKeyUp);
+    document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("keyup", handleKeyUp, true);
 
     return () => {
       document.removeEventListener("mousedown", handleMouseDown, true);
       document.removeEventListener("mouseup", handleMouseUp, true);
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("keyup", handleKeyUp);
+      document.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener("keyup", handleKeyUp, true);
     };
   }, [handleMouseDown, handleMouseUp, handleKeyDown, handleKeyUp]);
 

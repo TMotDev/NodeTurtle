@@ -32,7 +32,8 @@ import MoveNode from "@/components/node-flow/MoveNode";
 import { DnDProvider, useDragDrop } from "@/hooks/FlowDragAndDropContext";
 import { useCutTool } from "@/hooks/CutTool";
 import { useLazyConnect } from "@/hooks/LazyConnect";
-import MouseTrail from "@/components/node-flow/MouseTrail";
+import MouseTrail from "@/components/MouseTrail";
+import MouseLine from "@/components/MouseLine";
 
 export const Route = createFileRoute("/new")({
   component: Flow,
@@ -229,9 +230,9 @@ function FlowEditor() {
             onPaneClick={onPaneClick}
             onSelectionContextMenu={onSelectionContextMenu}
             fitView
+            selectionOnDrag={!cutActive && !lazyConnectActive}
             panOnDrag={!cutActive && !lazyConnectActive && [1, 2]}
             panOnScroll={!cutActive && !lazyConnectActive}
-            selectionOnDrag={!cutActive && !lazyConnectActive}
             deleteKeyCode={"Delete"}
             onPaneContextMenu={(e) => {
               e.preventDefault();
@@ -241,7 +242,8 @@ function FlowEditor() {
           >
             <Background />
             <DevTools position="top-left" />
-            <MouseTrail isActive={cutActive} />
+            <MouseTrail isActive={cutActive && !lazyConnectActive} />
+            <MouseLine isActive={lazyConnectActive && !cutActive} />
           </ReactFlow>
         </div>
       </main>
