@@ -8,7 +8,6 @@ import type { Connection, Node, XYPosition } from "@xyflow/react";
 
 interface UseLazyConnectOptions {
   onConnection?: (connection: Connection) => void;
-
   nodeOutlinedClassName?: string;
 }
 
@@ -21,13 +20,11 @@ interface LazyConnectState {
 }
 
 // Utility function to calculate distance between two points
-
 function getDistance(p1: XYPosition, p2: XYPosition): number {
   return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
 }
 
 // Find the closest node to a given point
-
 function findClosestNode(point: XYPosition, nodes: Array<Node>): Node | null {
   if (nodes.length === 0) return null;
 
@@ -40,14 +37,12 @@ function findClosestNode(point: XYPosition, nodes: Array<Node>): Node | null {
 
   for (const node of nodes) {
     // Calculate node center point
-
     const nodeCenter = {
       x: node.position.x + (node.measured?.width || 0) / 2,
       y: node.position.y + (node.measured?.height || 0) / 2,
     };
 
     const distance = getDistance(point, nodeCenter);
-
     if (distance < minDistance) {
       minDistance = distance;
       closestNode = node;
@@ -59,7 +54,6 @@ function findClosestNode(point: XYPosition, nodes: Array<Node>): Node | null {
 
 export function useLazyConnect({
   onConnection,
-
   nodeOutlinedClassName = "lazy-connect-outline",
 }: UseLazyConnectOptions = {}) {
   const [state, setState] = useState<LazyConnectState>({
@@ -111,12 +105,10 @@ export function useLazyConnect({
   );
 
   const updateLazyConnectState = useCallback(() => {
-    const shouldActivate =
-      inputStateRef.current.isAltPressed && inputStateRef.current.isRightMouseDown;
+    const shouldActivate = inputStateRef.current.isAltPressed && inputStateRef.current.isRightMouseDown;
 
     if (shouldActivate && !state.isActive) {
       const nodes = getNodes();
-
       const sourceNode = findClosestNode(screenToFlowPosition(mousePosition), nodes);
 
       setState({
@@ -127,12 +119,12 @@ export function useLazyConnect({
         targetNodeId: null,
       });
     } else if (!shouldActivate && state.isActive) {
+
       if (state.startPos && state.endPos) {
         connectNodes(screenToFlowPosition(state.startPos), screenToFlowPosition(state.endPos));
       }
 
       clearNodeOutlines();
-
       setState({
         isActive: false,
         startPos: null,

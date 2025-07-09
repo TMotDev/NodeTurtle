@@ -16,7 +16,7 @@ import "@xyflow/react/dist/style.css";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { Connection, Edge, EdgeChange, Node, NodeChange, XYPosition } from "@xyflow/react";
+import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import NodeBase from "@/components/node-flow/baseNode";
@@ -217,8 +217,13 @@ function FlowEditor() {
             onConnect={onConnect}
             onDrop={onDrop}
             onDragStart={onDragStart}
+            zoomOnDoubleClick={false}
             onDragOver={onDragOver}
             onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
+            onEdgeDoubleClick={(_, edge) => {
+              setEdges((e) => e.filter((ed) => ed.id !== edge.id));
+              markAsModified();
+            }}
             isValidConnection={isValidConnection}
             onNodeContextMenu={onNodeContextMenu}
             onPaneClick={onPaneClick}
