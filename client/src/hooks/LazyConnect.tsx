@@ -4,12 +4,8 @@ import { useReactFlow } from "@xyflow/react";
 
 import { useMousePosition } from "./FlowMousePosition";
 
-import type { Connection, Node, XYPosition } from "@xyflow/react";
-
-interface UseLazyConnectOptions {
-  onConnection?: (connection: Connection) => void;
-  nodeOutlinedClassName?: string;
-}
+import type { Connection, XYPosition } from "@xyflow/react";
+import { findClosestNode } from "@/lib/flowUtils";
 
 interface LazyConnectState {
   isActive: boolean;
@@ -19,43 +15,15 @@ interface LazyConnectState {
   targetNodeId: string | null;
 }
 
-// Utility function to calculate distance between two points
-function getDistance(p1: XYPosition, p2: XYPosition): number {
-  return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-}
-
-// Find the closest node to a given point
-function findClosestNode(point: XYPosition, nodes: Array<Node>): Node | null {
-  if (nodes.length === 0) return null;
-
-  let closestNode = nodes[0];
-
-  let minDistance = getDistance(point, {
-    x: closestNode.position.x + (closestNode.measured?.width || 0) / 2,
-    y: closestNode.position.y + (closestNode.measured?.height || 0) / 2,
-  });
-
-  for (const node of nodes) {
-    // Calculate node center point
-    const nodeCenter = {
-      x: node.position.x + (node.measured?.width || 0) / 2,
-      y: node.position.y + (node.measured?.height || 0) / 2,
-    };
-
-    const distance = getDistance(point, nodeCenter);
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestNode = node;
-    }
-  }
-
-  return closestNode;
-}
-
 export function useLazyConnect({
+  isActive,
   onConnection,
   nodeOutlinedClassName = "lazy-connect-outline",
-}: UseLazyConnectOptions = {}) {
+}: {
+  isActive: boolean;
+  onConnection?: (connection: Connection) => void;
+  nodeOutlinedClassName?: string;
+}) {
   const [state, setState] = useState<LazyConnectState>({
     isActive: false,
     startPos: null,
@@ -66,11 +34,7 @@ export function useLazyConnect({
 
   const { mousePosition } = useMousePosition();
   const { getNodes, setNodes, screenToFlowPosition } = useReactFlow();
-
-  const inputStateRef = useRef({
-    isRightMouseDown: false,
-    isAltPressed: false,
-  });
+  const wasActiveRef = useRef(false);
 
   const clearNodeOutlines = useCallback(() => {
     setNodes((nds) =>
@@ -94,19 +58,16 @@ export function useLazyConnect({
           sourceHandle: "out",
           targetHandle: "in",
         };
-
         onConnection?.(connection);
       }
     },
-
     [getNodes, onConnection],
   );
 
-  const updateLazyConnectState = useCallback(() => {
-    const shouldActivate =
-      inputStateRef.current.isAltPressed && inputStateRef.current.isRightMouseDown;
+  useEffect(() => {
+    if (isActive && !wasActiveRef.current) {
+      // Activation
 
-    if (shouldActivate && !state.isActive) {
       const nodes = getNodes();
       const sourceNode = findClosestNode(screenToFlowPosition(mousePosition), nodes);
 
@@ -117,11 +78,12 @@ export function useLazyConnect({
         sourceNodeId: sourceNode?.id || null,
         targetNodeId: null,
       });
-    } else if (!shouldActivate && state.isActive) {
+    } else if (!isActive && wasActiveRef.current) {
+      // Deactivation
+
       if (state.startPos && state.endPos) {
         connectNodes(screenToFlowPosition(state.startPos), screenToFlowPosition(state.endPos));
       }
-
       clearNodeOutlines();
       setState({
         isActive: false,
@@ -131,19 +93,20 @@ export function useLazyConnect({
         targetNodeId: null,
       });
     }
+    wasActiveRef.current = isActive;
   }, [
-    state.isActive,
-    state.startPos,
-    state.endPos,
-    getNodes,
-    screenToFlowPosition,
-    mousePosition,
     clearNodeOutlines,
     connectNodes,
+    getNodes,
+    isActive,
+    mousePosition,
+    screenToFlowPosition,
+    state.endPos,
+    state.startPos,
   ]);
 
   useEffect(() => {
-    if (!state.isActive) return;
+    if (!isActive) return;
 
     const nodes = getNodes();
     const targetNode = findClosestNode(screenToFlowPosition(mousePosition), nodes);
@@ -154,10 +117,11 @@ export function useLazyConnect({
       targetNodeId: targetNode?.id || null,
     }));
 
+    // Update node highlighting
     setNodes((nds) =>
       nds.map((n) => {
         const isSource = n.id === state.sourceNodeId;
-        const isTarget = n.id === state.targetNodeId;
+        const isTarget = n.id === targetNode?.id;
         const currentClassName = n.className || "";
         const hasOutline = currentClassName.includes(nodeOutlinedClassName);
 
@@ -177,82 +141,23 @@ export function useLazyConnect({
       }),
     );
   }, [
-    state.isActive,
-    mousePosition,
     getNodes,
     setNodes,
-    state.sourceNodeId,
-    state.targetNodeId,
-    nodeOutlinedClassName,
+    isActive,
+    mousePosition,
     screenToFlowPosition,
+    state.sourceNodeId,
+    nodeOutlinedClassName,
   ]);
 
-  const handleMouseDown = useCallback(
-    (event: MouseEvent) => {
-      if (event.button === 2) {
-        inputStateRef.current.isRightMouseDown = true;
-        updateLazyConnectState();
-      }
-    },
-
-    [updateLazyConnectState],
-  );
-
-  const handleMouseUp = useCallback(
-    (event: MouseEvent) => {
-      if (event.button === 2) {
-        inputStateRef.current.isRightMouseDown = false;
-        updateLazyConnectState();
-      }
-    },
-
-    [updateLazyConnectState],
-  );
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.altKey) {
-        inputStateRef.current.isAltPressed = true;
-        updateLazyConnectState();
-      }
-    },
-
-    [updateLazyConnectState],
-  );
-
-  const handleKeyUp = useCallback(
-    (event: KeyboardEvent) => {
-      if (!event.altKey) {
-        inputStateRef.current.isAltPressed = false;
-        updateLazyConnectState();
-      }
-    },
-
-    [updateLazyConnectState],
-  );
-
-  useEffect(() => {
-    document.addEventListener("mousedown", handleMouseDown, true);
-    document.addEventListener("mouseup", handleMouseUp, true);
-    document.addEventListener("keydown", handleKeyDown, true);
-    document.addEventListener("keyup", handleKeyUp, true);
-
-    return () => {
-      document.removeEventListener("mousedown", handleMouseDown, true);
-      document.removeEventListener("mouseup", handleMouseUp, true);
-      document.removeEventListener("keydown", handleKeyDown, true);
-      document.removeEventListener("keyup", handleKeyUp, true);
-    };
-  }, [handleMouseDown, handleMouseUp, handleKeyDown, handleKeyUp]);
-
   return {
-    isActive: state.isActive,
+    isActive,
     startPos: state.startPos,
     endPos: state.endPos,
     connectionValid: !!(
       state.sourceNodeId &&
       state.targetNodeId &&
-      state.sourceNodeId != state.targetNodeId
+      state.sourceNodeId !== state.targetNodeId
     ),
   };
 }

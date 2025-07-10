@@ -5,13 +5,13 @@ const MouseTrail = ({ isActive }: { isActive: boolean }) => {
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      if (isActive) {
         const newPoint = { x: event.clientX, y: event.clientY };
         setPoints((prevPoints) => [...prevPoints, newPoint]);
-      }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
+    if(isActive){
+      window.addEventListener("mousemove", handleMouseMove);
+    }
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);

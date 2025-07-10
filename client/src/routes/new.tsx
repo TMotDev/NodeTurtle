@@ -14,7 +14,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
@@ -68,7 +68,117 @@ function FlowEditor() {
   const { getNodes, getEdges } = useReactFlow();
   const { onDragOver, onDrop, onDragStart } = useDragDrop();
 
-  const { isActive: cutActive, handleEdgeMouseEnter } = useCutTool({
+  const [toolStates, setToolStates] = useState({
+    cutTool: false,
+    lazyConnect: false,
+  });
+
+  const inputStateRef = useRef({
+    isRightMouseDown: false,
+    isCtrlPressed: false,
+    isAltPressed: false,
+  });
+
+  const updateToolStates = useCallback(() => {
+    const cutActive = inputStateRef.current.isCtrlPressed && inputStateRef.current.isRightMouseDown;
+    const lazyConnectActive =
+      inputStateRef.current.isAltPressed && inputStateRef.current.isRightMouseDown;
+
+    setToolStates(() => ({
+      cutTool: cutActive,
+      lazyConnect: lazyConnectActive,
+    }));
+  }, []);
+
+  const handleMouseDown = useCallback(
+    (event: MouseEvent) => {
+      if (event.button === 2) {
+        inputStateRef.current.isRightMouseDown = true;
+        updateToolStates();
+      }
+    },
+    [updateToolStates],
+  );
+
+  const handleMouseUp = useCallback(
+    (event: MouseEvent) => {
+      if (event.button === 2) {
+        inputStateRef.current.isRightMouseDown = false;
+        updateToolStates();
+      }
+    },
+    [updateToolStates],
+  );
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      let stateChanged = false;
+
+      if ((event.ctrlKey || event.metaKey) && !inputStateRef.current.isCtrlPressed) {
+        inputStateRef.current.isCtrlPressed = true;
+        stateChanged = true;
+      }
+
+      if (event.altKey && !inputStateRef.current.isAltPressed) {
+        inputStateRef.current.isAltPressed = true;
+        stateChanged = true;
+      }
+
+      if (stateChanged) {
+        updateToolStates();
+      }
+
+      // Handle copy/paste separately
+      if (event.ctrlKey || event.metaKey) {
+        if (event.key === "c") {
+          event.preventDefault();
+          copyElements();
+        } else if (event.key === "v") {
+          event.preventDefault();
+          pasteElements();
+        }
+      }
+    },
+    [updateToolStates, copyElements, pasteElements],
+  );
+
+  const handleKeyUp = useCallback(
+    (event: KeyboardEvent) => {
+      let stateChanged = false;
+
+      if (!event.ctrlKey && !event.metaKey && inputStateRef.current.isCtrlPressed) {
+        inputStateRef.current.isCtrlPressed = false;
+        stateChanged = true;
+      }
+
+      if (!event.altKey && inputStateRef.current.isAltPressed) {
+        inputStateRef.current.isAltPressed = false;
+        stateChanged = true;
+      }
+
+      if (stateChanged) {
+        updateToolStates();
+      }
+    },
+    [updateToolStates],
+  );
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleMouseDown, true);
+    document.addEventListener("mouseup", handleMouseUp, true);
+    document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("keyup", handleKeyUp, true);
+
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown, true);
+      document.removeEventListener("mouseup", handleMouseUp, true);
+      document.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener("keyup", handleKeyUp, true);
+    };
+  }, [handleMouseDown, handleMouseUp, handleKeyDown, handleKeyUp]);
+
+  const { handleEdgeMouseEnter } = useCutTool({
+    isActive: toolStates.cutTool,
     onEdgesCut: (edgeIds) => {
       setEdges((e) => e.filter((edge) => !edgeIds.includes(edge.id)));
       markAsModified();
@@ -83,7 +193,8 @@ function FlowEditor() {
     [setEdges, markAsModified],
   );
 
-  const { isActive: lazyConnectActive } = useLazyConnect({
+  const { connectionValid } = useLazyConnect({
+    isActive: toolStates.lazyConnect,
     onConnection,
   });
 
@@ -97,27 +208,40 @@ function FlowEditor() {
     left: number;
   } | null>(null);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey) {
-        if (event.key === "c") {
-          event.preventDefault();
-          copyElements();
-        } else if (event.key === "v") {
-          event.preventDefault();
-          pasteElements();
-        }
-      }
-    };
+  const isValidConnection = useCallback(
+    (connectionOrEdge: Edge | Connection) => {
+      if (
+        typeof connectionOrEdge.source === "string" &&
+        typeof connectionOrEdge.target === "string"
+      ) {
+        const connection = connectionOrEdge as Connection;
+        const n = getNodes();
+        const e = getEdges();
+        const target = n.find((node) => node.id === connection.target);
+        const hasCycle = (node: Node, visited = new Set<string>()) => {
+          if (visited.has(node.id)) return false;
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [copyElements, pasteElements]);
+          visited.add(node.id);
+
+          for (const outgoer of getOutgoers(node, n, e)) {
+            if (outgoer.id === connection.source) return true;
+            if (hasCycle(outgoer, visited)) return true;
+          }
+        };
+
+        if (!target) return false;
+        if (target.id === connection.source) return false;
+
+        return !hasCycle(target);
+      }
+      return false;
+    },
+    [getNodes, getEdges],
+  );
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      if (cutActive || lazyConnectActive) return;
-
+      if (toolStates.cutTool || toolStates.lazyConnect) return;
       event.preventDefault();
       setSelectionContextMenu(null);
       setContextMenu({
@@ -126,7 +250,7 @@ function FlowEditor() {
         left: event.clientX,
       });
     },
-    [cutActive, lazyConnectActive],
+    [toolStates.cutTool, toolStates.lazyConnect],
   );
 
   const onSelectionContextMenu = useCallback(
@@ -162,37 +286,6 @@ function FlowEditor() {
     [setEdges, markAsModified],
   );
 
-  const isValidConnection = useCallback(
-    (connectionOrEdge: Edge | Connection) => {
-      if (
-        typeof connectionOrEdge.source === "string" &&
-        typeof connectionOrEdge.target === "string"
-      ) {
-        const connection = connectionOrEdge as Connection;
-        const n = getNodes();
-        const e = getEdges();
-        const target = n.find((node) => node.id === connection.target);
-        const hasCycle = (node: Node, visited = new Set<string>()) => {
-          if (visited.has(node.id)) return false;
-
-          visited.add(node.id);
-
-          for (const outgoer of getOutgoers(node, n, e)) {
-            if (outgoer.id === connection.source) return true;
-            if (hasCycle(outgoer, visited)) return true;
-          }
-        };
-
-        if (!target) return false;
-        if (target.id === connection.source) return false;
-
-        return !hasCycle(target);
-      }
-      return false;
-    },
-    [getNodes, getEdges],
-  );
-
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge(connection, eds));
@@ -206,7 +299,9 @@ function FlowEditor() {
       <NodeSiderbar />
       <SidebarTrigger />
       <main className="w-screen h-screen relative">
-        <div className={`w-full h-full ${cutActive ? "cursor-crosshair" : "cursor-default"}`}>
+        <div
+          className={`w-full h-full ${toolStates.cutTool ? "cursor-crosshair" : "cursor-default"}`}
+        >
           <ReactFlow
             ref={reactFlowWrapper}
             onMouseMove={handleMouseMove}
@@ -230,9 +325,9 @@ function FlowEditor() {
             onPaneClick={onPaneClick}
             onSelectionContextMenu={onSelectionContextMenu}
             fitView
-            selectionOnDrag={!cutActive && !lazyConnectActive}
-            panOnDrag={!cutActive && !lazyConnectActive && [1, 2]}
-            panOnScroll={!cutActive && !lazyConnectActive}
+            selectionOnDrag={!toolStates.cutTool && !toolStates.lazyConnect}
+            panOnDrag={!toolStates.cutTool && !toolStates.lazyConnect && [1]}
+            panOnScroll={!toolStates.cutTool && !toolStates.lazyConnect}
             deleteKeyCode={"Delete"}
             onPaneContextMenu={(e) => {
               e.preventDefault();
@@ -242,8 +337,11 @@ function FlowEditor() {
           >
             <Background />
             <DevTools position="top-left" />
-            <MouseTrail isActive={cutActive && !lazyConnectActive} />
-            <MouseLine isActive={lazyConnectActive && !cutActive} />
+            <MouseTrail isActive={toolStates.cutTool && !toolStates.lazyConnect} />
+            <MouseLine
+              isActive={toolStates.lazyConnect && !toolStates.cutTool}
+              connectionValid={connectionValid}
+            />
           </ReactFlow>
         </div>
       </main>

@@ -1,22 +1,23 @@
 import { useEffect, useState } from "react";
-import { useLazyConnect } from "@/hooks/LazyConnect";
 
-const MouseLine = ({ isActive }: { isActive: boolean }) => {
+const MouseLine = ({
+  isActive,
+  connectionValid,
+}: {
+  isActive: boolean;
+  connectionValid: boolean;
+}) => {
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
   const [currentPoint, setCurrentPoint] = useState<{ x: number; y: number } | null>(null);
 
-  const { connectionValid } = useLazyConnect();
-
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      if (isActive) {
-        if (!startPoint) {
-          const newStartPoint = { x: event.clientX, y: event.clientY };
-          setStartPoint(newStartPoint);
-          setCurrentPoint(newStartPoint);
-        } else {
-          setCurrentPoint({ x: event.clientX, y: event.clientY });
-        }
+      if (!startPoint) {
+        const newStartPoint = { x: event.clientX, y: event.clientY };
+        setStartPoint(newStartPoint);
+        setCurrentPoint(newStartPoint);
+      } else {
+        setCurrentPoint({ x: event.clientX, y: event.clientY });
       }
     };
 

@@ -1,6 +1,6 @@
 // Helper function to calculate the center of a group of nodes
 
-import type { Node, NodeProps } from "@xyflow/react";
+import type { Node, NodeProps, XYPosition } from "@xyflow/react";
 
 export function getNodeGroupCenter(nodes: Array<Node>) {
   if (nodes.length === 0) return { x: 0, y: 0 };
@@ -153,3 +153,37 @@ export const createFlowSummary = (
 
   return summary;
 };
+
+
+// Utility function to calculate distance between two points
+export function getDistance(p1: XYPosition, p2: XYPosition): number {
+  return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+}
+
+// Find the closest node to a given point
+export function findClosestNode(point: XYPosition, nodes: Array<Node>): Node | null {
+  if (nodes.length === 0) return null;
+
+  let closestNode = nodes[0];
+
+  let minDistance = getDistance(point, {
+    x: closestNode.position.x + (closestNode.measured?.width || 0) / 2,
+    y: closestNode.position.y + (closestNode.measured?.height || 0) / 2,
+  });
+
+  for (const node of nodes) {
+    // Calculate node center point
+    const nodeCenter = {
+      x: node.position.x + (node.measured?.width || 0) / 2,
+      y: node.position.y + (node.measured?.height || 0) / 2,
+    };
+
+    const distance = getDistance(point, nodeCenter);
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestNode = node;
+    }
+  }
+
+  return closestNode;
+}
