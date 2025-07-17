@@ -9,12 +9,13 @@ import {
   applyNodeChanges,
   getOutgoers,
   useEdgesState,
+  useKeyPress,
   useNodesState,
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
@@ -61,13 +62,33 @@ function FlowEditor() {
   const [nodes, setNodes] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);
 
+  const { getNodes, getEdges } = useReactFlow();
+
   const { markAsModified } = useFlowManagerContext();
   const { copyElements, pasteElements } = useClipboard();
   const { reactFlowWrapper, handleMouseMove } = useMousePosition();
-  const { duplicateNode, deleteNode, deleteSelection, duplicateSelection } = useNodeOperations();
-  const { getNodes, getEdges } = useReactFlow();
+  const { duplicateNode, deleteNode, deleteSelection, duplicateSelection, muteSelection } =
+    useNodeOperations();
+
   const { onDragOver, onDrop, onDragStart } = useDragDrop();
 
+  const CtrlCPressed = useKeyPress(["Control+c"]);
+  const CtrlVPressed = useKeyPress(["Control+v"]);
+  const MPressed = useKeyPress(["m"]);
+
+  const [contextMenu, setContextMenu] = useState<{
+    id: string;
+    top: number;
+    left: number;
+  } | null>(null);
+  const [selectionContextMenu, setSelectionContextMenu] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
+  // ------------------------------------
+  // Cut Tool and Lazy Connect
+  // ------------------------------------
   const [toolStates, setToolStates] = useState({
     cutTool: false,
     lazyConnect: false,
@@ -90,6 +111,44 @@ function FlowEditor() {
     }));
   }, []);
 
+  const { handleEdgeMouseEnter } = useCutTool({
+    isActive: toolStates.cutTool,
+    onEdgesCut: (edgeIds) => {
+      setEdges((e) => e.filter((edge) => !edgeIds.includes(edge.id)));
+      markAsModified();
+    },
+  });
+
+  useEffect(() => {
+    if (CtrlCPressed) {
+      copyElements();
+      console.log("copy");
+    } else if (CtrlVPressed) {
+      pasteElements();
+      console.log("paste");
+    } else if (MPressed) {
+      muteSelection();
+      console.log("mute");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [CtrlCPressed, CtrlVPressed, MPressed]);
+
+  const onConnection = useCallback(
+    (connection: Connection) => {
+      setEdges((eds) => addEdge(connection, eds));
+      markAsModified();
+    },
+    [setEdges, markAsModified],
+  );
+
+  const { connectionValid } = useLazyConnect({
+    isActive: toolStates.lazyConnect,
+    onConnection,
+  });
+
+  // ------------------------------------
+  // Keyboard and Mouse Event Handlers
+  // ------------------------------------
   const handleMouseDown = useCallback(
     (event: MouseEvent) => {
       if (event.button === 2) {
@@ -127,19 +186,8 @@ function FlowEditor() {
       if (stateChanged) {
         updateToolStates();
       }
-
-      // Handle copy/paste separately
-      if (event.ctrlKey || event.metaKey) {
-        if (event.key === "c") {
-          event.preventDefault();
-          copyElements();
-        } else if (event.key === "v") {
-          event.preventDefault();
-          pasteElements();
-        }
-      }
     },
-    [updateToolStates, copyElements, pasteElements],
+    [updateToolStates],
   );
 
   const handleKeyUp = useCallback(
@@ -177,68 +225,9 @@ function FlowEditor() {
     };
   }, [handleMouseDown, handleMouseUp, handleKeyDown, handleKeyUp]);
 
-  const { handleEdgeMouseEnter } = useCutTool({
-    isActive: toolStates.cutTool,
-    onEdgesCut: (edgeIds) => {
-      setEdges((e) => e.filter((edge) => !edgeIds.includes(edge.id)));
-      markAsModified();
-    },
-  });
-
-  const onConnection = useCallback(
-    (connection: Connection) => {
-      setEdges((eds) => addEdge(connection, eds));
-      markAsModified();
-    },
-    [setEdges, markAsModified],
-  );
-
-  const { connectionValid } = useLazyConnect({
-    isActive: toolStates.lazyConnect,
-    onConnection,
-  });
-
-  const [contextMenu, setContextMenu] = useState<{
-    id: string;
-    top: number;
-    left: number;
-  } | null>(null);
-  const [selectionContextMenu, setSelectionContextMenu] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
-
-  const isValidConnection = useCallback(
-    (connectionOrEdge: Edge | Connection) => {
-      if (
-        typeof connectionOrEdge.source === "string" &&
-        typeof connectionOrEdge.target === "string"
-      ) {
-        const connection = connectionOrEdge as Connection;
-        const n = getNodes();
-        const e = getEdges();
-        const target = n.find((node) => node.id === connection.target);
-        const hasCycle = (node: Node, visited = new Set<string>()) => {
-          if (visited.has(node.id)) return false;
-
-          visited.add(node.id);
-
-          for (const outgoer of getOutgoers(node, n, e)) {
-            if (outgoer.id === connection.source) return true;
-            if (hasCycle(outgoer, visited)) return true;
-          }
-        };
-
-        if (!target) return false;
-        if (target.id === connection.source) return false;
-
-        return !hasCycle(target);
-      }
-      return false;
-    },
-    [getNodes, getEdges],
-  );
-
+  // ------------------------------------
+  // Context Menu handlers
+  // ------------------------------------
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       if (toolStates.cutTool || toolStates.lazyConnect) return;
@@ -270,6 +259,9 @@ function FlowEditor() {
     setSelectionContextMenu(null);
   }, []);
 
+  // ------------------------------------
+  // Node, Edge and connection related handlers
+  // ------------------------------------
   const onNodesChange = useCallback(
     (changes: Array<NodeChange<Node>>) => {
       setNodes((nds) => applyNodeChanges(changes, nds));
@@ -292,6 +284,36 @@ function FlowEditor() {
       markAsModified();
     },
     [setEdges, markAsModified],
+  );
+
+  const isValidConnection = useCallback(
+    (connectionOrEdge: Edge | Connection) => {
+      if (
+        typeof connectionOrEdge.source === "string" &&
+        typeof connectionOrEdge.target === "string"
+      ) {
+        const connection = connectionOrEdge as Connection;
+        const n = getNodes();
+        const e = getEdges();
+        const target = n.find((node) => node.id === connection.target);
+        const hasCycle = (node: Node, visited = new Set<string>()) => {
+          if (visited.has(node.id)) return false;
+
+          visited.add(node.id);
+          for (const outgoer of getOutgoers(node, n, e)) {
+            if (outgoer.id === connection.source) return true;
+            if (hasCycle(outgoer, visited)) return true;
+          }
+        };
+
+        if (!target) return false;
+        if (target.id === connection.source) return false;
+
+        return !hasCycle(target);
+      }
+      return false;
+    },
+    [getNodes, getEdges],
   );
 
   return (

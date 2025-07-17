@@ -11,8 +11,7 @@ export const useClipboard = () => {
     edges: Array<Edge>;
   }>({ nodes: [], edges: [] });
 
-  const { screenToFlowPosition, getNodes, getEdges, setNodes, setEdges } =
-    useReactFlow();
+  const { screenToFlowPosition, getNodes, getEdges, setNodes, setEdges } = useReactFlow();
 
   const nodes = getNodes();
   const edges = getEdges();
@@ -26,8 +25,7 @@ export const useClipboard = () => {
     // Get edges that connect selected nodes
     const selectedNodeIds = new Set(selectedNodes.map((node) => node.id));
     const connectedEdges = edges.filter(
-      (edge) =>
-        selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target),
+      (edge) => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target),
     );
 
     const allEdgesToCopy = new Map();
@@ -49,8 +47,7 @@ export const useClipboard = () => {
   }, [nodes, edges]);
 
   const pasteElements = useCallback(() => {
-    if (copiedElements.edges.length === 0 && copiedElements.nodes.length === 0)
-      return;
+    if (copiedElements.edges.length === 0 && copiedElements.nodes.length === 0) return;
 
     const position = screenToFlowPosition({
       x: mousePosition.x,
@@ -88,7 +85,7 @@ export const useClipboard = () => {
       .map((edge) => {
         return {
           ...edge,
-          id: `edge_${uuidv4}`,
+          id: `edge_${uuidv4()}`,
           source: nodeIdMap[edge.source],
           target: nodeIdMap[edge.target],
           selected: true,
@@ -96,12 +93,8 @@ export const useClipboard = () => {
       })
       .filter((edge) => edge.source && edge.target);
 
-    setNodes((nds: Array<Node>) =>
-      nds.map((n) => ({ ...n, selected: false })).concat(newNodes),
-    );
-    setEdges((eds: Array<Edge>) =>
-      eds.map((e) => ({ ...e, selected: false })).concat(newEdges),
-    );
+    setNodes((nds: Array<Node>) => nds.map((n) => ({ ...n, selected: false })).concat(newNodes));
+    setEdges((eds: Array<Edge>) => eds.map((e) => ({ ...e, selected: false })).concat(newEdges));
   }, [copiedElements, setNodes, setEdges, screenToFlowPosition, mousePosition]);
 
   useEffect(() => {

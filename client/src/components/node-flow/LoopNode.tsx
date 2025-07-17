@@ -91,7 +91,7 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
   );
 
   return (
-    <BaseNode selected={selected} className="px-3 py-2 w-40">
+    <BaseNode muted={data.muted} selected={selected} className="px-3 py-2 w-40">
       <BaseHandle id="in" type="target" position={Position.Left} />
       <BaseHandle id="out" type="source" position={Position.Right} />
       <BaseHandle

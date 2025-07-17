@@ -27,40 +27,39 @@ export function getNodeGroupCenter(nodes: Array<Node>) {
 }
 
 export interface NodeRegistry {
-  startNode: {};
-  moveNode: { distance: number };
-  loopNode: { loopCount: number };
+  startNode: { muted: boolean };
+  moveNode: { muted: boolean; distance: number };
+  loopNode: { muted: boolean; loopCount: number };
 }
 
 export type NodeType = keyof NodeRegistry;
 
 export const INITIAL_NODE_DATA: NodeRegistry = {
-  startNode: {},
-  moveNode: { distance: 10 },
-  loopNode: { loopCount: 3 },
+  startNode: { muted: false },
+  moveNode: { muted: false, distance: 10 },
+  loopNode: { muted: false, loopCount: 3 },
 };
 
 export const NODE_EXECUTORS = {
-  startNode: (nodeData: NodeRegistry['startNode']) => {
+  startNode: (nodeData: NodeRegistry["startNode"]) => {
     console.log("Executing Start Node:", nodeData);
   },
-  moveNode: (nodeData: NodeRegistry['moveNode']) => {
+  moveNode: (nodeData: NodeRegistry["moveNode"]) => {
     console.log("Executing Move Node:", nodeData);
     console.log("Distance:", nodeData.distance);
   },
-  loopNode: (nodeData: NodeRegistry['loopNode']) => {
+  loopNode: (nodeData: NodeRegistry["loopNode"]) => {
     console.log("Executing Loop Node:", nodeData);
     console.log("Loop count:", nodeData.loopCount);
-  }
+  },
 } satisfies Record<NodeType, (nodeData: any) => void>;
 
 export type NodePropsFor<T extends NodeType> = NodeProps & {
   data: NodeRegistry[T] & { [K in keyof NodeRegistry[T]]: NodeRegistry[T][K] | undefined };
 };
 
-export type MoveNodeProps = NodePropsFor<'moveNode'>;
-export type LoopNodeProps = NodePropsFor<'loopNode'>;
-
+export type MoveNodeProps = NodePropsFor<"moveNode">;
+export type LoopNodeProps = NodePropsFor<"loopNode">;
 
 export type NodeTree = {
   node: {
@@ -102,22 +101,14 @@ export const createAsciiTree = (
   children.forEach((child, index) => {
     const isLastChild = index === children.length - 1;
     const childPrefix = prefix + (isLast ? "    " : "│   ");
-    const childLines = createAsciiTree(
-      child,
-      childPrefix,
-      isLastChild,
-      new Set(visited),
-    );
+    const childLines = createAsciiTree(child, childPrefix, isLastChild, new Set(visited));
     lines.push(...childLines);
   });
 
   return lines;
 };
 
-export const createFlowSummary = (
-  nodeTree: NodeTree,
-  results: Array<any>,
-): Array<string> => {
+export const createFlowSummary = (nodeTree: NodeTree, results: Array<any>): Array<string> => {
   const summary: Array<string> = [];
   const nodeCount = new Map<string, number>();
   const loopRefs = new Set<string>();
@@ -153,7 +144,6 @@ export const createFlowSummary = (
 
   return summary;
 };
-
 
 // Utility function to calculate distance between two points
 export function getDistance(p1: XYPosition, p2: XYPosition): number {

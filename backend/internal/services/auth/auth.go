@@ -99,10 +99,10 @@ func (s AuthService) Login(email, password string) (string, *data.User, error) {
 			BannedAt:  *ban.BannedAt,
 			BannedBy:  *ban.BannedBy,
 		}
-	}
 
-	if user.Ban.IsValid() {
-		return "", nil, fmt.Errorf("%w (reason: %v, expires at: %v)", services.ErrAccountSuspended, user.Ban.Reason, user.Ban.ExpiresAt.Local().Format("2006-01-02"))
+		if user.Ban.IsValid() {
+			return "", nil, fmt.Errorf("%w (reason: %v, expires at: %v)", services.ErrAccountSuspended, user.Ban.Reason, user.Ban.ExpiresAt.Local().Format("2006-01-02"))
+		}
 	}
 
 	// Update last login time

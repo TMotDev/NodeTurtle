@@ -5,27 +5,25 @@ import { useFlowManager } from "./FlowManager";
 import type { Edge, Node } from "@xyflow/react";
 
 export const useNodeOperations = () => {
-  const { deleteElements, getNodes, getEdges, setNodes, setEdges } =
-    useReactFlow();
+  const { deleteElements, getNodes, getEdges, setNodes, setEdges } = useReactFlow();
   const { markAsModified } = useFlowManager();
 
   const duplicateSelection = useCallback(() => {
     const selectedNodes = getNodes().filter((n) => n.selected);
     const selectedNodeIds = new Set(selectedNodes.map((n) => n.id));
     const selectedEdges = getEdges().filter(
-      (edge) =>
-        selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target),
+      (edge) => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target),
     );
 
     if (selectedNodes.length === 0) return;
 
     const nodeIdMap: Record<string, string> = {};
     const newNodes = selectedNodes.map((node) => {
-      const newId = uuidv4();
+      const newId = `${node.type}_${uuidv4()}`;
       nodeIdMap[node.id] = newId;
       return {
         ...node,
-        id: `${node.type}_${uuidv4()}`,
+        id: newId,
         position: { x: node.position.x + 50, y: node.position.y + 50 },
         selected: true,
       };
@@ -39,21 +37,42 @@ export const useNodeOperations = () => {
       selected: true,
     }));
 
-    setNodes((nds: Array<Node>) =>
-      nds.map((n) => ({ ...n, selected: false })).concat(newNodes),
-    );
-    setEdges((eds: Array<Edge>) =>
-      eds.map((e) => ({ ...e, selected: false })).concat(newEdges),
-    );
+    setNodes((nds: Array<Node>) => nds.map((n) => ({ ...n, selected: false })).concat(newNodes));
+    setEdges((eds: Array<Edge>) => eds.map((e) => ({ ...e, selected: false })).concat(newEdges));
     markAsModified();
   }, [getNodes, getEdges, setNodes, setEdges, markAsModified]);
 
   const deleteSelection = useCallback(() => {
     const selectedNodes = getNodes().filter((n) => n.selected);
     const selectedEdges = getEdges().filter((e) => e.selected);
+
+    if (selectedNodes.length === 0 && selectedEdges.length === 0) return;
+
     deleteElements({ nodes: selectedNodes, edges: selectedEdges });
     markAsModified();
   }, [getNodes, getEdges, deleteElements, markAsModified]);
+
+  const muteSelection = useCallback(() => {
+    const selectedNodes = getNodes().filter((n) => n.selected);
+    if (selectedNodes.length === 0) return;
+
+    setNodes((nds: Array<Node>) =>
+      nds.map((node) => {
+        if (node.selected && "muted" in node.data) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              muted: !node.data.muted,
+            },
+          };
+        }
+        return node;
+      }),
+    );
+
+    markAsModified();
+  }, [getNodes, setNodes, markAsModified]);
 
   const duplicateNode = useCallback(
     (nodeId: string) => {
@@ -76,9 +95,7 @@ export const useNodeOperations = () => {
           },
           selected: true,
         };
-        setNodes((nds: Array<Node>) =>
-          nds.map((n) => ({ ...n, selected: false })).concat(newNode),
-        );
+        setNodes((nds: Array<Node>) => nds.map((n) => ({ ...n, selected: false })).concat(newNode));
         markAsModified();
       }
     },
@@ -105,5 +122,6 @@ export const useNodeOperations = () => {
     deleteNode,
     deleteSelection,
     duplicateSelection,
+    muteSelection,
   };
 };
