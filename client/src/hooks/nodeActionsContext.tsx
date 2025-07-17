@@ -1,12 +1,10 @@
 import { useCallback } from "react";
 import { useReactFlow } from "@xyflow/react";
 import { v4 as uuidv4 } from "uuid";
-import { useFlowManager } from "./FlowManager";
 import type { Edge, Node } from "@xyflow/react";
 
 export const useNodeOperations = () => {
   const { deleteElements, getNodes, getEdges, setNodes, setEdges } = useReactFlow();
-  const { markAsModified } = useFlowManager();
 
   const duplicateSelection = useCallback(() => {
     const selectedNodes = getNodes().filter((n) => n.selected);
@@ -39,8 +37,7 @@ export const useNodeOperations = () => {
 
     setNodes((nds: Array<Node>) => nds.map((n) => ({ ...n, selected: false })).concat(newNodes));
     setEdges((eds: Array<Edge>) => eds.map((e) => ({ ...e, selected: false })).concat(newEdges));
-    markAsModified();
-  }, [getNodes, getEdges, setNodes, setEdges, markAsModified]);
+  }, [getNodes, getEdges, setNodes, setEdges]);
 
   const deleteSelection = useCallback(() => {
     const selectedNodes = getNodes().filter((n) => n.selected);
@@ -49,8 +46,7 @@ export const useNodeOperations = () => {
     if (selectedNodes.length === 0 && selectedEdges.length === 0) return;
 
     deleteElements({ nodes: selectedNodes, edges: selectedEdges });
-    markAsModified();
-  }, [getNodes, getEdges, deleteElements, markAsModified]);
+  }, [getNodes, getEdges, deleteElements]);
 
   const muteSelection = useCallback(() => {
     const selectedNodes = getNodes().filter((n) => n.selected);
@@ -71,8 +67,7 @@ export const useNodeOperations = () => {
       }),
     );
 
-    markAsModified();
-  }, [getNodes, setNodes, markAsModified]);
+  }, [getNodes, setNodes]);
 
   const duplicateNode = useCallback(
     (nodeId: string) => {
@@ -96,10 +91,9 @@ export const useNodeOperations = () => {
           selected: true,
         };
         setNodes((nds: Array<Node>) => nds.map((n) => ({ ...n, selected: false })).concat(newNode));
-        markAsModified();
       }
     },
-    [duplicateSelection, getNodes, markAsModified, setNodes],
+    [duplicateSelection, getNodes, setNodes],
   );
 
   const deleteNode = useCallback(
@@ -112,9 +106,8 @@ export const useNodeOperations = () => {
       }
 
       deleteElements({ nodes: [{ id: nodeId }] });
-      markAsModified();
     },
-    [deleteElements, deleteSelection, getNodes, markAsModified],
+    [deleteElements, deleteSelection, getNodes],
   );
 
   return {

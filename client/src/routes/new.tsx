@@ -115,7 +115,6 @@ function FlowEditor() {
     isActive: toolStates.cutTool,
     onEdgesCut: (edgeIds) => {
       setEdges((e) => e.filter((edge) => !edgeIds.includes(edge.id)));
-      markAsModified();
     },
   });
 
@@ -133,17 +132,16 @@ function FlowEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [CtrlCPressed, CtrlVPressed, MPressed]);
 
-  const onConnection = useCallback(
+  const onLazyConnection = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge(connection, eds));
-      markAsModified();
     },
-    [setEdges, markAsModified],
+    [setEdges],
   );
 
   const { connectionValid } = useLazyConnect({
     isActive: toolStates.lazyConnect,
-    onConnection,
+    onConnection: onLazyConnection,
   });
 
   // ------------------------------------
@@ -265,7 +263,11 @@ function FlowEditor() {
   const onNodesChange = useCallback(
     (changes: Array<NodeChange<Node>>) => {
       setNodes((nds) => applyNodeChanges(changes, nds));
-      markAsModified();
+
+      const isStructuralChange = changes.some((change) => change.type !== "select");
+      if (isStructuralChange) {
+        markAsModified();
+      }
     },
     [setNodes, markAsModified],
   );
@@ -273,7 +275,11 @@ function FlowEditor() {
   const onEdgesChange = useCallback(
     (changes: Array<EdgeChange<Edge>>) => {
       setEdges((eds) => applyEdgeChanges(changes, eds));
-      markAsModified();
+
+      const isStructuralChange = changes.some((change) => change.type !== "select");
+      if (isStructuralChange) {
+        markAsModified();
+      }
     },
     [setEdges, markAsModified],
   );
@@ -281,6 +287,7 @@ function FlowEditor() {
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge(connection, eds));
+
       markAsModified();
     },
     [setEdges, markAsModified],
@@ -340,7 +347,6 @@ function FlowEditor() {
             onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
             onEdgeDoubleClick={(_, edge) => {
               setEdges((e) => e.filter((ed) => ed.id !== edge.id));
-              markAsModified();
             }}
             isValidConnection={isValidConnection}
             onNodeContextMenu={onNodeContextMenu}
