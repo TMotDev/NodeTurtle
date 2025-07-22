@@ -63,10 +63,11 @@ export default function BanDialog({
   const confirmBan = async () => {
     if (selectedUser) {
       const d = getFinalDuration();
+      console.log(d)
       const result = await API.post("/admin/users/ban", {
         reason,
         user_id: selectedUser.id,
-        d,
+        "duration": d,
       });
       if (result.success) {
         toast.success(`User successfully banned`);
