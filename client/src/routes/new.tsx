@@ -64,7 +64,7 @@ function FlowEditor() {
 
   const { getNodes, getEdges } = useReactFlow();
 
-  const { markAsModified } = useFlowManagerContext();
+  const { markAsModified, hasUnsavedChanges } = useFlowManagerContext();
   const { copyElements, pasteElements } = useClipboard();
   const { reactFlowWrapper, handleMouseMove } = useMousePosition();
   const { duplicateNode, deleteNode, deleteSelection, duplicateSelection, muteSelection } =
@@ -322,6 +322,26 @@ function FlowEditor() {
     },
     [getNodes, getEdges],
   );
+
+  const handleUnload = useCallback(
+    (event: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        event.preventDefault();
+
+        // legacy browser support
+        event.returnValue = true;
+      }
+    },
+    [hasUnsavedChanges],
+  );
+
+  useEffect(() => {
+    window.addEventListener("beforeunload", handleUnload, true);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload, true);
+    };
+  }, [handleUnload]);
 
   return (
     <SidebarProvider>

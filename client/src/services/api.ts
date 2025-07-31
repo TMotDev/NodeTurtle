@@ -20,9 +20,11 @@ export type User = {
   ban?: Ban;
 };
 
-type ApiResponse<T = any> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export enum ERROR_CODES {
+  INACTIVE_ACCOUNT = "INACTIVE_ACCOUNT",
+}
+
+type ApiResponse<T = any> = { success: true; data: T } | { success: false; error: string };
 
 type QueuedRequest = {
   resolve: (value: any) => void;
@@ -137,9 +139,7 @@ class FetchHandler {
         const errorData = await response.json().catch(() => ({}));
         return {
           success: false,
-          error:
-            errorData.message ||
-            `HTTP ${response.status}: ${response.statusText}`,
+          error: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
         };
       }
 
@@ -149,10 +149,7 @@ class FetchHandler {
       console.error("API request failed:", error);
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
+        error: error instanceof Error ? error.message : "An unexpected error occurred.",
       };
     }
   }
@@ -161,11 +158,7 @@ class FetchHandler {
     return this.makeRequest<T>(url, { ...options, method: "GET" });
   }
 
-  async post<T>(
-    url: string,
-    body?: any,
-    options: RequestInit = {},
-  ): Promise<ApiResponse> {
+  async post<T>(url: string, body?: any, options: RequestInit = {}): Promise<ApiResponse> {
     return this.makeRequest<T>(url, {
       ...options,
       method: "POST",
@@ -177,11 +170,7 @@ class FetchHandler {
     });
   }
 
-  async put<T>(
-    url: string,
-    body?: any,
-    options: RequestInit = {},
-  ): Promise<ApiResponse> {
+  async put<T>(url: string, body?: any, options: RequestInit = {}): Promise<ApiResponse> {
     return this.makeRequest<T>(url, {
       ...options,
       method: "PUT",
@@ -193,10 +182,7 @@ class FetchHandler {
     });
   }
 
-  async delete<T>(
-    url: string,
-    options: RequestInit = {},
-  ): Promise<ApiResponse> {
+  async delete<T>(url: string, options: RequestInit = {}): Promise<ApiResponse> {
     return this.makeRequest<T>(url, { ...options, method: "DELETE" });
   }
 }

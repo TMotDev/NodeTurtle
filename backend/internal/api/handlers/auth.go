@@ -146,7 +146,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusUnauthorized, err)
 		}
 		if errors.Is(err, services.ErrInactiveAccount) {
-			return echo.NewHTTPError(http.StatusForbidden, err)
+			return echo.NewHTTPError(http.StatusForbidden, "INACTIVE_ACCOUNT")
 		}
 		if errors.Is(err, services.ErrAccountSuspended) {
 			return echo.NewHTTPError(http.StatusForbidden, err)
