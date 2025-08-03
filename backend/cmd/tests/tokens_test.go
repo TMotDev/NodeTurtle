@@ -42,7 +42,7 @@ func TestTokenService_New(t *testing.T) {
 	s, td, db, close := setupTokenService()
 	defer close()
 
-	userID := td.Users[0].ID
+	userID := td.Users[UserAlice].ID
 	ttl := 1 * time.Hour
 	scope := data.ScopePasswordReset
 
@@ -91,7 +91,7 @@ func TestTokenService_DeleteAllForUser(t *testing.T) {
 	assert.NoError(t, err, "Deleting non-existent tokens should not return an error")
 
 	// Test Case 3: Delete for a user with no tokens of that scope
-	otherUserID := td.Users[0].ID
+	otherUserID := td.Users[UserAlice].ID
 	err = s.DeleteAllForUser(data.ScopeUserActivation, otherUserID)
 	assert.NoError(t, err, "Deleting non-existent tokens for a user should not return an error")
 }

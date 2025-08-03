@@ -45,14 +45,14 @@ func TestCreateUser(t *testing.T) {
 		"Duplicate username": {
 			reg: data.UserRegistration{
 				Email:    "test2@example.com",
-				Username: td.Users[1].Username,
+				Username: td.Users[UserBob].Username,
 				Password: "duplicate123",
 			},
 			err: services.ErrDuplicateUsername,
 		},
 		"Duplicate email": {
 			reg: data.UserRegistration{
-				Email:    td.Users[1].Email,
+				Email:    td.Users[UserBob].Email,
 				Username: "newbob",
 				Password: "duplicate123",
 			},
@@ -130,7 +130,7 @@ func TestChangePassword(t *testing.T) {
 		err         error
 	}{
 		"Successful password reset": {
-			userId:      td.Users[0].ID,
+			userId:      td.Users[UserAlice].ID,
 			oldPassword: "password1234",
 			newPassword: "newPassword1234",
 			err:         nil,
@@ -142,7 +142,7 @@ func TestChangePassword(t *testing.T) {
 			err:         services.ErrUserNotFound,
 		},
 		"Wrong old password": {
-			userId:      td.Users[0].ID,
+			userId:      td.Users[UserAlice].ID,
 			oldPassword: "wrongPassword",
 			newPassword: "newPassword1234",
 			err:         services.ErrInvalidCredentials,
@@ -174,7 +174,7 @@ func TestGetUserById(t *testing.T) {
 		err    error
 	}{
 		"Successful user fetch": {
-			userId: td.Users[4].ID,
+			userId: td.Users[UserAlice].ID,
 			err:    nil,
 		},
 		"User ID not found": {
@@ -208,7 +208,7 @@ func TestGetUserByEmail(t *testing.T) {
 		err   error
 	}{
 		"Successful user fetch": {
-			email: td.Users[4].Email,
+			email: td.Users[UserAlice].Email,
 			err:   nil,
 		},
 		"User ID not found": {
@@ -242,7 +242,7 @@ func TestGetUserByUsername(t *testing.T) {
 		err      error
 	}{
 		"Successful user fetch": {
-			username: td.Users[0].Username,
+			username: td.Users[UserAlice].Username,
 			err:      nil,
 		},
 		"User not found": {
@@ -414,7 +414,7 @@ func TestUpdateUser(t *testing.T) {
 		err     error
 	}{
 		"Successful user update": {
-			userID: td.Users[0].ID,
+			userID: td.Users[UserAlice].ID,
 			updates: &data.UserUpdate{
 				Username:  utils.Ptr("newUsername"),
 				Email:     utils.Ptr("newEmail@example.com"),
@@ -424,7 +424,7 @@ func TestUpdateUser(t *testing.T) {
 			err: nil,
 		},
 		"No updates provided": {
-			userID:  td.Users[0].ID,
+			userID:  td.Users[UserAlice].ID,
 			updates: &data.UserUpdate{},
 			err:     services.ErrNoFields,
 		},
@@ -465,7 +465,7 @@ func TestDeleteUser(t *testing.T) {
 		err    error
 	}{
 		"Successful user delete": {
-			userId: td.Users[0].ID,
+			userId: td.Users[UserAlice].ID,
 			err:    nil,
 		},
 		"User ID not found": {
@@ -541,7 +541,7 @@ func TestEmailExists(t *testing.T) {
 		exists bool
 	}{
 		"Email exists": {
-			email:  td.Users[0].Email,
+			email:  td.Users[UserAlice].Email,
 			exists: true,
 		},
 		"Email does not exist": {
@@ -569,7 +569,7 @@ func TestUsernameExists(t *testing.T) {
 		exists   bool
 	}{
 		"Username exists": {
-			username: td.Users[0].Username,
+			username: td.Users[UserAlice].Username,
 			exists:   true,
 		},
 		"Username does not exist": {

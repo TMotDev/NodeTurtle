@@ -32,22 +32,22 @@ func TestBanUser(t *testing.T) {
 		err        error
 	}{
 		"Successful ban": {
-			userId:     td.Users[0].ID,
-			bannedBy:   td.Users[3].ID,
+			userId:     td.Users[UserAlice].ID,
+			bannedBy:   td.Users[UserChris].ID,
 			expires_at: time.Now().Add(time.Hour),
 			reason:     "test ban",
 			err:        nil,
 		},
 		"Self ban (self account deactivation)": {
-			userId:     td.Users[0].ID,
-			bannedBy:   td.Users[0].ID,
+			userId:     td.Users[UserAlice].ID,
+			bannedBy:   td.Users[UserAlice].ID,
 			expires_at: time.Now().Add(time.Hour),
 			reason:     "test self ban",
 			err:        nil,
 		},
 		"Ban receiver ID not found": {
 			userId:     uuid.New(),
-			bannedBy:   td.Users[3].ID,
+			bannedBy:   td.Users[UserChris].ID,
 			expires_at: time.Now().Add(time.Hour),
 			reason:     "test ban",
 			err:        services.ErrUserNotFound,
@@ -83,11 +83,11 @@ func TestUnbanUser(t *testing.T) {
 		err    error
 	}{
 		"Successful unban": {
-			userId: td.Users[4].ID,
+			userId: td.Users[UserTom].ID,
 			err:    nil,
 		},
 		"Expired ban unban should still work": {
-			userId: td.Users[5].ID,
+			userId: td.Users[UserFrank].ID,
 			err:    nil,
 		},
 		"unban receiver ID not found": {

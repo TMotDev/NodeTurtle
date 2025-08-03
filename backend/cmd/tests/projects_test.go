@@ -30,7 +30,7 @@ func TestCreateProject(t *testing.T) {
 		Title:       "testProject",
 		Description: "A Test Project",
 		Data:        json.RawMessage([]byte(`{}`)),
-		CreatorID:   td.Users[0].ID,
+		CreatorID:   td.Users[UserAlice].ID,
 		IsPublic:    false,
 	}
 
@@ -50,7 +50,7 @@ func TestDeleteProject(t *testing.T) {
 		err       error
 	}{
 		"Successful project delete": {
-			projectID: td.Projects[0].ID,
+			projectID: td.Projects[ProjectAlicePrivate].ID,
 			err:       nil,
 		},
 		"Project ID not found": {
@@ -84,13 +84,13 @@ func TestGetProject(t *testing.T) {
 		err              error
 	}{
 		"Successful private project fetch": {
-			projectID:        td.Projects[1].ID,
-			requestingUserID: td.Projects[1].CreatorID,
+			projectID:        td.Projects[ProjectAlicePrivate].ID,
+			requestingUserID: td.Projects[ProjectAlicePrivate].CreatorID,
 			err:              nil,
 		},
 		"Failed to fetch private project for non-owner": {
-			projectID:        td.Projects[3].ID,
-			requestingUserID: td.Projects[3].LikedByUsers[0],
+			projectID:        td.Projects[ProjectBobPrivate].ID,
+			requestingUserID: td.Projects[ProjectBobPrivate].LikedByUsers[0],
 			err:              services.ErrRecordNotFound,
 		},
 	}
@@ -123,20 +123,20 @@ func TestGetUserProjects(t *testing.T) {
 		expectedArrayLength   int
 	}{
 		"Requester is the owner of the projects": {
-			profileUserID:         td.Users[0].ID,
-			requestingUserID:      td.Users[0].ID,
+			profileUserID:         td.Users[UserAlice].ID,
+			requestingUserID:      td.Users[UserAlice].ID,
 			expectPrivateProjects: true,
 			expectedArrayLength:   3,
 		},
 		"Requester is not the owner of the projects": {
-			profileUserID:         td.Users[0].ID,
-			requestingUserID:      td.Users[1].ID,
+			profileUserID:         td.Users[UserAlice].ID,
+			requestingUserID:      uuid.New(),
 			expectPrivateProjects: false,
 			expectedArrayLength:   2,
 		},
 		"No projects found because user does not exist": {
 			profileUserID:         uuid.New(),
-			requestingUserID:      td.Users[0].ID,
+			requestingUserID:      td.Users[UserAlice].ID,
 			expectPrivateProjects: false,
 			expectedArrayLength:   0,
 		},
@@ -193,7 +193,7 @@ func TestGetLikedProjects(t *testing.T) {
 	s, td, close := setupProjectService()
 	defer close()
 
-	userID := td.Users[1].ID
+	userID := td.Users[UserBob].ID
 	expectedLength := 4
 
 	p, err := s.GetLikedProjects(userID)
@@ -213,9 +213,9 @@ func TestLikeProject(t *testing.T) {
 	s, td, close := setupProjectService()
 	defer close()
 
-	project := td.Projects[3]
+	project := td.Projects[ProjectChrisAdmin]
 	initialLikes := project.LikesCount
-	user := td.Users[1]
+	user := td.Users[UserJohn]
 
 	err := s.LikeProject(project.ID, user.ID)
 	assert.NoError(t, err)
@@ -242,7 +242,7 @@ func TestUnlikeProject(t *testing.T) {
 	s, td, close := setupProjectService()
 	defer close()
 
-	project := td.Projects[2]
+	project := td.Projects[ProjectBobFeatured]
 	initialLikes := project.LikesCount
 	userID := project.LikedByUsers[0]
 
@@ -271,9 +271,9 @@ func TestUnlikeProject_NotLikedInitially(t *testing.T) {
 	s, td, close := setupProjectService()
 	defer close()
 
-	project := td.Projects[0]
+	project := td.Projects[ProjectAlicePublic]
 	initialLikes := project.LikesCount
-	userID := td.Users[2].ID
+	userID := td.Users[UserJohn].ID
 
 	err := s.UnlikeProject(project.ID, userID)
 	assert.NoError(t, err)
@@ -299,7 +299,7 @@ func TestUpdateProject(t *testing.T) {
 	s, td, close := setupProjectService()
 	defer close()
 
-	project := td.Projects[0]
+	project := td.Projects[ProjectAlicePrivate]
 
 	newTitle := "Updated Title"
 	newDescription := "Updated Description"
@@ -344,12 +344,12 @@ func TestIsOwner(t *testing.T) {
 		isOwner   bool
 	}{
 		"Valid owner": {
-			projectID: td.Projects[0].ID,
-			userID:    td.Projects[0].CreatorID,
+			projectID: td.Projects[ProjectAlicePublic].ID,
+			userID:    td.Projects[ProjectAlicePublic].CreatorID,
 			isOwner:   true,
 		},
 		"Not Owner": {
-			projectID: td.Projects[0].ID,
+			projectID: td.Projects[ProjectAlicePublic].ID,
 			userID:    uuid.New(),
 			isOwner:   false,
 		},

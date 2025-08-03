@@ -15,9 +15,9 @@ import (
 )
 
 type TestData struct {
-	Users    []TestUser
-	Tokens   map[string]*data.Token
-	Projects []TestProject
+	Users    map[string]TestUser    // "alice", "bob", "john", etc.
+	Tokens   map[string]*data.Token // "john_valid_activation", etc.
+	Projects map[string]TestProject // "alice_public", "bob_featured", etc.
 }
 
 type TestUser struct {
@@ -45,13 +45,41 @@ type TestProject struct {
 	LikedByUsers    []uuid.UUID
 }
 
+const (
+	// User keys
+	UserAlice = "alice"
+	UserBob   = "bob"
+	UserJohn  = "john"
+	UserChris = "chris"
+	UserTom   = "tom"
+	UserFrank = "frank"
+
+	// Project keys
+	ProjectAlicePublic     = "alice_public"
+	ProjectAlicePrivate    = "alice_private"
+	ProjectBobFeatured     = "bob_featured"
+	ProjectBobPrivate      = "bob_private"
+	ProjectJohnUnactivated = "john_unactivated"
+	ProjectChrisAdmin      = "chris_admin"
+	ProjectTomBanned       = "tom_banned"
+	ProjectFrankExpired    = "frank_expired"
+	ProjectFrankPrivate    = "frank_private"
+	ProjectMultiLiked      = "multi_liked"
+
+	// Token keys
+	TokenJohnActivation       = "john_valid_activation"
+	TokenBobPasswordReset     = "bob_valid_password_reset"
+	TokenAliceExpiredPassword = "alice_expired_password_reset"
+	TokenTomAccountSuspended  = "tom_account_suspended"
+)
+
 func createTestData() (*TestData, *sql.DB, error) {
 	adminID := uuid.New()
 
 	now := time.Now().UTC()
 
-	testUsers := []TestUser{
-		{
+	testUsers := map[string]TestUser{
+		UserAlice: {
 			ID:        uuid.New(),
 			Email:     "alice@example.com",
 			Username:  "alice",
@@ -59,7 +87,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Role:      data.RoleUser,
 			Activated: true,
 		},
-		{
+		UserBob: {
 			ID:        uuid.New(),
 			Email:     "bob@example.com",
 			Username:  "bob",
@@ -67,7 +95,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Role:      data.RoleUser,
 			Activated: true,
 		},
-		{
+		UserJohn: {
 			ID:        uuid.New(),
 			Email:     "john@example.com",
 			Username:  "john",
@@ -75,7 +103,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Role:      data.RolePremium,
 			Activated: false,
 		},
-		{
+		UserChris: {
 			ID:        adminID,
 			Email:     "chris@example.com",
 			Username:  "chris",
@@ -83,7 +111,7 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Role:      data.RoleAdmin,
 			Activated: true,
 		},
-		{
+		UserTom: {
 			ID:        uuid.New(),
 			Email:     "tom@example.com",
 			Username:  "tom",
@@ -93,11 +121,11 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Ban: utils.Ptr(data.Ban{
 				BannedBy:  adminID,
 				Reason:    "test ban",
-				BannedAt:  now,
-				ExpiresAt: now.Add(24 * time.Hour),
+				BannedAt:  time.Now().UTC(),
+				ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
 			}),
 		},
-		{
+		UserFrank: {
 			ID:        uuid.New(),
 			Email:     "frank@example.com",
 			Username:  "frank",
@@ -107,36 +135,36 @@ func createTestData() (*TestData, *sql.DB, error) {
 			Ban: utils.Ptr(data.Ban{
 				BannedBy:  adminID,
 				Reason:    "test expired ban",
-				BannedAt:  now,
-				ExpiresAt: now.Add(-24 * time.Hour), // expired ban
+				BannedAt:  time.Now().UTC(),
+				ExpiresAt: time.Now().UTC().Add(-24 * time.Hour), // expired ban
 			}),
 		},
 	}
 
 	emptyFlowData := json.RawMessage(`{"nodes":[],"edges":[],"viewport":{"x":0,"y":0,"zoom":1}}`)
 
-	testProjects := []TestProject{
-		{
+	testProjects := map[string]TestProject{
+		ProjectAlicePublic: {
 			ID:              uuid.New(),
 			Title:           "Alice's Public Project",
 			Description:     "A public project by Alice that everyone can see",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[0].ID, // alice
-			CreatorUsername: testUsers[0].Username,
+			CreatorID:       testUsers[UserAlice].ID,
+			CreatorUsername: testUsers[UserAlice].Username,
 			LikesCount:      2,
 			FeaturedUntil:   nil,
 			CreatedAt:       now.Add(-72 * time.Hour),
 			LastEditedAt:    now.Add(-24 * time.Hour),
 			IsPublic:        true,
-			LikedByUsers:    []uuid.UUID{testUsers[1].ID, testUsers[3].ID}, // bob and chris
+			LikedByUsers:    []uuid.UUID{testUsers[UserBob].ID, testUsers[UserChris].ID},
 		},
-		{
+		ProjectAlicePrivate: {
 			ID:              uuid.New(),
 			Title:           "Alice's Private Project",
 			Description:     "A private project by Alice that only she can see",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[0].ID, // alice
-			CreatorUsername: testUsers[0].Username,
+			CreatorID:       testUsers[UserAlice].ID,
+			CreatorUsername: testUsers[UserAlice].Username,
 			LikesCount:      0,
 			FeaturedUntil:   nil,
 			CreatedAt:       now.Add(-48 * time.Hour),
@@ -144,41 +172,41 @@ func createTestData() (*TestData, *sql.DB, error) {
 			IsPublic:        false,
 			LikedByUsers:    []uuid.UUID{},
 		},
-		{
+		ProjectBobFeatured: {
 			ID:              uuid.New(),
 			Title:           "Bob's Featured Project",
 			Description:     "Bob's amazing project that is currently featured",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[1].ID, // bob
-			CreatorUsername: testUsers[1].Username,
+			CreatorID:       testUsers[UserBob].ID,
+			CreatorUsername: testUsers[UserBob].Username,
 			LikesCount:      3,
 			FeaturedUntil:   utils.Ptr(now.Add(24 * time.Hour)),
 			CreatedAt:       now.Add(-96 * time.Hour),
 			LastEditedAt:    now.Add(-6 * time.Hour),
 			IsPublic:        true,
-			LikedByUsers:    []uuid.UUID{testUsers[0].ID, testUsers[3].ID, testUsers[5].ID}, // alice, chris, frank
+			LikedByUsers:    []uuid.UUID{testUsers[UserAlice].ID, testUsers[UserChris].ID, testUsers[UserFrank].ID},
 		},
-		{
+		ProjectBobPrivate: {
 			ID:              uuid.New(),
 			Title:           "Bob's Private Liked Project",
 			Description:     "A private project by Bob that has likes somehow",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[1].ID, // bob
-			CreatorUsername: testUsers[1].Username,
+			CreatorID:       testUsers[UserBob].ID,
+			CreatorUsername: testUsers[UserBob].Username,
 			LikesCount:      1,
 			FeaturedUntil:   nil,
 			CreatedAt:       now.Add(-36 * time.Hour),
 			LastEditedAt:    now.Add(-2 * time.Hour),
 			IsPublic:        false,
-			LikedByUsers:    []uuid.UUID{testUsers[0].ID}, // alice (had access before project went private)
+			LikedByUsers:    []uuid.UUID{testUsers[UserAlice].ID},
 		},
-		{
+		ProjectJohnUnactivated: {
 			ID:              uuid.New(),
 			Title:           "John's Unactivated User Project",
 			Description:     "Project by John who hasn't activated his account",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[2].ID, // john (unactivated)
-			CreatorUsername: testUsers[2].Username,
+			CreatorID:       testUsers[UserJohn].ID,
+			CreatorUsername: testUsers[UserJohn].Username,
 			LikesCount:      0,
 			FeaturedUntil:   nil,
 			CreatedAt:       now.Add(-12 * time.Hour),
@@ -186,27 +214,27 @@ func createTestData() (*TestData, *sql.DB, error) {
 			IsPublic:        true,
 			LikedByUsers:    []uuid.UUID{},
 		},
-		{
+		ProjectChrisAdmin: {
 			ID:              uuid.New(),
 			Title:           "Chris's Admin Project",
 			Description:     "An admin's public project with lots of likes",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[3].ID, // chris (admin)
-			CreatorUsername: testUsers[3].Username,
+			CreatorID:       testUsers[UserChris].ID,
+			CreatorUsername: testUsers[UserChris].Username,
 			LikesCount:      4,
 			FeaturedUntil:   nil,
 			CreatedAt:       now.Add(-120 * time.Hour),
 			LastEditedAt:    now.Add(-8 * time.Hour),
 			IsPublic:        true,
-			LikedByUsers:    []uuid.UUID{testUsers[0].ID, testUsers[1].ID, testUsers[4].ID, testUsers[5].ID}, // alice, bob, tom, frank
+			LikedByUsers:    []uuid.UUID{testUsers[UserAlice].ID, testUsers[UserBob].ID, testUsers[UserTom].ID, testUsers[UserFrank].ID},
 		},
-		{
+		ProjectTomBanned: {
 			ID:              uuid.New(),
 			Title:           "Tom's Banned User Project",
 			Description:     "Project by Tom who is currently banned",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[4].ID, // tom (banned)
-			CreatorUsername: testUsers[4].Username,
+			CreatorID:       testUsers[UserTom].ID,
+			CreatorUsername: testUsers[UserTom].Username,
 			LikesCount:      0,
 			FeaturedUntil:   nil,
 			CreatedAt:       now.Add(-6 * time.Hour),
@@ -214,62 +242,62 @@ func createTestData() (*TestData, *sql.DB, error) {
 			IsPublic:        true,
 			LikedByUsers:    []uuid.UUID{},
 		},
-		{
+		ProjectFrankExpired: {
 			ID:              uuid.New(),
 			Title:           "Frank's Expired Featured Project",
 			Description:     "Frank's project that was featured but expired",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[5].ID, // frank
-			CreatorUsername: testUsers[5].Username,
+			CreatorID:       testUsers[UserFrank].ID,
+			CreatorUsername: testUsers[UserFrank].Username,
 			LikesCount:      1,
 			FeaturedUntil:   utils.Ptr(now.Add(-12 * time.Hour)), // expired 12 hours ago
 			CreatedAt:       now.Add(-168 * time.Hour),           // 1 week ago
 			LastEditedAt:    now.Add(-72 * time.Hour),
 			IsPublic:        true,
-			LikedByUsers:    []uuid.UUID{testUsers[1].ID}, // bob
+			LikedByUsers:    []uuid.UUID{testUsers[UserBob].ID},
 		},
-		{
+		ProjectFrankPrivate: {
 			ID:              uuid.New(),
 			Title:           "Frank's Private Featured Project",
 			Description:     "Frank's project that was featured but has been privated",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[5].ID, // frank
-			CreatorUsername: testUsers[5].Username,
+			CreatorID:       testUsers[UserFrank].ID,
+			CreatorUsername: testUsers[UserFrank].Username,
 			LikesCount:      1,
 			FeaturedUntil:   utils.Ptr(now.Add(5 * time.Hour)),
 			CreatedAt:       now.Add(-168 * time.Hour), // 1 week ago
 			LastEditedAt:    now.Add(-72 * time.Hour),
 			IsPublic:        false,
-			LikedByUsers:    []uuid.UUID{testUsers[1].ID}, // bob
+			LikedByUsers:    []uuid.UUID{testUsers[UserBob].ID},
 		},
-		{
+		ProjectMultiLiked: {
 			ID:              uuid.New(),
 			Title:           "Multi User Liked Project",
 			Description:     "A public project liked by multiple users",
 			Data:            emptyFlowData,
-			CreatorID:       testUsers[0].ID, // alice
-			CreatorUsername: testUsers[0].Username,
+			CreatorID:       testUsers[UserAlice].ID,
+			CreatorUsername: testUsers[UserAlice].Username,
 			LikesCount:      5,
 			FeaturedUntil:   nil,
 			CreatedAt:       now.Add(-200 * time.Hour),
 			LastEditedAt:    now.Add(-48 * time.Hour),
 			IsPublic:        true,
-			LikedByUsers:    []uuid.UUID{testUsers[1].ID, testUsers[2].ID, testUsers[3].ID, testUsers[4].ID, testUsers[5].ID}, // everyone except alice
+			LikedByUsers:    []uuid.UUID{testUsers[UserBob].ID, testUsers[UserFrank].ID, testUsers[UserTom].ID, testUsers[UserChris].ID, testUsers[UserJohn].ID},
 		},
 	}
 
-	t1, _ := tokens.GenerateToken(testUsers[2].ID, time.Hour, data.ScopeUserActivation)
-	t2, _ := tokens.GenerateToken(testUsers[1].ID, time.Hour, data.ScopePasswordReset)
-	t3, _ := tokens.GenerateToken(testUsers[0].ID, time.Microsecond, data.ScopePasswordReset)
-	t4, _ := tokens.GenerateToken(testUsers[4].ID, time.Hour, data.ScopePasswordReset)
+	t1, _ := tokens.GenerateToken(testUsers[UserJohn].ID, time.Hour, data.ScopeUserActivation)
+	t2, _ := tokens.GenerateToken(testUsers[UserBob].ID, time.Hour, data.ScopePasswordReset)
+	t3, _ := tokens.GenerateToken(testUsers[UserAlice].ID, time.Microsecond, data.ScopePasswordReset)
+	t4, _ := tokens.GenerateToken(testUsers[UserTom].ID, time.Hour, data.ScopePasswordReset)
 
 	t3.ExpiresAt = time.Now().UTC().Add(-time.Hour)
 
 	testTokens := map[string]*data.Token{
-		"john_valid_activation":        t1,
-		"bob_valid_password_reset":     t2,
-		"alice_expired_password_reset": t3,
-		"tom_account_suspended":        t4,
+		TokenJohnActivation:       t1,
+		TokenBobPasswordReset:     t2,
+		TokenAliceExpiredPassword: t3,
+		TokenTomAccountSuspended:  t4,
 	}
 
 	config := config.DatabaseConfig{

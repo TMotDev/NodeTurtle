@@ -40,8 +40,8 @@ func TestLogin(t *testing.T) {
 		err      error
 	}{
 		"Successful login": {
-			email:    td.Users[0].Email,
-			password: td.Users[0].Password,
+			email:    td.Users[UserAlice].Email,
+			password: td.Users[UserAlice].Password,
 			err:      nil,
 		},
 		"Invalid credentials - wrong email": {
@@ -50,18 +50,18 @@ func TestLogin(t *testing.T) {
 			err:      services.ErrInvalidCredentials,
 		},
 		"Invalid credentials - wrong password": {
-			email:    td.Users[0].Email,
+			email:    td.Users[UserAlice].Email,
 			password: "wrongpassword",
 			err:      services.ErrInvalidCredentials,
 		},
 		"Inactive account": {
-			email:    td.Users[2].Email,
-			password: td.Users[2].Password,
+			email:    td.Users[UserJohn].Email,
+			password: td.Users[UserJohn].Password,
 			err:      services.ErrInactiveAccount,
 		},
 		"Suspended account": {
-			email:    td.Users[4].Email,
-			password: td.Users[4].Password,
+			email:    td.Users[UserTom].Email,
+			password: td.Users[UserTom].Password,
 			err:      services.ErrAccountSuspended,
 		},
 	}
@@ -95,9 +95,9 @@ func TestCreateJWTToken(t *testing.T) {
 	}{
 		"Successful token creation": {
 			user: data.User{
-				ID:       td.Users[0].ID,
-				Email:    td.Users[0].Email,
-				Username: td.Users[0].Username,
+				ID:       td.Users[UserAlice].ID,
+				Email:    td.Users[UserAlice].Email,
+				Username: td.Users[UserAlice].Username,
 				Role:     data.Role{ID: data.RoleUser.ToID(), Name: "user"},
 			},
 			err: nil,
@@ -125,9 +125,9 @@ func TestVerifyToken(t *testing.T) {
 	defer close()
 
 	user := data.User{
-		ID:       td.Users[0].ID,
-		Email:    td.Users[0].Email,
-		Username: td.Users[0].Username,
+		ID:       td.Users[UserAlice].ID,
+		Email:    td.Users[UserAlice].Email,
+		Username: td.Users[UserAlice].Username,
 		Role:     data.Role{ID: data.RoleUser.ToID(), Name: "user"},
 	}
 	validToken, err := s.CreateAccessToken(user)
