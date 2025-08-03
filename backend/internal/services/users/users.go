@@ -560,7 +560,6 @@ func (s UserService) DeleteUser(userID uuid.UUID) error {
 	}
 
 	return tx.Commit()
-
 }
 
 // GetForToken retrieves a user associated with a valid token.

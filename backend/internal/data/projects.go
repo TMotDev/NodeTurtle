@@ -17,6 +17,7 @@ type Project struct {
 	CreatorUsername string          `json:"creator_username"`
 	LikesCount      int             `json:"likes_count"`
 	FeaturedUntil   *time.Time      `json:"featured_until,omitempty"`
+	CreatedAt       time.Time       `json:"created_at"`
 	LastEditedAt    time.Time       `json:"last_edited_at"`
 	IsPublic        bool            `json:"is_public"`
 }
@@ -30,14 +31,16 @@ type ProjectLike struct {
 
 // ProjectCreate represents the data required to create a new project.
 type ProjectCreate struct {
-	Title       string           `json:"title" validate:"required,min=3,max=100,alphanum"`
-	Description string           `json:"description" validate:"max=5000"`
-	Data        *json.RawMessage `json:"data,omitempty"` // can be nil for new projects
-	IsPublic    bool             `json:"is_public" validate:"required"`
+	Title       string          `json:"title" validate:"required,min=3,max=100,alphanum"`
+	CreatorID   uuid.UUID       `json:"creator_id"`
+	Description string          `json:"description" validate:"max=5000"`
+	Data        json.RawMessage `json:"data,omitempty"`
+	IsPublic    bool            `json:"is_public" validate:"required"`
 }
 
 // ProjectUpdate represents the fields that can be updated for a project.
 type ProjectUpdate struct {
+	ID          uuid.UUID       `json:"id"`
 	Title       *string         `json:"title,omitempty" validate:"omitempty,min=3,max=100"`
 	Description *string         `json:"description,omitempty" validate:"omitempty,max=5000"`
 	IsPublic    *bool           `json:"is_public,omitempty"`

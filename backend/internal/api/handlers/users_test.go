@@ -872,7 +872,7 @@ func TestBanUser(t *testing.T) {
 	mockBanService := mocks.MockBanService{}
 
 	adminUser := &data.User{ID: uuid.New(), Email: "admin@test.test", Username: "adminuser", IsActivated: true}
-	user := &data.User{ID: uuid.New(), Email: "test@test.test", Username: "testuser", IsActivated: true}
+	user := &data.User{ID: uuid.New()}
 
 	mockBanService.On("BanUser", user.ID, adminUser.ID, mock.Anything, mock.Anything).Return(&data.Ban{ExpiresAt: time.Now().UTC(), Reason: "test", BannedAt: time.Now().UTC()}, nil)
 	mockBanService.On("BanUser", mock.Anything, adminUser.ID, mock.Anything, mock.Anything).Return(nil, services.ErrUserNotFound)
