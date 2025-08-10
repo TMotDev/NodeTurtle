@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Account Suspended</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info-table {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Account Suspended</h1>
+    </div>
+    <div class="content">
+        <h2>Hello {{.Username}},</h2>
+
+        <div class="warning-box">
+            <strong>Your Turtle Graphics account has been temporarily suspended.</strong>
+        </div>
+
+        <p>We are writing to inform you that your account has been suspended due to a violation of our terms of service.</p>
+
+        <div class="info-table">
+            <div class="info-row">
+                <span class="info-label">Reason:</span>
+                <span>{{.Reason}}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Suspended on:</span>
+                <span>{{.BannedAt}}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Suspension expires:</span>
+                <span>{{.ExpiresAt}}</span>
+            </div>
+        </div>
+
+        <p><strong>What this means:</strong></p>
+        <ul>
+            <li>You will not be able to access your account until the suspension expires</li>
+            <li>All active sessions have been terminated</li>
+            <li>Any ongoing projects or data remain safe and will be accessible once the suspension is lifted</li>
+        </ul>
+
+        <p><strong>What happens next:</strong></p>
+        <p>Your account will be automatically reactivated on the expiration date shown above. You will then be able to log in normally.</p>
+
+        <p>If you believe this suspension was issued in error or if you have questions about this decision, please contact our support team.</p>
+
+        <p>We appreciate your understanding and look forward to welcoming you back to Turtle Graphics.</p>
+
+        <p>Best regards,<br>The Turtle Graphics Team</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 Turtle Graphics. All rights reserved.</p>
+        <p>This is an automated message, please do not reply to this email.</p>
+    </div>
+</body>
+</html>

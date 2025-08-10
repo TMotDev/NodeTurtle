@@ -59,6 +59,7 @@ func (m *MockUserService) ListUsers(filters data.UserFilter) ([]data.User, int, 
 	}
 	return args.Get(0).([]data.User), args.Int(1), args.Error(2)
 }
+
 func (m *MockUserService) UpdateUser(userID uuid.UUID, updates data.UserUpdate) (*data.User, error) {
 	args := m.Called(userID, updates)
 	var user *data.User

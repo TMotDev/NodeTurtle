@@ -9,6 +9,7 @@ import (
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
+	"NodeTurtleAPI/internal/services/mail"
 	"NodeTurtleAPI/internal/services/tokens"
 	"NodeTurtleAPI/internal/services/users"
 
@@ -22,15 +23,17 @@ type UserHandler struct {
 	authService  auth.IAuthService
 	tokenService tokens.ITokenService
 	banService   services.IBanService
+	mailService  mail.IMailService
 }
 
 // NewUserHandler creates a new UserHandler with the provided services.
-func NewUserHandler(userService users.IUserService, authService auth.IAuthService, tokenService tokens.ITokenService, banService services.IBanService) UserHandler {
+func NewUserHandler(userService users.IUserService, authService auth.IAuthService, tokenService tokens.ITokenService, banService services.IBanService, mailService mail.IMailService) UserHandler {
 	return UserHandler{
 		userService:  userService,
 		authService:  authService,
 		tokenService: tokenService,
 		banService:   banService,
+		mailService:  mailService,
 	}
 }
 
@@ -389,6 +392,15 @@ func (h *UserHandler) Ban(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
+	userToBan, err := h.userService.GetUserByID(payload.UserID)
+	if err != nil {
+		if err == services.ErrUserNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "User not found")
+		}
+		c.Logger().Errorf("Internal user retrieval error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve user")
+	}
+
 	ban, err := h.banService.BanUser(payload.UserID, contextUser.ID, time.Now().UTC().Add(time.Duration(payload.Duration)*time.Hour), payload.Reason)
 	if err != nil {
 		if err == services.ErrUserNotFound {
@@ -403,6 +415,15 @@ func (h *UserHandler) Ban(c echo.Context) error {
 		c.Logger().Errorf("Internal token deletion error %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to ban a user")
 	}
+
+	// Send ban notification email
+	emailData := map[string]string{
+		"Username":  userToBan.Username,
+		"Reason":    ban.Reason,
+		"BannedAt":  ban.BannedAt.Format("January 2, 2006 at 3:04 PM MST"),
+		"ExpiresAt": ban.ExpiresAt.Format("January 2, 2006 at 3:04 PM MST"),
+	}
+	go h.mailService.SendEmail(userToBan.Email, "Account Suspended - Turtle Graphics", "ban", emailData)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"message": "User banned successfully",

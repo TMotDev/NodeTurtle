@@ -25,7 +25,7 @@ func NewMailService(cfg config.MailConfig) MailService {
 	templates := make(map[string]*template.Template)
 	templateDir := "internal/services/mail/templates"
 
-	templateFiles := []string{"activation", "reset", "deactivation"}
+	templateFiles := []string{"activation", "reset", "deactivation", "ban"}
 	for _, name := range templateFiles {
 		templatePath := filepath.Join(templateDir, name+".html")
 		tmpl, err := template.ParseFiles(templatePath)
