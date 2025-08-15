@@ -84,15 +84,15 @@ db/migrations/migrate-down-1:
 # Create database
 db/create:
 	@echo "Creating database..."
-	@PGPASSWORD=$(DB_PASSWORD) createdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) $(DB_NAME)
+	@set PGPASSWORD=$(DB_PASSWORD) && createdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) $(DB_NAME)
 
-# Drop database
+# Drop database (Windows compatible)
 db/drop:
 	@echo "Dropping database..."
-	@PGPASSWORD=$(DB_PASSWORD) dropdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) --if-exists $(DB_NAME)
+	@set PGPASSWORD=$(DB_PASSWORD) && dropdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) --if-exists $(DB_NAME)
 
 # Reset database (drop, create, migrate)
-db/reset: db/drop db/create db/mibrations/up
+db/reset: db/drop db/create db/migrations/up
 	@echo "Database reset complete"
 
 # Run tests
