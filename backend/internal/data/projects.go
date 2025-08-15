@@ -32,7 +32,7 @@ type ProjectLike struct {
 // ProjectCreate represents the data required to create a new project.
 type ProjectCreate struct {
 	Title       string          `json:"title" validate:"required,min=3,max=100,alphanum"`
-	CreatorID   uuid.UUID       `json:"creator_id"`
+	CreatorID   uuid.UUID       `json:"creator_id" validate:"required"`
 	Description string          `json:"description" validate:"max=5000"`
 	Data        json.RawMessage `json:"data,omitempty"`
 	IsPublic    bool            `json:"is_public" validate:"required"`
@@ -45,4 +45,23 @@ type ProjectUpdate struct {
 	Description *string         `json:"description,omitempty" validate:"omitempty,max=5000"`
 	IsPublic    *bool           `json:"is_public,omitempty"`
 	Data        json.RawMessage `json:"data,omitempty"`
+}
+
+// ProjectFilter defines the options for filtering and paginating public projects.
+type ProjectFilter struct {
+	Page       int    `query:"page" validate:"min=1"`
+	Limit      int    `query:"limit" validate:"min=1,max=100"`
+	SearchTerm string `query:"search_term" validate:"omitempty"`
+	SortField  string `query:"sort_field" validate:"omitempty,oneof=created_at likes_count"`
+	SortOrder  string `query:"sort_order" validate:"omitempty,oneof=asc desc"`
+}
+
+// DefaultProjectFilter provides default values for the project filter.
+func DefaultProjectFilter() ProjectFilter {
+	return ProjectFilter{
+		Page:      1,
+		Limit:     10,
+		SortField: "created_at",
+		SortOrder: "desc",
+	}
 }

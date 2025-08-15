@@ -23,6 +23,7 @@ type IProjectService interface {
 	UpdateProject(p data.ProjectUpdate) (*data.Project, error)
 	DeleteProject(projectID uuid.UUID) error
 	IsOwner(projectID, userID uuid.UUID) (bool, error)
+	GetPublicProjects(filters data.ProjectFilter) ([]data.Project, int, error)
 }
 
 // UserService implements the IUserService interface for managing users.
@@ -276,6 +277,10 @@ func (s ProjectService) LikeProject(projectID, userID uuid.UUID) error {
 		return err
 	}
 
+	if rowsAffected == 0 {
+		return services.ErrRecordNotFound
+	}
+
 	if rowsAffected > 0 {
 		query = "UPDATE projects SET likes_count = likes_count + 1 WHERE id = $1"
 		_, err = tx.Exec(query, projectID)
@@ -303,6 +308,10 @@ func (s ProjectService) UnlikeProject(projectID, userID uuid.UUID) error {
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
 		return err
+	}
+
+	if rowsAffected == 0 {
+		return services.ErrRecordNotFound
 	}
 
 	if rowsAffected > 0 {
@@ -404,6 +413,78 @@ func (s ProjectService) DeleteProject(projectID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+// GetPublicProjects retrieves a paginated and filtered list of public projects.
+func (s ProjectService) GetPublicProjects(filters data.ProjectFilter) ([]data.Project, int, error) {
+	offset := (filters.Page - 1) * filters.Limit
+
+	baseQuery := `
+        FROM projects p
+        JOIN users u ON p.creator_id = u.id
+    `
+
+	whereClause := []string{"p.is_public = TRUE"}
+	args := []interface{}{}
+
+	// Filter by search term (partial match in project title and creator username)
+	if filters.SearchTerm != "" {
+		whereClause = append(whereClause, "(p.title ILIKE $"+fmt.Sprint(len(args)+1)+" OR u.username ILIKE $"+fmt.Sprint(len(args)+2)+")")
+		searchTerm := "%" + filters.SearchTerm + "%"
+		args = append(args, searchTerm, searchTerm)
+	}
+
+	// Construct the final WHERE clause
+	where := "WHERE " + strings.Join(whereClause, " AND ")
+
+	// Count total matching projects
+	countQuery := "SELECT COUNT(*) " + baseQuery + where
+	var total int
+	err := s.db.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	query := `
+        SELECT p.id, p.title, p.description, p.data, p.creator_id, u.username, p.likes_count, p.featured_until, p.created_at, p.last_edited_at, p.is_public
+    ` + baseQuery + where + `
+        ORDER BY p.` + filters.SortField + ` ` + filters.SortOrder + `
+        LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
+
+	args = append(args, filters.Limit, offset)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var projects []data.Project
+	for rows.Next() {
+		var project data.Project
+		if err := rows.Scan(
+			&project.ID,
+			&project.Title,
+			&project.Description,
+			&project.Data,
+			&project.CreatorID,
+			&project.CreatorUsername,
+			&project.LikesCount,
+			&project.FeaturedUntil,
+			&project.CreatedAt,
+			&project.LastEditedAt,
+			&project.IsPublic,
+		); err != nil {
+			return nil, 0, err
+		}
+		projects = append(projects, project)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	return projects, total, nil
 }
 
 // IsOwner checks to see if a user is the creator of a project.

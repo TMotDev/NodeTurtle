@@ -886,6 +886,9 @@ func TestBanUser(t *testing.T) {
 
 	mockBanService.On("BanUser", user.ID, adminUser.ID, mock.Anything, mock.Anything).Return(&data.Ban{ExpiresAt: time.Now().UTC(), Reason: "test", BannedAt: time.Now().UTC()}, nil)
 	mockBanService.On("BanUser", mock.Anything, adminUser.ID, mock.Anything, mock.Anything).Return(nil, services.ErrUserNotFound)
+	mockUserService.On("GetUserByID", user.ID).Return(user, nil)
+	mockUserService.On("GetUserByID", mock.Anything).Return(nil, services.ErrUserNotFound)
+	mockMailService.On("SendEmail", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, user.ID).Return(nil)
 	mockTokenService.On("DeleteAllForUser", data.ScopeRefresh, mock.Anything).Return(services.ErrInternal)
 
@@ -976,8 +979,10 @@ func TestBanUser(t *testing.T) {
 		})
 	}
 
+	mockUserService.AssertExpectations(t)
 	mockTokenService.AssertExpectations(t)
 	mockBanService.AssertExpectations(t)
+	mockMailService.AssertExpectations(t)
 }
 
 func TestDeactivate(t *testing.T) {

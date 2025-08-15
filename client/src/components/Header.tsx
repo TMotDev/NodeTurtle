@@ -14,13 +14,11 @@ import {
 import useAuthStore, { Role } from "@/lib/authStore";
 
 export default function Header() {
-  const [isLoading, user] = useAuthStore(
-    useShallow((state) => [state.isLoading, state.user]),
-  );
+  const [isLoading, user] = useAuthStore(useShallow((state) => [state.isLoading, state.user]));
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center space-x-4">
           <Link to="/" className="flex items-center space-x-2">
             <Turtle size={32} className="text-primary" />
@@ -31,10 +29,7 @@ export default function Header() {
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList>
             <NavigationMenuItem>
-              <NavigationMenuLink
-                asChild
-                className={navigationMenuTriggerStyle()}
-              >
+              <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
                 <Link to="/">Home</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
@@ -42,18 +37,12 @@ export default function Header() {
             {!user && !isLoading && (
               <>
                 <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
-                  >
+                  <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
                     <Link to="/login">Login</Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
-                  >
+                  <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
                     <Link to="/register">Register</Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
@@ -62,34 +51,26 @@ export default function Header() {
 
             {user?.role === Role.Admin && (
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="h-10">
-                  Admin
-                </NavigationMenuTrigger>
+                <NavigationMenuTrigger className="h-10">Admin</NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid w-[300px] gap-4">
                     <li>
                       <NavigationMenuLink asChild>
                         <Link to="/admin/dashboard">
                           <div className="font-medium">Dashboard</div>
-                          <div className="text-muted-foreground">
-                            Overview and analytics
-                          </div>
+                          <div className="text-muted-foreground">Overview and analytics</div>
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
                         <Link to="/admin/users">
                           <div className="font-medium">Users</div>
-                          <div className="text-muted-foreground">
-                            Manage user accounts
-                          </div>
+                          <div className="text-muted-foreground">Manage user accounts</div>
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
                         <Link to="/admin/projects">
                           <div className="font-medium">Projects</div>
-                          <div className="text-muted-foreground">
-                            Manage user projects
-                          </div>
+                          <div className="text-muted-foreground">Manage user projects</div>
                         </Link>
                       </NavigationMenuLink>
                     </li>

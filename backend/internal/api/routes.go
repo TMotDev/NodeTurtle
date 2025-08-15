@@ -13,6 +13,7 @@ import (
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/auth"
 	"NodeTurtleAPI/internal/services/mail"
+	"NodeTurtleAPI/internal/services/projects"
 	"NodeTurtleAPI/internal/services/tokens"
 	"NodeTurtleAPI/internal/services/users"
 
@@ -59,11 +60,13 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	userService := users.NewUserService(db)
 	tokenService := tokens.NewTokenService(db)
 	banService := services.NewBanService(db)
+	projectService := projects.NewProjectService(db)
 
 	// setup handlers
 	authHandler := handlers.NewAuthHandler(&authService, &userService, &tokenService, &mailService)
-	userHandler := handlers.NewUserHandler(&userService, &authService, &tokenService, &banService)
+	userHandler := handlers.NewUserHandler(&userService, &authService, &tokenService, &banService, &mailService)
 	tokenHandler := handlers.NewTokenHandler(&userService, &tokenService, &mailService)
+	projectHandler := handlers.NewProjectHandler(&projectService)
 
 	// setup middleware
 	// TODO: requestloggerwithconfig
@@ -76,7 +79,7 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 		AllowCredentials: true,
 	}))
 
-	setupRoutes(e, &authHandler, &userHandler, &tokenHandler, &authService, &userService)
+	setupRoutes(e, &authHandler, &userHandler, &tokenHandler, &projectHandler, &authService, &userService)
 
 	return &Server{
 		echo:   e,
@@ -85,9 +88,11 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	}
 }
 
-func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, tokenHandler *handlers.TokenHandler, authService *auth.AuthService, userService *users.UserService) {
+func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, tokenHandler *handlers.TokenHandler, projectHandler *handlers.ProjectHandler, authService *auth.AuthService, userService *users.UserService) {
 
 	// Public routes
+	e.GET("/api/projects/public", projectHandler.GetPublic)
+
 	e.POST("/api/users", authHandler.Register)
 	e.GET("/api/users/username/:username", userHandler.CheckUsername)
 	e.GET("/api/users/email/:email", userHandler.CheckEmail)
@@ -111,6 +116,16 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	api.PUT("/users/me", userHandler.UpdateCurrent)
 	api.PUT("/users/me/password", userHandler.ChangePassword)
 	api.POST("/users/me/deactivate", tokenHandler.RequestDeactivationToken)
+
+	api.POST("/projects", projectHandler.Create)
+	api.GET("/projects/featured", projectHandler.GetFeatured)
+	api.GET("/projects/:id", projectHandler.Get)
+	api.POST("/projects/:id/likes", projectHandler.Like)
+	api.DELETE("/projects/:id/likes", projectHandler.Unlike)
+	api.GET("/users/:id/projects", projectHandler.GetUserProjects)
+	api.GET("/users/:id/liked-projects", projectHandler.GetLikedProjects)
+	api.DELETE("/projects/:id", projectHandler.Delete)
+	api.PUT("/projects/:id", projectHandler.Update)
 
 	// Role-specific routes
 	admin := api.Group("/admin")

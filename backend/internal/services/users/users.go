@@ -324,10 +324,8 @@ func (s UserService) GetUserByUsername(username string) (*data.User, error) {
 
 // ListUsers returns a paginated list of users and the total count.
 func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error) {
-	// Calculate offset for pagination
 	offset := (filters.Page - 1) * filters.Limit
 
-	// Build WHERE clause and args for filtering
 	whereClause := []string{}
 	args := []interface{}{}
 
@@ -406,7 +404,6 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 		return nil, 0, err
 	}
 
-	// Build the SELECT query
 	query := `
 		SELECT u.id, u.email, u.username, u.activated, u.created_at, u.last_login,
 		       r.id, r.name,
@@ -418,17 +415,14 @@ func (s UserService) ListUsers(filters data.UserFilter) ([]data.User, int, error
 		ORDER BY u.` + filters.SortField + ` ` + filters.SortOrder + `
 		LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 
-	// Add the limit and offset args
 	args = append(args, filters.Limit, offset)
 
-	// Execute the query
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
 
-	// Process the results
 	users := []data.User{}
 	for rows.Next() {
 		var user data.User

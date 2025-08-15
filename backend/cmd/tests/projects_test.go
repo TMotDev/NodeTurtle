@@ -222,7 +222,7 @@ func TestLikeProject(t *testing.T) {
 
 	// try liking the project twice
 	err = s.LikeProject(project.ID, user.ID)
-	assert.NoError(t, err)
+	assert.NotNil(t, err)
 
 	if err != nil {
 		assert.Error(t, err)
@@ -251,7 +251,7 @@ func TestUnlikeProject(t *testing.T) {
 
 	// try unliking the project twice
 	err = s.UnlikeProject(project.ID, userID)
-	assert.NoError(t, err)
+	assert.NotNil(t, err)
 
 	if err != nil {
 		assert.Error(t, err)
@@ -276,11 +276,11 @@ func TestUnlikeProject_NotLikedInitially(t *testing.T) {
 	userID := td.Users[UserJohn].ID
 
 	err := s.UnlikeProject(project.ID, userID)
-	assert.NoError(t, err)
+	assert.NotNil(t, err)
 
 	// try unliking the project twice
 	err = s.UnlikeProject(project.ID, userID)
-	assert.NoError(t, err)
+	assert.NotNil(t, err)
 
 	if err != nil {
 		assert.Error(t, err)
@@ -365,4 +365,106 @@ func TestIsOwner(t *testing.T) {
 	}
 
 	defer close()
+}
+
+func TestGetPublicProjects(t *testing.T) {
+	s, td, close := setupProjectService()
+	defer close()
+
+	tests := []struct {
+		name           string
+		filters        data.ProjectFilter
+		expectedTitles []string
+		expectedTotal  int
+	}{
+		{
+			name: "Default filter returns all public projects",
+			filters: data.ProjectFilter{
+				SearchTerm: "",
+				SortField:  "created_at",
+				SortOrder:  "DESC",
+				Page:       1,
+				Limit:      10,
+			},
+			expectedTitles: []string{
+				td.Projects[ProjectAlicePublic].Title,
+				td.Projects[ProjectBobFeatured].Title,
+				td.Projects[ProjectJohnUnactivated].Title,
+				td.Projects[ProjectChrisAdmin].Title,
+				td.Projects[ProjectTomBanned].Title,
+				td.Projects[ProjectFrankExpired].Title,
+				td.Projects[ProjectMultiLiked].Title,
+			},
+			expectedTotal: 7,
+		},
+		{
+			name: "Search by title",
+			filters: data.ProjectFilter{
+				SearchTerm: "alice",
+				SortField:  "created_at",
+				SortOrder:  "DESC",
+				Page:       1,
+				Limit:      10,
+			},
+			expectedTitles: []string{
+				td.Projects[ProjectAlicePublic].Title,
+				td.Projects[ProjectMultiLiked].Title,
+			},
+			expectedTotal: 2,
+		},
+		{
+			name: "Search by creator username",
+			filters: data.ProjectFilter{
+				SearchTerm: td.Users[UserBob].Username,
+				SortField:  "created_at",
+				SortOrder:  "DESC",
+				Page:       1,
+				Limit:      10,
+			},
+			expectedTitles: []string{
+				td.Projects[ProjectBobFeatured].Title,
+			},
+			expectedTotal: 1,
+		},
+		{
+			name: "Pagination works",
+			filters: data.ProjectFilter{
+				SearchTerm: "",
+				SortField:  "created_at",
+				SortOrder:  "DESC",
+				Page:       1,
+				Limit:      2,
+			},
+			expectedTitles: []string{
+				td.Projects[ProjectAlicePublic].Title,
+				td.Projects[ProjectBobFeatured].Title,
+			},
+			expectedTotal: 7,
+		},
+		{
+			name: "No results for unmatched search",
+			filters: data.ProjectFilter{
+				SearchTerm: "notfound",
+				SortField:  "created_at",
+				SortOrder:  "DESC",
+				Page:       1,
+				Limit:      10,
+			},
+			expectedTitles: []string{},
+			expectedTotal:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			projects, total, err := s.GetPublicProjects(tt.filters)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedTotal, total)
+			assert.Equal(t, len(tt.expectedTitles), len(projects))
+			for i, title := range tt.expectedTitles {
+				assert.Equal(t, title, projects[i].Title)
+				assert.True(t, projects[i].IsPublic)
+			}
+		})
+	}
 }
