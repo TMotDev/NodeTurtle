@@ -13,11 +13,12 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as RegisterImport } from './routes/register'
 import { Route as NotfoundImport } from './routes/notfound'
-import { Route as NewImport } from './routes/new'
 import { Route as LoginImport } from './routes/login'
 import { Route as CreateImport } from './routes/create'
 import { Route as IndexImport } from './routes/index'
+import { Route as ProjectsIndexImport } from './routes/projects/index'
 import { Route as ResetTokenImport } from './routes/reset/$token'
+import { Route as ProjectsNewImport } from './routes/projects/new'
 import { Route as DeactivateTokenImport } from './routes/deactivate/$token'
 import { Route as AdminUsersImport } from './routes/admin/users'
 import { Route as AdminDashboardImport } from './routes/admin/dashboard'
@@ -34,12 +35,6 @@ const RegisterRoute = RegisterImport.update({
 const NotfoundRoute = NotfoundImport.update({
   id: '/notfound',
   path: '/notfound',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const NewRoute = NewImport.update({
-  id: '/new',
-  path: '/new',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -61,9 +56,21 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ProjectsIndexRoute = ProjectsIndexImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const ResetTokenRoute = ResetTokenImport.update({
   id: '/reset/$token',
   path: '/reset/$token',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ProjectsNewRoute = ProjectsNewImport.update({
+  id: '/projects/new',
+  path: '/projects/new',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -116,13 +123,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
-    '/new': {
-      id: '/new'
-      path: '/new'
-      fullPath: '/new'
-      preLoaderRoute: typeof NewImport
-      parentRoute: typeof rootRoute
-    }
     '/notfound': {
       id: '/notfound'
       path: '/notfound'
@@ -165,11 +165,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeactivateTokenImport
       parentRoute: typeof rootRoute
     }
+    '/projects/new': {
+      id: '/projects/new'
+      path: '/projects/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof ProjectsNewImport
+      parentRoute: typeof rootRoute
+    }
     '/reset/$token': {
       id: '/reset/$token'
       path: '/reset/$token'
       fullPath: '/reset/$token'
       preLoaderRoute: typeof ResetTokenImport
+      parentRoute: typeof rootRoute
+    }
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsIndexImport
       parentRoute: typeof rootRoute
     }
   }
@@ -181,28 +195,30 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
-  '/new': typeof NewRoute
   '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
+  '/projects/new': typeof ProjectsNewRoute
   '/reset/$token': typeof ResetTokenRoute
+  '/projects': typeof ProjectsIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
-  '/new': typeof NewRoute
   '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
+  '/projects/new': typeof ProjectsNewRoute
   '/reset/$token': typeof ResetTokenRoute
+  '/projects': typeof ProjectsIndexRoute
 }
 
 export interface FileRoutesById {
@@ -210,14 +226,15 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
-  '/new': typeof NewRoute
   '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
+  '/projects/new': typeof ProjectsNewRoute
   '/reset/$token': typeof ResetTokenRoute
+  '/projects/': typeof ProjectsIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -226,40 +243,43 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/login'
-    | '/new'
     | '/notfound'
     | '/register'
     | '/activate/$token'
     | '/admin/dashboard'
     | '/admin/users'
     | '/deactivate/$token'
+    | '/projects/new'
     | '/reset/$token'
+    | '/projects'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/create'
     | '/login'
-    | '/new'
     | '/notfound'
     | '/register'
     | '/activate/$token'
     | '/admin/dashboard'
     | '/admin/users'
     | '/deactivate/$token'
+    | '/projects/new'
     | '/reset/$token'
+    | '/projects'
   id:
     | '__root__'
     | '/'
     | '/create'
     | '/login'
-    | '/new'
     | '/notfound'
     | '/register'
     | '/activate/$token'
     | '/admin/dashboard'
     | '/admin/users'
     | '/deactivate/$token'
+    | '/projects/new'
     | '/reset/$token'
+    | '/projects/'
   fileRoutesById: FileRoutesById
 }
 
@@ -267,28 +287,30 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
   LoginRoute: typeof LoginRoute
-  NewRoute: typeof NewRoute
   NotfoundRoute: typeof NotfoundRoute
   RegisterRoute: typeof RegisterRoute
   ActivateTokenRoute: typeof ActivateTokenRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminUsersRoute: typeof AdminUsersRoute
   DeactivateTokenRoute: typeof DeactivateTokenRoute
+  ProjectsNewRoute: typeof ProjectsNewRoute
   ResetTokenRoute: typeof ResetTokenRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
   LoginRoute: LoginRoute,
-  NewRoute: NewRoute,
   NotfoundRoute: NotfoundRoute,
   RegisterRoute: RegisterRoute,
   ActivateTokenRoute: ActivateTokenRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminUsersRoute: AdminUsersRoute,
   DeactivateTokenRoute: DeactivateTokenRoute,
+  ProjectsNewRoute: ProjectsNewRoute,
   ResetTokenRoute: ResetTokenRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -304,14 +326,15 @@ export const routeTree = rootRoute
         "/",
         "/create",
         "/login",
-        "/new",
         "/notfound",
         "/register",
         "/activate/$token",
         "/admin/dashboard",
         "/admin/users",
         "/deactivate/$token",
-        "/reset/$token"
+        "/projects/new",
+        "/reset/$token",
+        "/projects/"
       ]
     },
     "/": {
@@ -322,9 +345,6 @@ export const routeTree = rootRoute
     },
     "/login": {
       "filePath": "login.tsx"
-    },
-    "/new": {
-      "filePath": "new.tsx"
     },
     "/notfound": {
       "filePath": "notfound.tsx"
@@ -344,8 +364,14 @@ export const routeTree = rootRoute
     "/deactivate/$token": {
       "filePath": "deactivate/$token.tsx"
     },
+    "/projects/new": {
+      "filePath": "projects/new.tsx"
+    },
     "/reset/$token": {
       "filePath": "reset/$token.tsx"
+    },
+    "/projects/": {
+      "filePath": "projects/index.tsx"
     }
   }
 }

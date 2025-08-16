@@ -72,8 +72,8 @@ export default function ChangeEmailForm() {
     });
 
     if (result.success) {
-      updateUser({ email: result.data.email });
       form.reset();
+      updateUser({ email: result.data.email });
       setFormStatus({ success: true, error: null });
       setValidationState({ username: "idle", email: "idle" });
     } else {

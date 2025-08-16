@@ -36,7 +36,7 @@ import { useLazyConnect } from "@/hooks/LazyConnect";
 import MouseTrail from "@/components/MouseTrail";
 import MouseLine from "@/components/MouseLine";
 
-export const Route = createFileRoute("/new")({
+export const Route = createFileRoute("/projects/new")({
   component: Flow,
 });
 
