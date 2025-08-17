@@ -7,95 +7,105 @@ import {
   useState,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { Viewport } from "@radix-ui/react-navigation-menu";
 import type { ReactNode } from "react";
-import type { SavedFlow } from "@/types/flow";
+import type { Flow, Project } from "@/api/projects";
 
 const FLOWS_STORAGE_KEY = "savedFlows";
 const CURRENT_FLOW_KEY = "currentFlowId";
 
-export const useFlowManager = () => {
+export const useLocalProjectManager = () => {
   const { getNodes, getEdges, setNodes, setEdges, setViewport, getViewport } =
     useReactFlow();
-  const [currentFlowId, setCurrentFlowId] = useState<string | null>(null);
-  const [currentFlowTitle, setCurrentFlowTitle] =
-    useState<string>("Untitled Flow");
+  const [currentProjectID, setCurrentProjectID] = useState<string | null>(null);
+  const [currentProjectTitle, setCurrentProjectTitle] =
+    useState<string>("Untitled Project");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  const getSavedFlows = useCallback((): Array<SavedFlow> => {
+  const getLocalProjects = useCallback((): Array<Project> => {
     const saved = localStorage.getItem(FLOWS_STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
   }, []);
 
-  const loadFlow = useCallback(
-    (flowId: string) => {
-      const flows = getSavedFlows();
-      const flow = flows.find((f) => f.id === flowId);
+  const loadLocalProject = useCallback(
+    (projectID: string) => {
+      const projects = getLocalProjects();
+      const p = projects.find((proj) => proj.id === projectID);
 
-      if (flow) {
-        setNodes(flow.nodes);
-        setEdges(flow.edges);
-        setViewport(flow.viewport);
-        setCurrentFlowId(flow.id);
-        setCurrentFlowTitle(flow.title);
-        localStorage.setItem(CURRENT_FLOW_KEY, flow.id);
+      if (p && p.data) {
+        setNodes(p.data.nodes);
+        setEdges(p.data.edges);
+        setViewport(p.data.viewport);
+        setCurrentProjectID(p.id);
+        setCurrentProjectTitle(p.title);
+        localStorage.setItem(CURRENT_FLOW_KEY, p.id);
         setHasUnsavedChanges(false);
       }
     },
-    [setNodes, setEdges, setViewport, getSavedFlows],
+    [setNodes, setEdges, setViewport, getLocalProjects],
   );
 
   // Load current flow ID on mount
   useEffect(() => {
     const savedCurrentId = localStorage.getItem(CURRENT_FLOW_KEY);
     if (savedCurrentId) {
-      setCurrentFlowId(savedCurrentId);
-      const flows = getSavedFlows();
+      setCurrentProjectID(savedCurrentId);
+      const flows = getLocalProjects();
       const currentFlow = flows.find((f) => f.id === savedCurrentId);
-      loadFlow(savedCurrentId);
+      loadLocalProject(savedCurrentId);
       if (currentFlow) {
-        setCurrentFlowTitle(currentFlow.title);
+        setCurrentProjectTitle(currentFlow.title);
       }
     } else {
       const newId = `flow_${uuidv4()}`;
-      setCurrentFlowId(newId);
-      setCurrentFlowTitle("Untitled flow");
+      setCurrentProjectID(newId);
+      setCurrentProjectTitle("Untitled flow");
     }
-  }, [getSavedFlows, loadFlow]);
+  }, [getLocalProjects, loadLocalProject]);
 
   const markAsModified = useCallback(() => {
     setHasUnsavedChanges(true);
   }, []);
 
-  const saveCurrentFlow = useCallback(() => {
-    if (!currentFlowId) return;
+  const saveLocalProject = useCallback(() => {
+    if (!currentProjectID) return;
 
-    const flows = getSavedFlows();
-    const currentFlow = {
-      id: currentFlowId,
-      title: currentFlowTitle,
+    const projects = getLocalProjects();
+
+    const flowData:Flow = {
       nodes: getNodes(),
-      edges: getEdges(),
+      edges:   getEdges(),
       viewport: getViewport(),
-      createdAt:
-        flows.find((f) => f.id === currentFlowId)?.createdAt ||
+      nodeCount: getNodes().length
+    }
+
+    const currentProject: Project = {
+      id: currentProjectID,
+      title: currentProjectTitle,
+      created_at: projects.find((f) => f.id === currentProjectID)?.created_at ||
         new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-      nodeCount: getNodes().length,
+      last_edited_at: new Date().toISOString(),
+      description: "-",
+      creator_id: "-",
+      creator_username: "-",
+      likes_count: 0,
+      is_public: false,
+      data: flowData
     };
 
-    const updatedFlows = flows.filter((f) => f.id !== currentFlowId);
-    updatedFlows.push(currentFlow);
+    const updatedFlows = projects.filter((f) => f.id !== currentProjectID);
+    updatedFlows.push(currentProject);
 
     localStorage.setItem(FLOWS_STORAGE_KEY, JSON.stringify(updatedFlows));
-    localStorage.setItem(CURRENT_FLOW_KEY, currentFlowId);
+    localStorage.setItem(CURRENT_FLOW_KEY, currentProjectID);
     setHasUnsavedChanges(false);
   }, [
-    currentFlowId,
-    currentFlowTitle,
+    currentProjectID,
+    currentProjectTitle,
     getNodes,
     getEdges,
     getViewport,
-    getSavedFlows,
+    getLocalProjects,
   ]);
 
   const createNewFlow = useCallback(() => {
@@ -104,38 +114,38 @@ export const useFlowManager = () => {
 
     setNodes([]);
     setEdges([]);
-    setCurrentFlowId(newId);
-    setCurrentFlowTitle(newTitle);
+    setCurrentProjectID(newId);
+    setCurrentProjectTitle(newTitle);
     localStorage.setItem(CURRENT_FLOW_KEY, newId);
     setHasUnsavedChanges(false);
   }, [setNodes, setEdges]);
 
   const deleteFlow = useCallback(
     (flowId: string) => {
-      const flows = getSavedFlows();
+      const flows = getLocalProjects();
       const updatedFlows = flows.filter((f) => f.id !== flowId);
       localStorage.setItem(FLOWS_STORAGE_KEY, JSON.stringify(updatedFlows));
 
       // If deleting current flow, create new one
-      if (flowId === currentFlowId) {
+      if (flowId === currentProjectID) {
         createNewFlow();
       }
     },
-    [getSavedFlows, currentFlowId, createNewFlow],
+    [getLocalProjects, currentProjectID, createNewFlow],
   );
 
   const updateFlowTitle = useCallback((newTitle: string) => {
-    setCurrentFlowTitle(newTitle);
+    setCurrentProjectTitle(newTitle);
     setHasUnsavedChanges(true);
   }, []);
 
   return {
-    currentFlowId,
-    currentFlowTitle,
+    currentFlowId: currentProjectID,
+    currentFlowTitle: currentProjectTitle,
     hasUnsavedChanges,
-    getSavedFlows,
-    saveCurrentFlow,
-    loadFlow,
+    getSavedFlows: getLocalProjects,
+    saveCurrentFlow: saveLocalProject,
+    loadFlow: loadLocalProject,
     createNewFlow,
     deleteFlow,
     updateFlowTitle,
@@ -144,7 +154,7 @@ export const useFlowManager = () => {
 };
 
 const FlowManagerContext = createContext<ReturnType<
-  typeof useFlowManager
+  typeof useLocalProjectManager
 > | null>(null);
 
 interface FlowManagerProviderProps {
@@ -154,7 +164,7 @@ interface FlowManagerProviderProps {
 export const FlowManagerProvider: React.FC<FlowManagerProviderProps> = ({
   children,
 }) => {
-  const flowManager = useFlowManager();
+  const flowManager = useLocalProjectManager();
 
   return (
     <FlowManagerContext.Provider value={flowManager}>

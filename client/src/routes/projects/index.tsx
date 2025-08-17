@@ -169,7 +169,8 @@ export const ProjectCard = ({
   onDelete: (project: Project) => void;
 }) => {
   return (
-    <div
+    <a
+      href={`/projects/${project.id}`}
       className={`
         relative w-64 h-32 rounded-sm border-2 p-4 cursor-pointer active:scale-95 transition-all duration-200 flex-shrink-0 bg-blue-50 border-primary hover:border-blue-700
       `}
@@ -215,6 +216,6 @@ export const ProjectCard = ({
           <span>Edited {getTimeSince(project.last_edited_at)}</span>
         </div>
       </div>
-    </div>
+    </a>
   );
 };
