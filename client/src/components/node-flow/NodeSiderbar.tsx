@@ -25,7 +25,7 @@ export default function NodeSidebar({project}: {project:Project}) {
 
   async function changeTitle(newTitle: string){
 
-    const result = await API.put(`/projects/${project.id}`, {"title":newTitle});
+    const result = await API.patch(`/projects/${project.id}`, {"title":newTitle});
 
     if (!result.success) {
       console.log(result.error)

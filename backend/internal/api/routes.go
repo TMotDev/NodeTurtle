@@ -125,7 +125,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	api.GET("/users/:id/projects", projectHandler.GetUserProjects)
 	api.GET("/users/:id/liked-projects", projectHandler.GetLikedProjects)
 	api.DELETE("/projects/:id", projectHandler.Delete)
-	api.PUT("/projects/:id", projectHandler.Update)
+	api.PATCH("/projects/:id", projectHandler.Update)
 
 	// Role-specific routes
 	admin := api.Group("/admin")

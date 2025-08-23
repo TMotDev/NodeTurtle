@@ -185,6 +185,19 @@ class FetchHandler {
   async delete<T>(url: string, options: RequestInit = {}): Promise<ApiResponse> {
     return this.makeRequest<T>(url, { ...options, method: "DELETE" });
   }
+
+  async patch<T>(url: string, body?: any, options: RequestInit = {}): Promise<ApiResponse> {
+    return this.makeRequest<T>(url, {
+      ...options,
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  }
+
 }
 
 export const API = new FetchHandler();
