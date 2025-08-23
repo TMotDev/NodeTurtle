@@ -66,7 +66,7 @@ export default function ChangeUsernameForm() {
       return;
     }
 
-    const result = await API.put("/users/me", {
+    const result = await API.patch("/users/me", {
       username: values.username,
       password: values.password,
     });

@@ -113,7 +113,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 
 	api.DELETE("/auth/session", authHandler.Logout)
 	api.GET("/users/me", userHandler.GetCurrent)
-	api.PUT("/users/me", userHandler.UpdateCurrent)
+	api.PATCH("/users/me", userHandler.UpdateCurrent)
 	api.PUT("/users/me/password", userHandler.ChangePassword)
 	api.POST("/users/me/deactivate", tokenHandler.RequestDeactivationToken)
 
