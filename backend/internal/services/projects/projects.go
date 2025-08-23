@@ -136,7 +136,7 @@ func (s ProjectService) GetUserProjects(profileUserID, requestingUserID uuid.UUI
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return []data.Project{}, err
 	}
 	defer rows.Close()
 
@@ -156,13 +156,13 @@ func (s ProjectService) GetUserProjects(profileUserID, requestingUserID uuid.UUI
 			&project.LastEditedAt,
 			&project.IsPublic,
 		); err != nil {
-			return nil, err
+			return []data.Project{}, err
 		}
 		projects = append(projects, project)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return []data.Project{}, err
 	}
 
 	return projects, nil

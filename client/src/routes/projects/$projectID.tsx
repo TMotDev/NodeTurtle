@@ -3,8 +3,11 @@ import type { Flow, Project } from "@/api/projects";
 import { API } from "@/services/api";
 import { FlowEditor } from "@/components/node-flow/FlowEditor";
 import { Toaster } from "@/components/ui/sonner";
+import { requireAuth } from "@/lib/utils";
+import { Role } from "@/lib/authStore";
 
 export const Route = createFileRoute("/projects/$projectID")({
+  beforeLoad: requireAuth(Role.User),
   component: Project,
   loader: async ({ params }) => {
     const { projectID } = params;
@@ -26,10 +29,13 @@ const fetchProjectById = async (projectId: string) => {
 
   if (result.success) {
     const proj = result.data.project
-    const flowData:Flow = JSON.parse(proj.data)
 
-    proj.data = flowData
-
+    try{
+      const flowData:Flow = JSON.parse(proj.data)
+      proj.data = flowData
+    }
+    catch (e) {
+    }
     return proj;
   } else {
     throw notFound();

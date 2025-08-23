@@ -7,16 +7,21 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
   getOutgoers,
-  useEdgesState,
   useKeyPress,
-  useNodesState,
-  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { SelectViewport } from "@radix-ui/react-select";
-import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
+import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
+import type {
+  Connection,
+  Edge,
+  Node,
+  OnConnect,
+  OnEdgesChange,
+  OnNodesChange,
+} from "@xyflow/react";
 import type { Project } from "@/api/projects";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -43,16 +48,88 @@ export const nodeTypes = {
   loopNode: LoopNode,
 };
 
-const initialNodes: Array<Node> = [];
-const initialEdges: Array<Edge> = [];
+type AppState = {
+  nodes: Array<Node>;
+  edges: Array<Edge>;
+  onNodesChange: OnNodesChange<Node>;
+  onEdgesChange: OnEdgesChange;
+  onConnect: OnConnect;
+  setNodes: (nodes: Array<Node>) => void;
+  setEdges: (edges: Array<Edge>) => void;
+  setData: (nodes: Array<Node>, edges: Array<Edge>) => void;
+};
+
+const useStore = create<AppState>((set, get) => ({
+  nodes: [],
+  edges: [],
+  onNodesChange: (changes) => {
+    set({
+      nodes: applyNodeChanges(changes, get().nodes),
+    });
+  },
+  onEdgesChange: (changes) => {
+    set({
+      edges: applyEdgeChanges(changes, get().edges),
+    });
+  },
+  onConnect: (connection) => {
+    set({
+      edges: addEdge(connection, get().edges),
+    });
+  },
+  setNodes: (nodes) => {
+    set({ nodes });
+  },
+  setEdges: (edges) => {
+    set({ edges });
+  },
+  setData: (nodes: Array<Node>, edges: Array<Edge>) => {
+    set({ nodes, edges });
+  },
+}));
+
+const selector = (state: AppState) => ({
+  nodes: state.nodes,
+  edges: state.edges,
+  onNodesChange: state.onNodesChange,
+  onEdgesChange: state.onEdgesChange,
+  onConnect: state.onConnect,
+  setEdges: state.setEdges,
+  setNodes: state.setNodes,
+  setData: state.setData,
+});
 
 function Flow({ project }: { project: Project }) {
-  const [nodes, setNodes] = useNodesState(initialNodes);
-  const [edges, setEdges] = useEdgesState(initialEdges);
-
-  const { getNodes, getEdges, setViewport, getViewport } = useReactFlow();
-
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setData, setEdges } = useStore(
+    useShallow(selector),
+  );
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { markAsModified, hasUnsavedChanges } = useFlowManagerContext();
+
+  useEffect(() => {
+    if (project.data) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const n = project.data.nodes ?? [];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const e = project.data.edges ?? [];
+      console.log("Project prop changed, updating Zustand store...");
+      setData(n, e);
+      setIsInitialLoad(true);
+    }
+  }, [project, setData]);
+
+  // Watch for changes in nodes and edges to mark as modified
+  useEffect(() => {
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+      return;
+    }
+
+    // Only mark as modified if we're not in initial load
+    markAsModified();
+  }, [nodes, edges, markAsModified, isInitialLoad]);
+
+
   const { copyElements, pasteElements } = useClipboard();
   const { reactFlowWrapper, handleMouseMove } = useMousePosition();
   const { duplicateNode, deleteNode, deleteSelection, duplicateSelection, muteSelection } =
@@ -102,7 +179,7 @@ function Flow({ project }: { project: Project }) {
   const { handleEdgeMouseEnter } = useCutTool({
     isActive: toolStates.cutTool,
     onEdgesCut: (edgeIds) => {
-      setEdges((e) => e.filter((edge) => !edgeIds.includes(edge.id)));
+      setEdges(edges.filter((ed) => !edgeIds.includes(ed.id)));
     },
   });
 
@@ -119,9 +196,10 @@ function Flow({ project }: { project: Project }) {
 
   const onLazyConnection = useCallback(
     (connection: Connection) => {
-      setEdges((eds) => addEdge(connection, eds));
+      const e = addEdge(connection, edges);
+      setEdges(e);
     },
-    [setEdges],
+    [edges, setEdges],
   );
 
   const { connectionValid } = useLazyConnect({
@@ -245,39 +323,6 @@ function Flow({ project }: { project: Project }) {
   // ------------------------------------
   // Node, Edge and connection related handlers
   // ------------------------------------
-  const onNodesChange = useCallback(
-    (changes: Array<NodeChange<Node>>) => {
-      setNodes((nds) => applyNodeChanges(changes, nds));
-
-      const isStructuralChange = changes.some((change) => change.type !== "select");
-      if (isStructuralChange) {
-        markAsModified();
-      }
-    },
-    [setNodes, markAsModified],
-  );
-
-  const onEdgesChange = useCallback(
-    (changes: Array<EdgeChange<Edge>>) => {
-      setEdges((eds) => applyEdgeChanges(changes, eds));
-
-      const isStructuralChange = changes.some((change) => change.type !== "select");
-      if (isStructuralChange) {
-        markAsModified();
-      }
-    },
-    [setEdges, markAsModified],
-  );
-
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      setEdges((eds) => addEdge(connection, eds));
-
-      markAsModified();
-    },
-    [setEdges, markAsModified],
-  );
-
   const isValidConnection = useCallback(
     (connectionOrEdge: Edge | Connection) => {
       if (
@@ -285,8 +330,8 @@ function Flow({ project }: { project: Project }) {
         typeof connectionOrEdge.target === "string"
       ) {
         const connection = connectionOrEdge as Connection;
-        const n = getNodes();
-        const e = getEdges();
+        const n = nodes;
+        const e = edges;
         const target = n.find((node) => node.id === connection.target);
         const hasCycle = (node: Node, visited = new Set<string>()) => {
           if (visited.has(node.id)) return false;
@@ -305,7 +350,7 @@ function Flow({ project }: { project: Project }) {
       }
       return false;
     },
-    [getNodes, getEdges],
+    [nodes, edges],
   );
 
   const handleUnload = useCallback(
@@ -322,23 +367,10 @@ function Flow({ project }: { project: Project }) {
 
   useEffect(() => {
     window.addEventListener("beforeunload", handleUnload, true);
-
-    setEdges(project.data?.edges || []);
-    setNodes(project.data?.nodes || []);
-
     return () => {
       window.removeEventListener("beforeunload", handleUnload, true);
     };
-  }, [
-    getViewport,
-    handleUnload,
-    project.data?.edges,
-    project.data?.nodes,
-    project.data?.viewport,
-    setEdges,
-    setNodes,
-    setViewport,
-  ]);
+  }, [handleUnload]);
 
   return (
     <main className="w-screen h-screen relative">
@@ -360,7 +392,7 @@ function Flow({ project }: { project: Project }) {
           onDragOver={onDragOver}
           onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
           onEdgeDoubleClick={(_, edge) => {
-            setEdges((e) => e.filter((ed) => ed.id !== edge.id));
+            setEdges(edges.filter((ed) => ed.id !== edge.id));
           }}
           isValidConnection={isValidConnection}
           onNodeContextMenu={onNodeContextMenu}

@@ -13,7 +13,7 @@ export default function NodeSidebar({ project }: { project: Project }) {
   const { getNodes, getEdges, getViewport } = useReactFlow();
 
     const {
-    hasUnsavedChanges,
+    hasUnsavedChanges, setHasUnsavedChanges
   } = useFlowManagerContext();
 
   function onDragStart(event: React.DragEvent<HTMLDivElement>, nodeType: string) {
@@ -35,6 +35,8 @@ export default function NodeSidebar({ project }: { project: Project }) {
       console.log(result.error);
       return;
     }
+
+    setHasUnsavedChanges(false)
   }
 
   async function changeTitle(newTitle: string) {

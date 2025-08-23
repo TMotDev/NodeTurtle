@@ -28,10 +28,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import AddProjectForm from "@/components/forms/AddProjectForm";
 import { API } from "@/services/api";
-import useAuthStore from "@/lib/authStore";
-import { getTimeSince } from "@/lib/utils";
+import useAuthStore, { Role } from "@/lib/authStore";
+import { getTimeSince, requireAuth } from "@/lib/utils";
 
 export const Route = createFileRoute("/projects/")({
+  beforeLoad: requireAuth(Role.User),
   component: App,
 });
 
@@ -59,8 +60,9 @@ function App() {
   const fetchProjects = useCallback(async () => {
     const result = await API.get(`/users/${contextUser?.id}/projects`);
 
+    console.log(result)
     if (result.success) {
-      setUserProjects(result.data.projects);
+      setUserProjects(result.data.projects ?? []);
     } else {
       toast.error(`Failed to fetch users. ${result.error}`);
     }
@@ -100,11 +102,11 @@ function App() {
             ))}
           </div>
 
-          {userProjects.length === 0 && (
-            <div className="flex items-center justify-center h-32 text-gray-500 text-sm bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+          {/* {userProjects.length === 0 && (
+            <div className="flex items-center justify-center w-64 h-32 text-gray-500 text-sm bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
               No projects yet
             </div>
-          )}
+          )} */}
         </div>
       </main>
 

@@ -142,6 +142,7 @@ export const useLocalProjectManager = () => {
     currentFlowId: currentProjectID,
     currentFlowTitle: currentProjectTitle,
     hasUnsavedChanges,
+    setHasUnsavedChanges,
     getSavedFlows: getLocalProjects,
     saveCurrentFlow: saveLocalProject,
     loadFlow: loadLocalProject,
