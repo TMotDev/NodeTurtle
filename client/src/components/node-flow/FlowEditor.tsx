@@ -46,8 +46,7 @@ export const nodeTypes = {
 const initialNodes: Array<Node> = [];
 const initialEdges: Array<Edge> = [];
 
-function Flow({project}: {project: Project}) {
-
+function Flow({ project }: { project: Project }) {
   const [nodes, setNodes] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);
 
@@ -330,59 +329,63 @@ function Flow({project}: {project: Project}) {
     return () => {
       window.removeEventListener("beforeunload", handleUnload, true);
     };
-  }, [getViewport, handleUnload, project.data?.edges, project.data?.nodes, project.data?.viewport, setEdges, setNodes, setViewport]);
+  }, [
+    getViewport,
+    handleUnload,
+    project.data?.edges,
+    project.data?.nodes,
+    project.data?.viewport,
+    setEdges,
+    setNodes,
+    setViewport,
+  ]);
 
   return (
-    <SidebarProvider>
-      <NodeSiderbar project={project}  />
-      <SidebarTrigger />
-      <main className="w-screen h-screen relative">
-        <div
-          className={`w-full h-full ${toolStates.cutTool ? "cursor-crosshair" : "cursor-default"}`}
+    <main className="w-screen h-screen relative">
+      <div
+        className={`w-full h-full ${toolStates.cutTool ? "cursor-crosshair" : "cursor-default"}`}
+      >
+        <ReactFlow
+          ref={reactFlowWrapper}
+          onMouseMove={handleMouseMove}
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onDrop={onDrop}
+          onDragStart={onDragStart}
+          zoomOnDoubleClick={false}
+          onDragOver={onDragOver}
+          onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
+          onEdgeDoubleClick={(_, edge) => {
+            setEdges((e) => e.filter((ed) => ed.id !== edge.id));
+          }}
+          isValidConnection={isValidConnection}
+          onNodeContextMenu={onNodeContextMenu}
+          onPaneClick={onPaneClick}
+          onSelectionContextMenu={onSelectionContextMenu}
+          fitView
+          selectionOnDrag={!toolStates.cutTool && !toolStates.lazyConnect}
+          panOnDrag={!toolStates.cutTool && !toolStates.lazyConnect && [1]}
+          panOnScroll={!toolStates.cutTool && !toolStates.lazyConnect}
+          deleteKeyCode={"Delete"}
+          onPaneContextMenu={(e) => {
+            e.preventDefault();
+          }}
+          selectionMode={SelectionMode.Partial}
+          multiSelectionKeyCode={"Shift"}
         >
-          <ReactFlow
-            ref={reactFlowWrapper}
-            onMouseMove={handleMouseMove}
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onDrop={onDrop}
-            onDragStart={onDragStart}
-            zoomOnDoubleClick={false}
-            onDragOver={onDragOver}
-            onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
-            onEdgeDoubleClick={(_, edge) => {
-              setEdges((e) => e.filter((ed) => ed.id !== edge.id));
-            }}
-            isValidConnection={isValidConnection}
-            onNodeContextMenu={onNodeContextMenu}
-            onPaneClick={onPaneClick}
-            onSelectionContextMenu={onSelectionContextMenu}
-            fitView
-            selectionOnDrag={!toolStates.cutTool && !toolStates.lazyConnect}
-            panOnDrag={!toolStates.cutTool && !toolStates.lazyConnect && [1]}
-            panOnScroll={!toolStates.cutTool && !toolStates.lazyConnect}
-            deleteKeyCode={"Delete"}
-            onPaneContextMenu={(e) => {
-              e.preventDefault();
-            }}
-            selectionMode={SelectionMode.Partial}
-            multiSelectionKeyCode={"Shift"}
-          >
-            <Background />
-            <DevTools position="top-left" />
-            <MouseTrail isActive={toolStates.cutTool && !toolStates.lazyConnect} />
-            <MouseLine
-              isActive={toolStates.lazyConnect && !toolStates.cutTool}
-              connectionValid={connectionValid}
-            />
-          </ReactFlow>
-        </div>
-      </main>
-
+          <Background />
+          <DevTools position="top-left" />
+          <MouseTrail isActive={toolStates.cutTool && !toolStates.lazyConnect} />
+          <MouseLine
+            isActive={toolStates.lazyConnect && !toolStates.cutTool}
+            connectionValid={connectionValid}
+          />
+        </ReactFlow>
+      </div>
       {contextMenu && (
         <ContextMenu
           onClose={() => setContextMenu(null)}
@@ -399,18 +402,22 @@ function Flow({project}: {project: Project}) {
           data={selectionContextMenu}
         />
       )}
-    </SidebarProvider>
+    </main>
   );
 }
 
-export function FlowEditor({project}: {project:Project}) {
+export function FlowEditor({ project }: { project: Project }) {
   return (
     <ReactFlowProvider>
       <FlowManagerProvider>
         <DnDProvider>
-          <MouseProvider>
-            <Flow project={project} />
-          </MouseProvider>
+          <SidebarProvider>
+            <NodeSiderbar project={project} />
+            <SidebarTrigger />
+            <MouseProvider>
+              <Flow project={project} />
+            </MouseProvider>
+          </SidebarProvider>
         </DnDProvider>
       </FlowManagerProvider>
     </ReactFlowProvider>
