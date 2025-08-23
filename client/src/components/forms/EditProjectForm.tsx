@@ -67,7 +67,6 @@ export default function EditProjectForm({ project, onSuccess, onCancel }: EditPr
     const result = await API.put(`/projects/${project?.id}`, projectData);
 
     if (result.success) {
-      console.log("Project edited:", result.data);
       form.reset();
       onSuccess?.();
     } else {

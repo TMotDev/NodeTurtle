@@ -121,13 +121,10 @@ function FlowEditor() {
   useEffect(() => {
     if (CtrlCPressed) {
       copyElements();
-      console.log("copy");
     } else if (CtrlVPressed) {
       pasteElements();
-      console.log("paste");
     } else if (MPressed) {
       muteSelection();
-      console.log("mute");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [CtrlCPressed, CtrlVPressed, MPressed]);

@@ -22,7 +22,6 @@ export const FlowTitle = ({
     onTitleChange(editValue.trim() || "Untitled Flow");
     setEditValue(editValue.trim())
     setIsEditing(false);
-    console.log(editValue)
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

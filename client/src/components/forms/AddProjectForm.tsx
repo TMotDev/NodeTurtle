@@ -55,7 +55,6 @@ export default function AddProjectForm({ onSuccess, onCancel }: AddProjectFormPr
     const result = await API.post("/projects", projectData);
 
     if (result.success) {
-      console.log("Project created:", result.data);
       form.reset();
       onSuccess?.();
     } else {

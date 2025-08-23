@@ -15,7 +15,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { SelectViewport } from "@radix-ui/react-select";
 import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
 import type { Project } from "@/api/projects";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
@@ -36,17 +36,6 @@ import { useLazyConnect } from "@/hooks/LazyConnect";
 import MouseTrail from "@/components/MouseTrail";
 import MouseLine from "@/components/MouseLine";
 
-// const initialNodes: Array<Node> = [
-//   {
-//     id: uuidv4(),
-//     type: "nodeBase",
-//     position: { x: 300, y: 300 },
-//     data: {},
-//   },
-// ];
-
-// const initialEdges: Array<Edge> = [];
-
 export const nodeTypes = {
   nodeBase: NodeBase,
   startNode: StartNode,
@@ -54,11 +43,15 @@ export const nodeTypes = {
   loopNode: LoopNode,
 };
 
-function Flow({project}: {project: Project}) {
-  const [nodes, setNodes] = useNodesState(project.data?.nodes || []);
-  const [edges, setEdges] = useEdgesState(project.data?.edges || []);
+const initialNodes: Array<Node> = [];
+const initialEdges: Array<Edge> = [];
 
-  const { getNodes, getEdges } = useReactFlow();
+function Flow({project}: {project: Project}) {
+
+  const [nodes, setNodes] = useNodesState(initialNodes);
+  const [edges, setEdges] = useEdgesState(initialEdges);
+
+  const { getNodes, getEdges, setViewport, getViewport } = useReactFlow();
 
   const { markAsModified, hasUnsavedChanges } = useFlowManagerContext();
   const { copyElements, pasteElements } = useClipboard();
@@ -117,13 +110,10 @@ function Flow({project}: {project: Project}) {
   useEffect(() => {
     if (CtrlCPressed) {
       copyElements();
-      console.log("copy");
     } else if (CtrlVPressed) {
       pasteElements();
-      console.log("paste");
     } else if (MPressed) {
       muteSelection();
-      console.log("mute");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [CtrlCPressed, CtrlVPressed, MPressed]);
@@ -334,10 +324,13 @@ function Flow({project}: {project: Project}) {
   useEffect(() => {
     window.addEventListener("beforeunload", handleUnload, true);
 
+    setEdges(project.data?.edges || []);
+    setNodes(project.data?.nodes || []);
+
     return () => {
       window.removeEventListener("beforeunload", handleUnload, true);
     };
-  }, [handleUnload]);
+  }, [getViewport, handleUnload, project.data?.edges, project.data?.nodes, project.data?.viewport, setEdges, setNodes, setViewport]);
 
   return (
     <SidebarProvider>
