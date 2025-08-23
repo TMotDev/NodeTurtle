@@ -354,7 +354,7 @@ func (h *ProjectHandler) GetLikedProjects(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"liked_projects": projects,
+		"projects": projects,
 	})
 }
 
