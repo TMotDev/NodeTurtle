@@ -1,5 +1,3 @@
-import { FolderOpen, Plus, Save } from "lucide-react";
-import { Button } from "../ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -7,22 +5,15 @@ import {
   SidebarGroup,
   SidebarHeader,
 } from "../ui/sidebar";
-import { LoadFlowDialog } from "./LoadFlowDialog";
 import { FlowTitle } from "./FlowTitle";
-import { useFlowManagerContext } from "@/hooks/FlowManager";
+import type { Project } from "@/api/projects";
+import { API } from "@/services/api";
 import { useDnD } from "@/hooks/FlowDragAndDropContext";
 
-export default function NodeSidebar() {
+export default function NodeSidebar({project}: {project:Project}) {
   const [_, setType] = useDnD();
-  const {
-    currentFlowTitle,
-    hasUnsavedChanges,
-    saveCurrentFlow,
-    loadFlow,
-    createNewFlow,
-    deleteFlow,
-    updateFlowTitle,
-  } = useFlowManagerContext();
+
+  console.log(project.title)
 
   function onDragStart(
     event: React.DragEvent<HTMLDivElement>,
@@ -32,13 +23,22 @@ export default function NodeSidebar() {
     event.dataTransfer.effectAllowed = "move";
   }
 
+  async function changeTitle(newTitle: string){
+
+    const result = await API.put(`/projects/${project.id}`, {"title":newTitle});
+
+    if (!result.success) {
+      console.log(result.error)
+      return
+    }
+  }
+
   return (
     <Sidebar>
       <SidebarHeader>
         <FlowTitle
-          title={currentFlowTitle}
-          onTitleChange={updateFlowTitle}
-          hasUnsavedChanges={hasUnsavedChanges}
+          title={project.title}
+          onTitleChange={(title)=>changeTitle(title)}
         />
       </SidebarHeader>
       <SidebarContent>
@@ -63,18 +63,18 @@ export default function NodeSidebar() {
           </div>
         </SidebarGroup>
         <SidebarGroup>
-          <Button onClick={createNewFlow} variant="outline" className="w-full">
+          {/* <Button onClick={createNewFlow} variant="outline" className="w-full">
             <Plus className="w-4 h-4 mr-2" />
             New Flow
-          </Button>
-          <Button onClick={saveCurrentFlow} className="w-full">
+          </Button> */}
+          {/* <Button onClick={saveCurrentFlow} className="w-full">
             <Save className="w-4 h-4 mr-2" />
             Save
             {hasUnsavedChanges && (
               <span className="ml-2 w-2 h-2 bg-white rounded-full" />
             )}
-          </Button>
-          <LoadFlowDialog
+          </Button> */}
+          {/* <LoadFlowDialog
             onLoadFlow={loadFlow}
             onDeleteFlow={deleteFlow}
             hasUnsavedChanges={hasUnsavedChanges}
@@ -84,7 +84,7 @@ export default function NodeSidebar() {
               <FolderOpen className="w-4 h-4 mr-2" />
               Load Flow
             </Button>
-          </LoadFlowDialog>
+          </LoadFlowDialog> */}
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter />

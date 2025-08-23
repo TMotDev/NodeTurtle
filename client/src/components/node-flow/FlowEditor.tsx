@@ -36,18 +36,16 @@ import { useLazyConnect } from "@/hooks/LazyConnect";
 import MouseTrail from "@/components/MouseTrail";
 import MouseLine from "@/components/MouseLine";
 
-const initialNodes: Array<Node> = [
-  {
-    id: uuidv4(),
-    type: "nodeBase",
-    position: { x: 300, y: 300 },
-    data: {},
-  },
-];
+// const initialNodes: Array<Node> = [
+//   {
+//     id: uuidv4(),
+//     type: "nodeBase",
+//     position: { x: 300, y: 300 },
+//     data: {},
+//   },
+// ];
 
-const initialEdges: Array<Edge> = [];
-
-
+// const initialEdges: Array<Edge> = [];
 
 export const nodeTypes = {
   nodeBase: NodeBase,
@@ -56,9 +54,9 @@ export const nodeTypes = {
   loopNode: LoopNode,
 };
 
-function Flow({project}: FlowProps) {
-  const [nodes, setNodes] = useNodesState(initialNodes);
-  const [edges, setEdges] = useEdgesState(initialEdges);
+function Flow({project}: {project: Project}) {
+  const [nodes, setNodes] = useNodesState(project.data?.nodes || []);
+  const [edges, setEdges] = useEdgesState(project.data?.edges || []);
 
   const { getNodes, getEdges } = useReactFlow();
 
@@ -343,7 +341,7 @@ function Flow({project}: FlowProps) {
 
   return (
     <SidebarProvider>
-      <NodeSiderbar />
+      <NodeSiderbar project={project}  />
       <SidebarTrigger />
       <main className="w-screen h-screen relative">
         <div
@@ -412,11 +410,7 @@ function Flow({project}: FlowProps) {
   );
 }
 
-interface FlowProps {
-  project?: Project;
-}
-
-export function FlowEditor({project}:FlowProps) {
+export function FlowEditor({project}: {project:Project}) {
   return (
     <ReactFlowProvider>
       <FlowManagerProvider>

@@ -26,9 +26,10 @@ const addProjectSchema = z.object({
 
 interface AddProjectFormProps {
   onSuccess?: () => void;
+  onCancel: () => void;
 }
 
-export default function AddProjectForm({ onSuccess }: AddProjectFormProps) {
+export default function AddProjectForm({ onSuccess, onCancel }: AddProjectFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -140,10 +141,10 @@ export default function AddProjectForm({ onSuccess }: AddProjectFormProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset()}
+              onClick={()=>onCancel()}
               disabled={isLoading}
             >
-              Clear
+              Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (

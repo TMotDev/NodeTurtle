@@ -4,13 +4,11 @@ import { Input } from "@/components/ui/input";
 interface FlowTitleEditorProps {
   title: string;
   onTitleChange: (title: string) => void;
-  hasUnsavedChanges: boolean;
 }
 
 export const FlowTitle = ({
   title,
   onTitleChange,
-  hasUnsavedChanges,
 }: FlowTitleEditorProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
@@ -22,24 +20,30 @@ export const FlowTitle = ({
 
   const handleSubmit = () => {
     onTitleChange(editValue.trim() || "Untitled Flow");
+    setEditValue(editValue.trim())
     setIsEditing(false);
+    console.log(editValue)
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSubmit();
     } else if (e.key === "Escape") {
-      setEditValue(title);
-      setIsEditing(false);
+      handleCancel()
     }
   };
+
+  function handleCancel(){
+    setEditValue(title);
+    setIsEditing(false);
+  }
 
   if (isEditing) {
     return (
       <Input
         value={editValue}
         onChange={(e) => setEditValue(e.target.value)}
-        onBlur={handleSubmit}
+        onBlur={handleCancel}
         onKeyDown={handleKeyDown}
         className="w-64 h-8 text-lg font-medium"
         autoFocus
@@ -54,12 +58,6 @@ export const FlowTitle = ({
       title="Double-click to edit title"
     >
       <span className="text-lg font-medium">{title}</span>
-      {hasUnsavedChanges && (
-        <span
-          className="w-2 h-2 bg-orange-500 rounded-full"
-          title="Unsaved changes"
-        />
-      )}
     </div>
   );
 };

@@ -319,6 +319,20 @@ func TestUpdateProject(t *testing.T) {
 	assert.Equal(t, newDescription, updatedProject.Description)
 	assert.Equal(t, newIsPublic, updatedProject.IsPublic)
 
+	// Try partial update
+	newDescription2 := "Partially Updated Description"
+	update = data.ProjectUpdate{
+		ID:          project.ID,
+		Description: &newDescription2,
+	}
+
+	updatedProject, err = s.UpdateProject(update)
+	assert.NoError(t, err)
+	assert.NotNil(t, updatedProject)
+	assert.Equal(t, newTitle, updatedProject.Title) // Title should remain unchanged
+	assert.Equal(t, newDescription2, updatedProject.Description)
+	assert.Equal(t, newIsPublic, updatedProject.IsPublic) // IsPublic should remain unchanged
+
 	// Try updating with no fields (should error)
 	emptyUpdate := data.ProjectUpdate{ID: project.ID}
 	updatedProject, err = s.UpdateProject(emptyUpdate)

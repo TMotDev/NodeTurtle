@@ -85,7 +85,7 @@ func (h *ProjectHandler) Create(c echo.Context) error {
 		Title       string          `json:"title" validate:"required,min=3,max=100"`
 		Description string          `json:"description" validate:"max=5000"`
 		Data        json.RawMessage `json:"data,omitempty"`
-		IsPublic    bool            `json:"is_public" validate:"required"`
+		IsPublic    bool            `json:"is_public"`
 	}
 
 	if err := c.Bind(&payload); err != nil {

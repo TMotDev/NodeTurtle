@@ -109,7 +109,12 @@ function App() {
       </main>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent
+          className="sm:max-w-[425px]"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Edit Project</DialogTitle>
             <DialogDescription>
@@ -118,6 +123,9 @@ function App() {
           </DialogHeader>
           <EditProjectForm
             project={selectedProject}
+            onCancel={()=>{
+              setAddDialogOpen(false)
+            }}
             onSuccess={() => {
               setEditDialogOpen(false), fetchProjects();
             }}
@@ -126,12 +134,20 @@ function App() {
       </Dialog>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent
+          className="sm:max-w-[425px]"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Add New Project</DialogTitle>
             <DialogDescription>Create a new project. Fill in the details below.</DialogDescription>
           </DialogHeader>
           <AddProjectForm
+            onCancel={() => {
+              setAddDialogOpen(false);
+            }}
             onSuccess={() => {
               setAddDialogOpen(false), fetchProjects();
             }}
@@ -204,7 +220,7 @@ export const ProjectCard = ({
         <div className={`text-sm mt-1 opacity-80`}>by {project.creator_username}</div>
       </div>
 
-      <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-xs">
+      <div className={`absolute bottom-3 left-4 right-4 flex ${project.is_public ? "justify-between" : "justify-end"} items-center text-xs`}>
         {project.is_public && (
           <div className="flex items-center gap-1">
             <Heart className="h-3 w-3" />

@@ -6,7 +6,7 @@ import { API } from "@/services/api";
 
 // ===== TYPES & SCHEMAS =====
 
-export type Project = {
+export interface Project{
   id: string;
   title: string;
   description: string;
