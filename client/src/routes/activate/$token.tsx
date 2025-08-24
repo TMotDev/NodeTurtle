@@ -3,13 +3,7 @@ import { useState } from "react";
 import { AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import type { FormStatus } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { API } from "@/services/api";
 
@@ -63,9 +57,7 @@ function ActivationPage() {
               <CheckCircle className="h-5 w-5 text-green-500" />
               Activation successful
             </CardTitle>
-            <CardDescription>
-              Your account has been successfully activated
-            </CardDescription>
+            <CardDescription>Your account has been successfully activated</CardDescription>
           </CardHeader>
           <CardContent>
             <Link className="btn w-full" to="/login">
@@ -82,8 +74,7 @@ function ActivationPage() {
         <CardHeader>
           <CardTitle>Activate Your Account</CardTitle>
           <CardDescription>
-            Click the button below to activate your account and start using our
-            services.
+            Click the button below to activate your account and start using our services.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -91,9 +82,7 @@ function ActivationPage() {
             {formStatus.error && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4 stroke-destructive" />
-                <AlertDescription className="text-destructive">
-                  {formStatus.error}
-                </AlertDescription>
+                <AlertDescription className="text-destructive">{formStatus.error}</AlertDescription>
               </Alert>
             )}
 

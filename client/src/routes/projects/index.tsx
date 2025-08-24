@@ -1,17 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Clock, Eye, Heart, HeartOff, MoreHorizontal, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { Project } from "@/api/projects";
 import Header from "@/components/Header";
 import EditProjectForm from "@/components/forms/EditProjectForm";
 import DeleteProjectForm from "@/components/forms/DeleteProjectForm";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -29,14 +23,15 @@ import {
 import AddProjectForm from "@/components/forms/AddProjectForm";
 import { API } from "@/services/api";
 import useAuthStore, { Role } from "@/lib/authStore";
-import { getTimeSince, requireAuth } from "@/lib/utils";
+import { requireAuth } from "@/lib/utils";
+import { ProjectCard } from "@/components/ProjectCard";
 
 export const Route = createFileRoute("/projects/")({
   beforeLoad: requireAuth(Role.User),
-  component: App,
+  component: ProjectPage,
 });
 
-function App() {
+function ProjectPage() {
   const contextUser = useAuthStore((state) => state.user);
 
   const [userProjects, setUserProjects] = useState<Array<Project>>([]);
@@ -74,7 +69,7 @@ function App() {
 
     console.log(result)
     if (result.success) {
-      setUserProjects(result.data.projects ?? []);
+      setUserProjects(result.data.projects);
     } else {
       toast.error(`Failed to fetch users. ${result.error}`);
     }
@@ -218,79 +213,3 @@ function App() {
   );
 }
 
-export const ProjectCard = ({
-  project,
-  onEdit,
-  onDelete,
-  onUnlike,
-  isOwned,
-}: {
-  project: Project;
-  onEdit?: (project: Project) => void;
-  onDelete?: (project: Project) => void;
-  onUnlike?: (project: Project) => void;
-  isOwned: boolean;
-}) => {
-  return (
-    <a
-      href={`/projects/${project.id}`}
-      className={`
-        relative w-64 h-32 rounded-sm border-2 p-4 cursor-pointer active:scale-95 transition-all duration-200 flex-shrink-0 bg-blue-50 border-primary hover:border-blue-700
-      `}
-    >
-      <div className="absolute top-3 right-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="p-1 hover:bg-white/20 rounded transition-colors">
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {isOwned ? (
-              <>
-                <DropdownMenuItem onClick={() => onEdit?.(project)}>Edit Project</DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete?.(project)}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  Delete Project
-                </DropdownMenuItem>
-              </>
-            ) : (
-              <DropdownMenuItem
-                onClick={() => onUnlike?.(project)}
-                className="text-red-600 focus:text-red-600"
-              >
-                <HeartOff className="h-4 w-4 mr-2" />
-                Unlike Project
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <div className="pr-16">
-        <h3 className="font-semibold text-lg leading-tight overflow-hidden">
-          <div className="truncate" title={project.title}>
-            {project.title}
-          </div>
-        </h3>
-
-        <div className={`text-sm mt-1 opacity-80`}>by {project.creator_username}</div>
-      </div>
-
-      <div className={`absolute bottom-3 left-4 right-4 flex ${project.is_public ? "justify-between" : "justify-end"} items-center text-xs`}>
-        {project.is_public && (
-          <div className="flex items-center gap-1">
-            <Heart className="h-3 w-3" />
-            <span>{project.likes_count}</span>
-          </div>
-        )}
-
-        <div className="flex items-center gap-1">
-          <span>Edited {getTimeSince(project.last_edited_at)}</span>
-        </div>
-      </div>
-    </a>
-  );
-};
