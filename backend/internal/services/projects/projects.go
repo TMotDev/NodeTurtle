@@ -140,7 +140,7 @@ func (s ProjectService) GetUserProjects(profileUserID, requestingUserID uuid.UUI
 	}
 	defer rows.Close()
 
-	var projects []data.Project
+	projects := make([]data.Project, 0)
 	for rows.Next() {
 		var project data.Project
 		if err := rows.Scan(
@@ -186,7 +186,7 @@ func (s ProjectService) GetFeaturedProjects(limit, page int) ([]data.Project, er
 	}
 	defer rows.Close()
 
-	var projects []data.Project
+	projects := make([]data.Project, 0)
 	for rows.Next() {
 		var project data.Project
 		if err := rows.Scan(
@@ -230,7 +230,7 @@ func (s ProjectService) GetLikedProjects(userID uuid.UUID) ([]data.Project, erro
 	}
 	defer rows.Close()
 
-	var projects []data.Project
+	projects := make([]data.Project, 0)
 	for rows.Next() {
 		var project data.Project
 		if err := rows.Scan(
