@@ -2,7 +2,6 @@ package tests
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -389,9 +388,7 @@ func TestListUsers(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			u, _, err := s.ListUsers(tt.filters)
-
-			fmt.Println(u)
+			_, _, err := s.ListUsers(tt.filters)
 
 			if tt.err != nil {
 				assert.Error(t, err)

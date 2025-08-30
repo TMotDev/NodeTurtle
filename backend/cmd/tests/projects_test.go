@@ -5,7 +5,6 @@ import (
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/projects"
 	"encoding/json"
-	"fmt"
 	"log"
 	"testing"
 
@@ -152,7 +151,6 @@ func TestGetUserProjects(t *testing.T) {
 
 			hasPrivate := false
 			for _, proj := range p {
-				fmt.Println(proj.CreatorUsername, proj.Description)
 				if proj.IsPublic == false {
 					hasPrivate = true
 					break

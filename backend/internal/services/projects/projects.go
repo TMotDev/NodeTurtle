@@ -382,8 +382,6 @@ func (s ProjectService) UpdateProject(p data.ProjectUpdate) (*data.Project, erro
 		&project.IsPublic,
 	)
 
-	fmt.Println(project.LastEditedAt)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, services.ErrRecordNotFound
