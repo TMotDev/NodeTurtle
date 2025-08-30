@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -128,8 +128,9 @@ function ProjectPage() {
 
             <div className="flex gap-4 overflow-x-auto pb-2 p-2">
               {likedProjects.length === 0 ? (
-                <div className="flex items-center justify-center w-64 h-32 text-gray-500 text-sm bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <div className="flex flex-col items-center justify-center w-64 h-32 text-gray-500 text-sm bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                   No liked projects yet
+                  <Link to="/projects/explore" className="underline underline-offset-2 font-bold">Explore</Link>
                 </div>
               ) : (
                 likedProjects.map((project) => (

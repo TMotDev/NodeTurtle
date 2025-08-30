@@ -64,7 +64,7 @@ export default function EditProjectForm({ project, onSuccess, onCancel }: EditPr
       is_public: values.is_public,
     };
 
-    const result = await API.put(`/projects/${project?.id}`, projectData);
+    const result = await API.patch(`/projects/${project?.id}`, projectData);
 
     if (result.success) {
       form.reset();

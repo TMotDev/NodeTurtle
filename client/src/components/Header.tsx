@@ -33,11 +33,16 @@ export default function Header() {
                 <Link to="/">Home</Link>
               </NavigationMenuLink>
               <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                <Link to="/projects">Projects</Link>
+                <Link to="/projects/explore">Explore</Link>
               </NavigationMenuLink>
+                {!isLoading && user && (
+                <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                  <Link to="/projects">Projects</Link>
+                </NavigationMenuLink>
+              )}
             </NavigationMenuItem>
 
-            {!user && !isLoading && (
+             {!isLoading && !user && (
               <>
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>

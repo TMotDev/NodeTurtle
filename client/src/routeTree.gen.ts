@@ -19,6 +19,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as ProjectsIndexImport } from './routes/projects/index'
 import { Route as ResetTokenImport } from './routes/reset/$token'
 import { Route as ProjectsNewImport } from './routes/projects/new'
+import { Route as ProjectsExploreImport } from './routes/projects/explore'
 import { Route as ProjectsProjectIDImport } from './routes/projects/$projectID'
 import { Route as DeactivateTokenImport } from './routes/deactivate/$token'
 import { Route as AdminUsersImport } from './routes/admin/users'
@@ -72,6 +73,12 @@ const ResetTokenRoute = ResetTokenImport.update({
 const ProjectsNewRoute = ProjectsNewImport.update({
   id: '/projects/new',
   path: '/projects/new',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ProjectsExploreRoute = ProjectsExploreImport.update({
+  id: '/projects/explore',
+  path: '/projects/explore',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -179,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIDImport
       parentRoute: typeof rootRoute
     }
+    '/projects/explore': {
+      id: '/projects/explore'
+      path: '/projects/explore'
+      fullPath: '/projects/explore'
+      preLoaderRoute: typeof ProjectsExploreImport
+      parentRoute: typeof rootRoute
+    }
     '/projects/new': {
       id: '/projects/new'
       path: '/projects/new'
@@ -216,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/projects/$projectID': typeof ProjectsProjectIDRoute
+  '/projects/explore': typeof ProjectsExploreRoute
   '/projects/new': typeof ProjectsNewRoute
   '/reset/$token': typeof ResetTokenRoute
   '/projects': typeof ProjectsIndexRoute
@@ -232,6 +247,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/projects/$projectID': typeof ProjectsProjectIDRoute
+  '/projects/explore': typeof ProjectsExploreRoute
   '/projects/new': typeof ProjectsNewRoute
   '/reset/$token': typeof ResetTokenRoute
   '/projects': typeof ProjectsIndexRoute
@@ -249,6 +265,7 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/projects/$projectID': typeof ProjectsProjectIDRoute
+  '/projects/explore': typeof ProjectsExploreRoute
   '/projects/new': typeof ProjectsNewRoute
   '/reset/$token': typeof ResetTokenRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -267,6 +284,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/deactivate/$token'
     | '/projects/$projectID'
+    | '/projects/explore'
     | '/projects/new'
     | '/reset/$token'
     | '/projects'
@@ -282,6 +300,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/deactivate/$token'
     | '/projects/$projectID'
+    | '/projects/explore'
     | '/projects/new'
     | '/reset/$token'
     | '/projects'
@@ -297,6 +316,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/deactivate/$token'
     | '/projects/$projectID'
+    | '/projects/explore'
     | '/projects/new'
     | '/reset/$token'
     | '/projects/'
@@ -314,6 +334,7 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   DeactivateTokenRoute: typeof DeactivateTokenRoute
   ProjectsProjectIDRoute: typeof ProjectsProjectIDRoute
+  ProjectsExploreRoute: typeof ProjectsExploreRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   ResetTokenRoute: typeof ResetTokenRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
@@ -330,6 +351,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   DeactivateTokenRoute: DeactivateTokenRoute,
   ProjectsProjectIDRoute: ProjectsProjectIDRoute,
+  ProjectsExploreRoute: ProjectsExploreRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   ResetTokenRoute: ResetTokenRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
@@ -355,6 +377,7 @@ export const routeTree = rootRoute
         "/admin/users",
         "/deactivate/$token",
         "/projects/$projectID",
+        "/projects/explore",
         "/projects/new",
         "/reset/$token",
         "/projects/"
@@ -389,6 +412,9 @@ export const routeTree = rootRoute
     },
     "/projects/$projectID": {
       "filePath": "projects/$projectID.tsx"
+    },
+    "/projects/explore": {
+      "filePath": "projects/explore.tsx"
     },
     "/projects/new": {
       "filePath": "projects/new.tsx"

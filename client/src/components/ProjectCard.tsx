@@ -1,5 +1,11 @@
 import { Heart, HeartOff, MoreHorizontal } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Badge } from "./ui/badge";
 import type { Project } from "@/api/projects";
 import { getTimeSince } from "@/lib/utils";
 
@@ -23,7 +29,7 @@ export const ProjectCard = ({
         relative w-64 h-32 rounded-sm border-2 p-4 cursor-pointer active:scale-95 transition-all duration-200 flex-shrink-0 bg-blue-50 border-primary hover:border-blue-700
       `}
     >
-      <div className="absolute top-3 right-3">
+      <div className="absolute top-4 right-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="p-1 hover:bg-white/20 rounded transition-colors">
@@ -62,9 +68,18 @@ export const ProjectCard = ({
         </h3>
 
         <div className={`text-sm mt-1 opacity-80`}>by {project.creator_username}</div>
+        <Badge
+          className={`${
+            project.is_public ? "bg-green-300 text-green-900" : "bg-blue-300 text-blue-900"
+          }`}
+        >
+          {project.is_public ? "public" : "private"}
+        </Badge>
       </div>
 
-      <div className={`absolute bottom-3 left-4 right-4 flex ${project.is_public ? "justify-between" : "justify-end"} items-center text-xs`}>
+      <div
+        className={`absolute bottom-3 left-4 right-4 flex ${project.is_public ? "justify-between" : "justify-end"} items-center text-xs`}
+      >
         {project.is_public && (
           <div className="flex items-center gap-1">
             <Heart className="h-3 w-3" />

@@ -3,8 +3,8 @@ import { AlertTriangle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
+import { useNavigate } from "@tanstack/react-router";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Alert, AlertDescription } from "../ui/alert";
 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
