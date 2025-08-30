@@ -8,6 +8,6 @@ CREATE TABLE users (
     password bytea NOT NULL,
     role_id INTEGER NOT NULL REFERENCES roles(id),
     activated bool NOT NULL,
-    last_login TIMESTAMP,
-    created_at TIMESTAMP NOT NULL
+    last_login TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL
 );

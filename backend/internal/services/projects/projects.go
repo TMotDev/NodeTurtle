@@ -176,7 +176,7 @@ func (s ProjectService) GetFeaturedProjects(limit, page int) ([]data.Project, er
 		SELECT p.id, p.title, p.description, p.data, p.creator_id, u.username, p.likes_count, p.featured_until, p.created_at, p.last_edited_at, p.is_public
 		FROM projects p
 		JOIN users u ON p.creator_id = u.id
-		WHERE p.featured_until IS NOT NULL AND p.featured_until > NOW() AT TIME ZONE 'UTC'  AND p.is_public = TRUE
+		WHERE p.featured_until IS NOT NULL AND p.featured_until > NOW() AND p.is_public = TRUE
 		ORDER BY p.featured_until DESC, p.likes_count DESC
 		LIMIT $1 OFFSET $2`
 
@@ -362,7 +362,7 @@ func (s ProjectService) UpdateProject(p data.ProjectUpdate) (*data.Project, erro
 	}
 
 	// Update the last_edited_at timestamp on any update
-	setValues = append(setValues, "last_edited_at = NOW() AT TIME ZONE 'UTC'")
+	setValues = append(setValues, "last_edited_at = NOW()")
 
 	query := fmt.Sprintf("UPDATE projects SET %s WHERE id = $%d RETURNING id, title, description, data, creator_id, (SELECT username FROM users WHERE id = creator_id), likes_count, featured_until, created_at, last_edited_at, is_public", strings.Join(setValues, ", "), argId)
 	args = append(args, p.ID)
@@ -381,6 +381,8 @@ func (s ProjectService) UpdateProject(p data.ProjectUpdate) (*data.Project, erro
 		&project.LastEditedAt,
 		&project.IsPublic,
 	)
+
+	fmt.Println(project.LastEditedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
