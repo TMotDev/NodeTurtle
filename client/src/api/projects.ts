@@ -27,7 +27,6 @@ export interface Flow {
   nodeCount: number;
 }
 
-
 export type ProjectLike = {
   project_id: string;
   user_id: string;

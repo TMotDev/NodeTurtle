@@ -203,20 +203,12 @@ func (h *ProjectHandler) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
-	var flowData json.RawMessage
-
-	if payload.Data != nil {
-		flowData = payload.Data
-	} else {
-		flowData = json.RawMessage([]byte("{}"))
-	}
-
 	updates := data.ProjectUpdate{
 		ID:          projectID,
 		Title:       payload.Title,
 		Description: payload.Description,
 		IsPublic:    payload.IsPublic,
-		Data:        flowData,
+		Data:        payload.Data,
 	}
 
 	updatedProject, err := h.projectService.UpdateProject(updates)
