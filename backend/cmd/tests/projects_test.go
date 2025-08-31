@@ -4,9 +4,11 @@ import (
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/projects"
+	"NodeTurtleAPI/internal/utils"
 	"encoding/json"
 	"log"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -385,13 +387,13 @@ func TestGetPublicProjects(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		filters        data.ProjectFilter
+		filters        data.PublicProjectFilter
 		expectedTitles []string
 		expectedTotal  int
 	}{
 		{
 			name: "Default filter returns all public projects",
-			filters: data.ProjectFilter{
+			filters: data.PublicProjectFilter{
 				SearchTerm: "",
 				SortField:  "created_at",
 				SortOrder:  "DESC",
@@ -411,7 +413,7 @@ func TestGetPublicProjects(t *testing.T) {
 		},
 		{
 			name: "Search by title",
-			filters: data.ProjectFilter{
+			filters: data.PublicProjectFilter{
 				SearchTerm: "alice",
 				SortField:  "created_at",
 				SortOrder:  "DESC",
@@ -426,7 +428,7 @@ func TestGetPublicProjects(t *testing.T) {
 		},
 		{
 			name: "Search by creator username",
-			filters: data.ProjectFilter{
+			filters: data.PublicProjectFilter{
 				SearchTerm: td.Users[UserBob].Username,
 				SortField:  "created_at",
 				SortOrder:  "DESC",
@@ -440,7 +442,7 @@ func TestGetPublicProjects(t *testing.T) {
 		},
 		{
 			name: "Pagination works",
-			filters: data.ProjectFilter{
+			filters: data.PublicProjectFilter{
 				SearchTerm: "",
 				SortField:  "created_at",
 				SortOrder:  "DESC",
@@ -455,7 +457,7 @@ func TestGetPublicProjects(t *testing.T) {
 		},
 		{
 			name: "No results for unmatched search",
-			filters: data.ProjectFilter{
+			filters: data.PublicProjectFilter{
 				SearchTerm: "notfound",
 				SortField:  "created_at",
 				SortOrder:  "DESC",
@@ -476,6 +478,120 @@ func TestGetPublicProjects(t *testing.T) {
 			for i, title := range tt.expectedTitles {
 				assert.Equal(t, title, projects[i].Title)
 				assert.True(t, projects[i].IsPublic)
+			}
+		})
+	}
+}
+
+func TestListProjects(t *testing.T) {
+	s, td, close := setupProjectService()
+	defer close()
+
+	now := td.Projects[ProjectAlicePublic].CreatedAt
+
+	tests := map[string]struct {
+		filters      data.ProjectFilter
+		expectErr    error
+	}{
+		"Default fetch": {
+			filters: data.ProjectFilter{
+				Page:      1,
+				Limit:     10,
+				SortField: "created_at",
+				SortOrder: "desc",
+			},
+			expectErr: nil,
+		},
+		"Partial title search": {
+			filters: data.ProjectFilter{
+				Page:       1,
+				Limit:      10,
+				SearchTerm: "alice",
+				SortField:  "created_at",
+				SortOrder:  "desc",
+			},
+			expectErr: nil,
+		},
+		"Filter by creator username": {
+			filters: data.ProjectFilter{
+				Page:           1,
+				Limit:          10,
+				CreatorUsername: utils.Ptr(td.Users[UserBob].Username),
+				SortField:      "created_at",
+				SortOrder:      "desc",
+			},
+			expectErr: nil,
+		},
+		"Filter by public projects only": {
+			filters: data.ProjectFilter{
+				Page:      1,
+				Limit:     10,
+				IsPublic:  utils.Ptr(true),
+				SortField: "created_at",
+				SortOrder: "desc",
+			},
+			expectErr: nil,
+		},
+		"Filter by private projects only": {
+			filters: data.ProjectFilter{
+				Page:      1,
+				Limit:     10,
+				IsPublic:  utils.Ptr(false),
+				SortField: "created_at",
+				SortOrder: "desc",
+			},
+			expectErr: nil,
+		},
+		"Filter by featured projects": {
+			filters: data.ProjectFilter{
+				Page:       1,
+				Limit:      10,
+				IsFeatured: utils.Ptr(true),
+				SortField:  "created_at",
+				SortOrder:  "desc",
+			},
+			expectErr: nil,
+		},
+		"Filter by min likes": {
+			filters: data.ProjectFilter{
+				Page:      1,
+				Limit:     10,
+				MinLikes:  utils.Ptr(3),
+				SortField: "likes_count",
+				SortOrder: "desc",
+			},
+			expectErr: nil,
+		},
+		"Filter by created_before": {
+			filters: data.ProjectFilter{
+				Page:         1,
+				Limit:        10,
+				CreatedBefore: utils.Ptr(now.Add(1 * time.Minute)),
+				SortField:    "created_at",
+				SortOrder:    "desc",
+			},
+			expectErr: nil,
+		},
+		"Filter by created_after (future, expect none)": {
+			filters: data.ProjectFilter{
+				Page:        1,
+				Limit:       10,
+				CreatedAfter: utils.Ptr(now.Add(24 * time.Hour)),
+				SortField:   "created_at",
+				SortOrder:   "desc",
+			},
+			expectErr:    nil,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, _, err := s.ListProjects(tt.filters)
+			if tt.expectErr != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectErr, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}

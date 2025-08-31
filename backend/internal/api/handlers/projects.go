@@ -352,7 +352,7 @@ func (h *ProjectHandler) GetLikedProjects(c echo.Context) error {
 
 // GetPublic handles the request to retrieve a paginated and filtered list of public projects.
 func (h *ProjectHandler) GetPublic(c echo.Context) error {
-	filters := data.DefaultProjectFilter()
+	filters := data.DefaultPublicProjectFilter()
 
 	if err := c.Bind(&filters); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
@@ -374,6 +374,35 @@ func (h *ProjectHandler) GetPublic(c echo.Context) error {
 			"total": total,
 			"page":  filters.Page,
 			"limit": filters.Limit,
+		},
+	})
+}
+
+// List handles the request to retrieve a paginated list of all projects.
+// binds payload to data.PublicProjectFilter for filtering options
+func (h *ProjectHandler) List(c echo.Context) error {
+	filters := data.DefaultProjectFilter()
+
+	if err := c.Bind(&filters); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&filters); err != nil {
+		c.Logger().Errorf("Filter validation error: %v", err)
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+	}
+
+	projects, total, err := h.projectService.ListProjects(filters)
+	if err != nil {
+		c.Logger().Errorf("Internal project retrieval error %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve projects")
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"projects": projects,
+		"meta": map[string]interface{}{
+			"total": total,
+			"page":  filters.Page,
 		},
 	})
 }

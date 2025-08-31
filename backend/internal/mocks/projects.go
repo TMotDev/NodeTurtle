@@ -76,7 +76,7 @@ func (m *MockProjectService) DeleteProject(projectID uuid.UUID) error {
 	return args.Error(0)
 }
 
-func (m *MockProjectService) GetPublicProjects(filters data.ProjectFilter) ([]data.Project, int, error) {
+func (m *MockProjectService) GetPublicProjects(filters data.PublicProjectFilter) ([]data.Project, int, error) {
 	args := m.Called(filters)
 	if args.Get(0) == nil {
 		return nil, args.Int(1), args.Error(2)
@@ -87,4 +87,12 @@ func (m *MockProjectService) GetPublicProjects(filters data.ProjectFilter) ([]da
 func (m *MockProjectService) IsOwner(projectID, userID uuid.UUID) (bool, error) {
 	args := m.Called(projectID, userID)
 	return args.Get(0).(bool), args.Error(1)
+}
+
+func (m *MockProjectService) ListProjects(filters data.ProjectFilter) ([]data.Project, int, error) {
+	args := m.Called(filters)
+	if args.Get(0) == nil {
+		return nil, args.Int(1), args.Error(2)
+	}
+	return args.Get(0).([]data.Project), args.Int(1), args.Error(2)
 }

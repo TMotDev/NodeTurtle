@@ -23,6 +23,7 @@ import { Route as ProjectsExploreImport } from './routes/projects/explore'
 import { Route as ProjectsProjectIDImport } from './routes/projects/$projectID'
 import { Route as DeactivateTokenImport } from './routes/deactivate/$token'
 import { Route as AdminUsersImport } from './routes/admin/users'
+import { Route as AdminProjectsImport } from './routes/admin/projects'
 import { Route as AdminDashboardImport } from './routes/admin/dashboard'
 import { Route as ActivateTokenImport } from './routes/activate/$token'
 
@@ -100,6 +101,12 @@ const AdminUsersRoute = AdminUsersImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const AdminProjectsRoute = AdminProjectsImport.update({
+  id: '/admin/projects',
+  path: '/admin/projects',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AdminDashboardRoute = AdminDashboardImport.update({
   id: '/admin/dashboard',
   path: '/admin/dashboard',
@@ -165,6 +172,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardImport
       parentRoute: typeof rootRoute
     }
+    '/admin/projects': {
+      id: '/admin/projects'
+      path: '/admin/projects'
+      fullPath: '/admin/projects'
+      preLoaderRoute: typeof AdminProjectsImport
+      parentRoute: typeof rootRoute
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/admin/users'
@@ -227,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/projects': typeof AdminProjectsRoute
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/projects/$projectID': typeof ProjectsProjectIDRoute
@@ -244,6 +259,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/projects': typeof AdminProjectsRoute
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/projects/$projectID': typeof ProjectsProjectIDRoute
@@ -262,6 +278,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/activate/$token': typeof ActivateTokenRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/projects': typeof AdminProjectsRoute
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/projects/$projectID': typeof ProjectsProjectIDRoute
@@ -281,6 +298,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/activate/$token'
     | '/admin/dashboard'
+    | '/admin/projects'
     | '/admin/users'
     | '/deactivate/$token'
     | '/projects/$projectID'
@@ -297,6 +315,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/activate/$token'
     | '/admin/dashboard'
+    | '/admin/projects'
     | '/admin/users'
     | '/deactivate/$token'
     | '/projects/$projectID'
@@ -313,6 +332,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/activate/$token'
     | '/admin/dashboard'
+    | '/admin/projects'
     | '/admin/users'
     | '/deactivate/$token'
     | '/projects/$projectID'
@@ -331,6 +351,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ActivateTokenRoute: typeof ActivateTokenRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminProjectsRoute: typeof AdminProjectsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   DeactivateTokenRoute: typeof DeactivateTokenRoute
   ProjectsProjectIDRoute: typeof ProjectsProjectIDRoute
@@ -348,6 +369,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ActivateTokenRoute: ActivateTokenRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminProjectsRoute: AdminProjectsRoute,
   AdminUsersRoute: AdminUsersRoute,
   DeactivateTokenRoute: DeactivateTokenRoute,
   ProjectsProjectIDRoute: ProjectsProjectIDRoute,
@@ -374,6 +396,7 @@ export const routeTree = rootRoute
         "/register",
         "/activate/$token",
         "/admin/dashboard",
+        "/admin/projects",
         "/admin/users",
         "/deactivate/$token",
         "/projects/$projectID",
@@ -403,6 +426,9 @@ export const routeTree = rootRoute
     },
     "/admin/dashboard": {
       "filePath": "admin/dashboard.tsx"
+    },
+    "/admin/projects": {
+      "filePath": "admin/projects.tsx"
     },
     "/admin/users": {
       "filePath": "admin/users.tsx"

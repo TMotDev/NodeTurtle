@@ -47,13 +47,50 @@ type ProjectUpdate struct {
 	Data        json.RawMessage `json:"data,omitempty"`
 }
 
-// ProjectFilter defines the options for filtering and paginating public projects.
-type ProjectFilter struct {
+// PublicProjectFilter defines the options for filtering and paginating public projects.
+type PublicProjectFilter struct {
 	Page       int    `query:"page" validate:"min=1"`
 	Limit      int    `query:"limit" validate:"min=1,max=100"`
 	SearchTerm string `query:"search_term" validate:"omitempty"`
 	SortField  string `query:"sort_field" validate:"omitempty,oneof=created_at likes_count"`
 	SortOrder  string `query:"sort_order" validate:"omitempty,oneof=asc desc"`
+}
+
+// DefaultPublicProjectFilter provides default values for the project filter.
+func DefaultPublicProjectFilter() PublicProjectFilter {
+	return PublicProjectFilter{
+		Page:      1,
+		Limit:     10,
+		SortField: "created_at",
+		SortOrder: "desc",
+	}
+}
+
+// ProjectFilter defines the options for filtering and paginating projects.
+type ProjectFilter struct {
+	// Pagination
+	Page  int `query:"page" validate:"min=1"`
+	Limit int `query:"limit" validate:"min=1,max=100"`
+
+	// Filters
+	SearchTerm  string     `query:"search_term" validate:"omitempty"`
+	CreatorUsername   *string `query:"creator" validate:"omitempty"`
+	IsPublic    *bool      `query:"is_public"`
+	IsFeatured  *bool      `query:"is_featured"`
+
+	// Time fields
+	CreatedBefore    *time.Time `query:"created_before" validate:"omitempty"`
+	CreatedAfter     *time.Time `query:"created_after" validate:"omitempty"`
+	LastEditedBefore *time.Time `query:"last_edited_before" validate:"omitempty"`
+	LastEditedAfter  *time.Time `query:"last_edited_after" validate:"omitempty"`
+	FeaturedUntil    *time.Time `query:"featured_until" validate:"omitempty"`
+
+	// Likes count range
+	MinLikes *int `query:"min_likes" validate:"omitempty,min=0"`
+	MaxLikes *int `query:"max_likes" validate:"omitempty,min=0"`
+
+	SortField string `query:"sort_field" validate:"omitempty,oneof=id title created_at last_edited_at likes_count"`
+	SortOrder string `query:"sort_order" validate:"omitempty,oneof=asc desc"`
 }
 
 // DefaultProjectFilter provides default values for the project filter.

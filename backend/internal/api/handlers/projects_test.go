@@ -1322,7 +1322,7 @@ func TestGetPublicProjects(t *testing.T) {
 		"Successful request with default params": {
 			query: "",
 			setupMocks: func() {
-				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.ProjectFilter) bool {
+				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.PublicProjectFilter) bool {
 					return filters.Page == 1 && filters.Limit == 10 &&
 						filters.SortField == "created_at" && filters.SortOrder == "desc"
 				})).Return([]data.Project{project1, project2}, 2, nil)
@@ -1333,7 +1333,7 @@ func TestGetPublicProjects(t *testing.T) {
 		"Successful request with custom params": {
 			query: "?page=2&limit=5&sort_field=likes_count&sort_order=asc&search_term=test",
 			setupMocks: func() {
-				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.ProjectFilter) bool {
+				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.PublicProjectFilter) bool {
 					return filters.Page == 2 && filters.Limit == 5 &&
 						filters.SortField == "likes_count" && filters.SortOrder == "asc" &&
 						filters.SearchTerm == "test"
@@ -1380,7 +1380,7 @@ func TestGetPublicProjects(t *testing.T) {
 		"Service error": {
 			query: "?page=1&limit=10",
 			setupMocks: func() {
-				mockProjectService.On("GetPublicProjects", mock.AnythingOfType("data.ProjectFilter")).
+				mockProjectService.On("GetPublicProjects", mock.AnythingOfType("data.PublicProjectFilter")).
 					Return(nil, 0, fmt.Errorf("database error"))
 			},
 			wantCode:  http.StatusInternalServerError,
@@ -1389,7 +1389,7 @@ func TestGetPublicProjects(t *testing.T) {
 		"Empty results": {
 			query: "?search_term=nonexistent",
 			setupMocks: func() {
-				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.ProjectFilter) bool {
+				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.PublicProjectFilter) bool {
 					return filters.SearchTerm == "nonexistent"
 				})).Return([]data.Project{}, 0, nil)
 			},
@@ -1399,7 +1399,7 @@ func TestGetPublicProjects(t *testing.T) {
 		"Valid sort by likes_count desc": {
 			query: "?sort_field=likes_count&sort_order=desc",
 			setupMocks: func() {
-				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.ProjectFilter) bool {
+				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.PublicProjectFilter) bool {
 					return filters.SortField == "likes_count" && filters.SortOrder == "desc"
 				})).Return([]data.Project{project1, project2}, 2, nil)
 			},
@@ -1409,7 +1409,7 @@ func TestGetPublicProjects(t *testing.T) {
 		"Invalid query params ignored (defaults used)": {
 			query: "?invalid_param=value&another_invalid=123",
 			setupMocks: func() {
-				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.ProjectFilter) bool {
+				mockProjectService.On("GetPublicProjects", mock.MatchedBy(func(filters data.PublicProjectFilter) bool {
 					// Should use defaults when invalid params are provided
 					return filters.Page == 1 && filters.Limit == 10 &&
 						filters.SortField == "created_at" && filters.SortOrder == "desc"
@@ -1458,6 +1458,81 @@ func TestGetPublicProjects(t *testing.T) {
 					assert.Contains(t, meta, "page")
 					assert.Contains(t, meta, "limit")
 				}
+			}
+		})
+	}
+
+	mockProjectService.AssertExpectations(t)
+}
+
+func TestListProjects(t *testing.T){
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockProjectService := mocks.MockProjectService{}
+
+
+	handler := NewProjectHandler(&mockProjectService)
+
+	project1 := data.Project{
+		ID: uuid.New(),
+	}
+	project2 := data.Project{
+		ID: uuid.New(),
+	}
+
+	mockProjectService.On("ListProjects", mock.Anything, mock.Anything).Return([]data.Project{project1, project2}, 2, nil)
+
+	tests := map[string]struct {
+		query     string
+		wantCode  int
+		wantError bool
+	}{
+		"Successful request": {
+			query:     "?page=1&limit=10&sort_field=created_at&sort_order=desc",
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
+		"Time params request": {
+			query:     "?created_after=2006-01-02T15:04:05Z",
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
+		"Invalid query param values (validation fails)": {
+			query:     "?page=-1&limit=-10&sort_field=height&sort_order=random",
+			wantCode:  http.StatusUnprocessableEntity,
+			wantError: true,
+		},
+		"Invalid query param names (default filter takes over)": {
+			query:     "?page=1&limitS=-10&sort_fieldS=height&sort_orderS=random",
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
+		"No params": {
+			query:     "?wwwaaaaaaah?!?+",
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			req := httptest.NewRequest(http.MethodGet, "/"+tt.query, nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			err := handler.List(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
 			}
 		})
 	}

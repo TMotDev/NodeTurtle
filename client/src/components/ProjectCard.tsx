@@ -26,8 +26,9 @@ export const ProjectCard = ({
     <a
       href={`/projects/${project.id}`}
       className={`
-        relative w-64 h-32 rounded-sm border-2 p-4 cursor-pointer active:scale-95 transition-all duration-200 flex-shrink-0 bg-blue-50 border-primary hover:border-blue-700
+        relative w-64 h-32 rounded-sm border-2 p-4 cursor-pointer active:scale-95 transition-all duration-200 flex-shrink-0 bg-blue-50 border-gray-300 hover:border-blue-700
       `}
+      title={project.title}
     >
       <div className="absolute top-4 right-4">
         <DropdownMenu>
@@ -62,19 +63,19 @@ export const ProjectCard = ({
 
       <div className="pr-16">
         <h3 className="font-semibold text-lg leading-tight overflow-hidden">
+          <Badge
+            className={`px-1 ${
+              project.is_public ? "bg-green-300 text-green-900" : "bg-blue-300 text-blue-900"
+            }`}
+          >
+            {project.is_public ? "public" : "private"}
+          </Badge>
           <div className="truncate" title={project.title}>
             {project.title}
           </div>
         </h3>
 
         <div className={`text-sm mt-1 opacity-80`}>by {project.creator_username}</div>
-        <Badge
-          className={`${
-            project.is_public ? "bg-green-300 text-green-900" : "bg-blue-300 text-blue-900"
-          }`}
-        >
-          {project.is_public ? "public" : "private"}
-        </Badge>
       </div>
 
       <div

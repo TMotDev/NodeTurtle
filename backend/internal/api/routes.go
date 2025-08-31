@@ -92,6 +92,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 
 	// Public routes
 	e.GET("/api/projects/public", projectHandler.GetPublic)
+	e.GET("/projects/featured", projectHandler.GetFeatured)
 
 	e.POST("/api/users", authHandler.Register)
 	e.GET("/api/users/username/:username", userHandler.CheckUsername)
@@ -118,7 +119,6 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	api.POST("/users/me/deactivate", tokenHandler.RequestDeactivationToken)
 
 	api.POST("/projects", projectHandler.Create)
-	api.GET("/projects/featured", projectHandler.GetFeatured)
 	api.GET("/projects/:id", projectHandler.Get)
 	api.POST("/projects/:id/likes", projectHandler.Like)
 	api.DELETE("/projects/:id/likes", projectHandler.Unlike)
@@ -131,8 +131,11 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	admin := api.Group("/admin")
 	admin.Use(m.RequireRole(data.RoleAdmin.String()))
 	admin.GET("/users/all", userHandler.List)
+	admin.GET("/projects/all", projectHandler.List)
 	admin.GET("/users/:id", userHandler.Get)
 	admin.PUT("/users/:id", userHandler.Update)
+	// TODO: change visibility, feature date
+	// admin.PATCH("/projects/:id", projectHandler.AdminUpdate)
 	admin.DELETE("/users/:id", userHandler.Delete)
 	admin.POST("/users/ban", userHandler.Ban)
 	admin.DELETE("/users/ban/:userID", userHandler.Unban)

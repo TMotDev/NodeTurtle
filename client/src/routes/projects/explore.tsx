@@ -1,15 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  Calendar,
-  Grid,
-  Heart,
-  List,
-  Search,
-  User,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, Calendar, Grid, Heart, List, Search, User } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import type { Project } from "@/api/projects";
 import useAuthStore from "@/lib/authStore";
@@ -30,148 +21,27 @@ import {
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
-import { getTimeSince } from "@/lib/utils";
 import { API } from "@/services/api";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ExploreProjectCard } from "@/components/ExploreProjectCard";
+import { useLikedProjects } from "@/hooks/UseLikedProjects";
 
 export const Route = createFileRoute("/projects/explore")({
   component: ExploreProjects,
 });
 
-const ExploreProjectCard = ({
-  project,
-  onLike,
-  onUnlike,
-  isLiked,
-  viewMode = "grid",
-}: {
-  project: Project;
-  onLike: (p: Project) => void;
-  onUnlike: (p: Project) => void;
-  isLiked: boolean;
-  viewMode?: "grid" | "list";
-}) => {
-  const user = useAuthStore((state) => state.user);
-
-  const handleLikeClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!user) {
-      toast.error("Please log in to like projects");
-      return;
-    }
-    if (isLiked) {
-      onUnlike(project);
-    } else {
-      onLike(project);
-    }
-  };
-
-  if (viewMode === "list") {
-    return (
-      <a
-        href={`/projects/${project.id}`}
-        className="block self-center min-w-64 justify-self-center p-4 rounded-lg border bg-white hover:shadow-md transition-all duration-200 hover:border-blue-300"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold truncate" title={project.title}>
-                  {project.title}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{project.description}</p>
-                <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    <span>{project.creator_username}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>Created {getTimeSince(project.created_at)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>Updated {getTimeSince(project.last_edited_at)}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 ml-4">
-                <button
-                  onClick={handleLikeClick}
-                  className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-                    isLiked
-                      ? "text-red-600 bg-red-50 hover:bg-red-100"
-                      : "text-gray-600 hover:text-red-600 hover:bg-red-50"
-                  }`}
-                >
-                  <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-                  <span className="text-sm">{project.likes_count}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </a>
-    );
-  }
-
-  return (
-    <a
-      href={`/projects/${project.id}`}
-      className="block w-full max-w-sm rounded-lg border bg-white hover:shadow-lg transition-all duration-200 hover:border-blue-300 overflow-hidden"
-    >
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-semibold line-clamp-2 flex-1 pr-2" title={project.title}>
-            {project.title}
-          </h3>
-          <button
-            onClick={handleLikeClick}
-            className={`flex items-center gap-1 px-2 py-1 rounded transition-colors flex-shrink-0 ${
-              isLiked
-                ? "text-red-600 bg-red-50 hover:bg-red-100"
-                : "text-gray-600 hover:text-red-600 hover:bg-red-50"
-            }`}
-          >
-            <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-            <span className="text-sm">{project.likes_count}</span>
-          </button>
-        </div>
-
-        <p className="text-sm text-gray-600 line-clamp-3 mb-4">{project.description}</p>
-
-        <div className="space-y-2 text-sm text-gray-500">
-          <div className="flex items-center gap-1">
-            <User className="h-3 w-3" />
-            <span className="truncate">by {project.creator_username}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            <span>Created {getTimeSince(project.created_at)}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            <span>Updated {getTimeSince(project.last_edited_at)}</span>
-          </div>
-        </div>
-
-        {project.featured_until && new Date(project.featured_until) > new Date() && (
-          <div className="mt-3">
-            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">Featured</Badge>
-          </div>
-        )}
-      </div>
-    </a>
-  );
-};
-
 function ExploreProjects() {
   const user = useAuthStore((state) => state.user);
   const [projects, setProjects] = useState<Array<Project>>([]);
-  const [likedProjects, setLikedProjects] = useState<Set<string>>(new Set());
+
+  // Use the custom hook for liked projects
+  const {
+    likedProjectIds,
+    likeProject: hookLikeProject,
+    unlikeProject: hookUnlikeProject,
+    isProjectLiked,
+  } = useLikedProjects();
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -209,15 +79,6 @@ function ExploreProjects() {
         if (result.success) {
           setProjects(result.data.projects);
           setTotalPages(Math.ceil(result.data.meta.total / queryParams.limit));
-
-          // Fetch user's liked projects if logged in
-          if (user) {
-            const likedResult = await API.get(`/users/${user.id}/liked-projects`);
-            if (likedResult.success) {
-              const likedIds = new Set<string>(likedResult.data.projects.map((p: Project) => p.id));
-              setLikedProjects(likedIds);
-            }
-          }
         } else {
           toast.error(`Failed to fetch projects. ${result.error}`);
         }
@@ -227,7 +88,7 @@ function ExploreProjects() {
         setLoading(false);
       }
     },
-    [page, user, viewMode],
+    [page, viewMode],
   );
 
   useEffect(() => {
@@ -245,44 +106,21 @@ function ExploreProjects() {
   };
 
   const handleLikeProject = async (project: Project) => {
-    if (!user) return;
-
-    try {
-      const result = await API.post(`/projects/${project.id}/likes`);
-      if (result.success) {
-        setLikedProjects((prev) => new Set(prev).add(project.id));
-        setProjects((prev) =>
-          prev.map((p) => (p.id === project.id ? { ...p, likes_count: p.likes_count + 1 } : p)),
-        );
-        toast.success("Project liked!");
-      } else {
-        toast.error("Failed to like project");
-      }
-    } catch (err) {
-      toast.error("Failed to like project");
+    const success = await hookLikeProject(project);
+    if (success) {
+      setProjects((prev) =>
+        prev.map((p) => (p.id === project.id ? { ...p, likes_count: p.likes_count + 1 } : p)),
+      );
     }
   };
 
   const handleUnlikeProject = async (project: Project) => {
-    if (!user) return;
-
-    try {
-      const result = await API.delete(`/projects/${project.id}/likes`);
-      if (result.success) {
-        setLikedProjects((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(project.id);
-          return newSet;
-        });
-        setProjects((prev) =>
-          prev.map((p) => (p.id === project.id ? { ...p, likes_count: p.likes_count - 1 } : p)),
-        );
-        toast.success("Project unliked!");
-      } else {
-        toast.error("Failed to unlike project");
-      }
-    } catch (err) {
-      toast.error("Failed to unlike project");
+    const success = await hookUnlikeProject(project);
+    if (success) {
+      // Update the local projects state to reflect the new like count
+      setProjects((prev) =>
+        prev.map((p) => (p.id === project.id ? { ...p, likes_count: p.likes_count - 1 } : p)),
+      );
     }
   };
 
@@ -395,7 +233,7 @@ function ExploreProjects() {
                   project={project}
                   onLike={handleLikeProject}
                   onUnlike={handleUnlikeProject}
-                  isLiked={likedProjects.has(project.id)}
+                  isLiked={isProjectLiked(project.id)}
                   viewMode={viewMode}
                 />
               ))}

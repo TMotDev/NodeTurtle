@@ -23,7 +23,8 @@ type IProjectService interface {
 	UpdateProject(p data.ProjectUpdate) (*data.Project, error)
 	DeleteProject(projectID uuid.UUID) error
 	IsOwner(projectID, userID uuid.UUID) (bool, error)
-	GetPublicProjects(filters data.ProjectFilter) ([]data.Project, int, error)
+	GetPublicProjects(filters data.PublicProjectFilter) ([]data.Project, int, error)
+	ListProjects(filters data.ProjectFilter) ([]data.Project, int, error)
 }
 
 // UserService implements the IUserService interface for managing users.
@@ -416,7 +417,7 @@ func (s ProjectService) DeleteProject(projectID uuid.UUID) error {
 }
 
 // GetPublicProjects retrieves a paginated and filtered list of public projects.
-func (s ProjectService) GetPublicProjects(filters data.ProjectFilter) ([]data.Project, int, error) {
+func (s ProjectService) GetPublicProjects(filters data.PublicProjectFilter) ([]data.Project, int, error) {
 	offset := (filters.Page - 1) * filters.Limit
 
 	baseQuery := `
@@ -493,4 +494,133 @@ func (s ProjectService) IsOwner(projectID, userID uuid.UUID) (bool, error) {
 	var exists bool
 	err := s.db.QueryRow(query, projectID, userID).Scan(&exists)
 	return exists, err
+}
+
+// ListProjects returns a paginated list of projects and the total count.
+func (s ProjectService) ListProjects(filters data.ProjectFilter) ([]data.Project, int, error) {
+	offset := (filters.Page - 1) * filters.Limit
+
+	whereClause := []string{}
+	args := []interface{}{}
+
+	// Filter by search term (partial match in title and description)
+	if filters.SearchTerm != "" {
+		whereClause = append(whereClause, "(p.title ILIKE $"+fmt.Sprint(len(args)+1)+" OR p.description ILIKE $"+fmt.Sprint(len(args)+1)+")")
+		args = append(args, "%"+filters.SearchTerm+"%")
+	}
+
+	// Filter by creator username
+	if filters.CreatorUsername != nil {
+		whereClause = append(whereClause, "u.username = $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.CreatorUsername)
+	}
+
+	// Filter by public status
+	if filters.IsPublic != nil {
+		whereClause = append(whereClause, "p.is_public = $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.IsPublic)
+	}
+
+	// Filter by featured status
+	if filters.IsFeatured != nil {
+		if *filters.IsFeatured {
+			whereClause = append(whereClause, "p.featured_until IS NOT NULL AND p.featured_until > NOW()")
+		} else {
+			whereClause = append(whereClause, "(p.featured_until IS NULL OR p.featured_until <= NOW())")
+		}
+	}
+
+	// Filter by creation time
+	if filters.CreatedBefore != nil {
+		whereClause = append(whereClause, "p.created_at <= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.CreatedBefore)
+	}
+	if filters.CreatedAfter != nil {
+		whereClause = append(whereClause, "p.created_at >= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.CreatedAfter)
+	}
+
+	// Filter by last edited time
+	if filters.LastEditedBefore != nil {
+		whereClause = append(whereClause, "p.last_edited_at <= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.LastEditedBefore)
+	}
+	if filters.LastEditedAfter != nil {
+		whereClause = append(whereClause, "p.last_edited_at >= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.LastEditedAfter)
+	}
+
+	// Filter by featured until time
+	if filters.FeaturedUntil != nil {
+		whereClause = append(whereClause, "p.featured_until <= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.FeaturedUntil)
+	}
+
+	// Filter by likes count range
+	if filters.MinLikes != nil {
+		whereClause = append(whereClause, "p.likes_count >= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.MinLikes)
+	}
+	if filters.MaxLikes != nil {
+		whereClause = append(whereClause, "p.likes_count <= $"+fmt.Sprint(len(args)+1))
+		args = append(args, *filters.MaxLikes)
+	}
+
+	// Construct the final WHERE clause
+	where := ""
+	if len(whereClause) > 0 {
+		where = "WHERE " + strings.Join(whereClause, " AND ")
+	}
+
+	// Count total matching projects
+	countQuery := "SELECT COUNT(*) FROM projects p JOIN users u ON p.creator_id = u.id " + where
+	var total int
+	err := s.db.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT p.id, p.title, p.description, p.data, p.creator_id, u.username,
+		       p.likes_count, p.featured_until, p.created_at, p.last_edited_at, p.is_public
+		FROM projects p
+		JOIN users u ON p.creator_id = u.id
+		` + where + `
+		ORDER BY p.` + filters.SortField + ` ` + filters.SortOrder + `
+		LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
+
+	args = append(args, filters.Limit, offset)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	projects := []data.Project{}
+	for rows.Next() {
+		var project data.Project
+		var featuredUntil sql.NullTime
+
+		err := rows.Scan(
+			&project.ID, &project.Title, &project.Description, &project.Data,
+			&project.CreatorID, &project.CreatorUsername, &project.LikesCount,
+			&featuredUntil, &project.CreatedAt, &project.LastEditedAt, &project.IsPublic,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		if featuredUntil.Valid {
+			project.FeaturedUntil = &featuredUntil.Time
+		}
+
+		projects = append(projects, project)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	return projects, total, nil
 }
