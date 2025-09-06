@@ -200,3 +200,79 @@ export function findClosestNode(point: XYPosition, nodes: Array<Node>): Node | n
 
   return closestNode;
 }
+
+export async function executeTurtleFlow(nodeTree: NodeTree) {
+  const results: Array<{ turtleId: string; log: string; path: Array<any>; }> = [];
+
+  const treeLines = createAsciiTree(nodeTree);
+  treeLines.forEach((line) => console.log(line));
+
+  console.log("\n" + createFlowSummary(nodeTree, results).join("\n"));
+
+  results.push({
+    turtleId: "debug",
+    log: "tree_visualization",
+    path: treeLines,
+  });
+
+  // Process a node and its children recursively
+  const processNode = async (nodeObj: NodeTree, depth: number = 0, path: Array<string> = []) => {
+    if (nodeObj.isLoop) return;
+
+    const node = nodeObj.node;
+    const children = nodeObj.children;
+    const nodeType = node.type;
+    const currentPath = [...path, `${node.type}(${node.id})`];
+
+    // Log current execution path
+    const indent = "  ".repeat(depth);
+
+    if (nodeType === "loopNode") {
+      const loopCount = node.data.loops || 3;
+      const loopChildren = [];
+      const exitChildren = [];
+
+      for (const child of children) {
+        if (child.node.source?.handle === "loop") {
+          loopChildren.push(child);
+        } else {
+          exitChildren.push(child);
+        }
+      }
+
+      if (loopChildren.length > 0) {
+        for (let i = 0; i < loopCount; i++) {
+          for (const loopChild of loopChildren) {
+            await processNode(loopChild, depth + 2, currentPath);
+          }
+        }
+      }
+
+      for (const exitChild of exitChildren) {
+        await processNode(exitChild, depth + 1, currentPath);
+      }
+
+      return;
+    }
+
+    const executeFn = NODE_EXECUTORS[nodeType as keyof typeof NODE_EXECUTORS];
+    executeFn(node.data);
+
+    // await sleep(30);
+    if (children.length === 0) {
+    } else if (children.length === 1) {
+      await processNode(children[0], depth + 1, currentPath);
+    } else {
+      console.log(`${indent}  ⚡ Branching into ${children.length} paths`);
+      for (const [index, child] of children.entries()) {
+        console.log(`${indent}    Branch ${index + 1}:`);
+        await processNode(child, depth + 2, currentPath);
+      }
+    }
+  };
+
+  await processNode(nodeTree);
+
+  return results;
+}
+

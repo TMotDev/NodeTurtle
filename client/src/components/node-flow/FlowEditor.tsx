@@ -14,6 +14,7 @@ import "@xyflow/react/dist/style.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
+import { TurtleArea } from "./TurtleArea";
 import type {
   Connection,
   Edge,
@@ -60,6 +61,7 @@ type AppState = {
   setEdges: (edges: Array<Edge>) => void;
   setData: (nodes: Array<Node>, edges: Array<Edge>) => void;
 };
+
 
 const useStore = create<AppState>((set, get) => ({
   nodes: [],
@@ -375,67 +377,73 @@ function Flow({ project }: { project: Project }) {
   }, [handleUnload]);
 
   return (
-    <main className="w-screen h-screen relative">
-      <div
-        className={`w-full h-full ${toolStates.cutTool ? "cursor-crosshair" : "cursor-default"}`}
-      >
-        <ReactFlow
-          ref={reactFlowWrapper}
-          onMouseMove={handleMouseMove}
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onDrop={onDrop}
-          onDragStart={onDragStart}
-          zoomOnDoubleClick={false}
-          onDragOver={onDragOver}
-          onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
-          onEdgeDoubleClick={(_, edge) => {
-            setEdges(edges.filter((ed) => ed.id !== edge.id));
-          }}
-          isValidConnection={isValidConnection}
-          onNodeContextMenu={onNodeContextMenu}
-          onPaneClick={onPaneClick}
-          onSelectionContextMenu={onSelectionContextMenu}
-          fitView
-          selectionOnDrag={!toolStates.cutTool && !toolStates.lazyConnect}
-          panOnDrag={!toolStates.cutTool && !toolStates.lazyConnect && [1]}
-          panOnScroll={!toolStates.cutTool && !toolStates.lazyConnect}
-          deleteKeyCode={"Delete"}
-          onPaneContextMenu={(e) => {
-            e.preventDefault();
-          }}
-          selectionMode={SelectionMode.Partial}
-          multiSelectionKeyCode={"Shift"}
+    <main className="w-screen h-screen relative flex">
+      {/* Left side - Flow Editor */}
+      <div className="flex-1 flex flex-col">
+        <div
+          className={`w-full h-full ${toolStates.cutTool ? "cursor-crosshair" : "cursor-default"}`}
         >
-          <Background />
-          <DevTools position="top-left" />
-          <MouseTrail isActive={toolStates.cutTool && !toolStates.lazyConnect} />
-          <MouseLine
-            isActive={toolStates.lazyConnect && !toolStates.cutTool}
-            connectionValid={connectionValid}
+          <ReactFlow
+            ref={reactFlowWrapper}
+            onMouseMove={handleMouseMove}
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onDrop={onDrop}
+            onDragStart={onDragStart}
+            zoomOnDoubleClick={false}
+            onDragOver={onDragOver}
+            onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
+            onEdgeDoubleClick={(_, edge) => {
+              setEdges(edges.filter((ed) => ed.id !== edge.id));
+            }}
+            isValidConnection={isValidConnection}
+            onNodeContextMenu={onNodeContextMenu}
+            onPaneClick={onPaneClick}
+            onSelectionContextMenu={onSelectionContextMenu}
+            fitView
+            selectionOnDrag={!toolStates.cutTool && !toolStates.lazyConnect}
+            panOnDrag={!toolStates.cutTool && !toolStates.lazyConnect && [1]}
+            panOnScroll={!toolStates.cutTool && !toolStates.lazyConnect}
+            deleteKeyCode={"Delete"}
+            onPaneContextMenu={(e) => {
+              e.preventDefault();
+            }}
+            selectionMode={SelectionMode.Partial}
+            multiSelectionKeyCode={"Shift"}
+          >
+            <Background />
+            <DevTools position="top-left" />
+            <MouseTrail isActive={toolStates.cutTool && !toolStates.lazyConnect} />
+            <MouseLine
+              isActive={toolStates.lazyConnect && !toolStates.cutTool}
+              connectionValid={connectionValid}
+            />
+          </ReactFlow>
+        </div>
+        {contextMenu && (
+          <ContextMenu
+            onClose={() => setContextMenu(null)}
+            onDuplicate={() => duplicateNode(contextMenu.id)}
+            onDelete={() => deleteNode(contextMenu.id)}
+            data={contextMenu}
           />
-        </ReactFlow>
+        )}
+        {selectionContextMenu && (
+          <ContextMenu
+            onClose={() => setSelectionContextMenu(null)}
+            onDuplicate={duplicateSelection}
+            onDelete={deleteSelection}
+            data={selectionContextMenu}
+          />
+        )}
       </div>
-      {contextMenu && (
-        <ContextMenu
-          onClose={() => setContextMenu(null)}
-          onDuplicate={() => duplicateNode(contextMenu.id)}
-          onDelete={() => deleteNode(contextMenu.id)}
-          data={contextMenu}
-        />
-      )}
-      {selectionContextMenu && (
-        <ContextMenu
-          onClose={() => setSelectionContextMenu(null)}
-          onDuplicate={duplicateSelection}
-          onDelete={deleteSelection}
-          data={selectionContextMenu}
-        />
-      )}
+
+      {/* Right side - Turtle Graphics */}
+      <TurtleArea nodes={nodes} edges={edges} />
     </main>
   );
 }

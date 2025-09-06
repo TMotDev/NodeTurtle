@@ -95,7 +95,7 @@ const RotateNode = memo(({ selected, data, id }: RotateNodeProps) => {
       <BaseHandle id="in" type="target" position={Position.Left} />
       <BaseHandle id="out" type="source" position={Position.Right} />
 
-      <NodeHeader className="-mx-3 -mt-2 border-b bg-blue-500 text-white rounded-t-[6px]">
+      <NodeHeader className="-mx-3 -mt-2 border-b bg-teal-500 text-white rounded-t-[6px]">
         <NodeHeaderIcon>
           <RotateCcw className="text-white" />
         </NodeHeaderIcon>
