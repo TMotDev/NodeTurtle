@@ -11,7 +11,7 @@ import type { NodeProps } from "@xyflow/react";
 import type { NodeTree } from "@/lib/flowUtils";
 import { NODE_EXECUTORS, createAsciiTree, createFlowSummary } from "@/lib/flowUtils";
 
-export const executeTurtleFlow = async (nodeTree: any) => {
+export const executeTurtleFlow = async (nodeTree: NodeTree) => {
   const results: Array<{ turtleId: string; log: string; path: Array<any> }> = [];
 
   const treeLines = createAsciiTree(nodeTree);
@@ -26,12 +26,12 @@ export const executeTurtleFlow = async (nodeTree: any) => {
   });
 
   // Process a node and its children recursively
-  const processNode = async (nodeObj: any, depth: number = 0, path: Array<string> = []) => {
-    if (!nodeObj || nodeObj.isLoop) return;
+  const processNode = async (nodeObj: NodeTree, depth: number = 0, path: Array<string> = []) => {
+    if (nodeObj.isLoop) return;
 
     const node = nodeObj.node;
-    const children = nodeObj.children || [];
-    const nodeType = node.type as string;
+    const children = nodeObj.children;
+    const nodeType = node.type;
     const currentPath = [...path, `${node.type}(${node.id})`];
 
     // Log current execution path

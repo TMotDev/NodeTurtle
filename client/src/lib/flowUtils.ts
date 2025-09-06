@@ -29,6 +29,7 @@ export function getNodeGroupCenter(nodes: Array<Node>) {
 export interface NodeRegistry {
   startNode: { muted: boolean };
   moveNode: { muted: boolean; distance: number };
+  rotateNode: { muted: boolean; angle: number };
   loopNode: { muted: boolean; loopCount: number };
 }
 
@@ -37,20 +38,41 @@ export type NodeType = keyof NodeRegistry;
 export const INITIAL_NODE_DATA: NodeRegistry = {
   startNode: { muted: false },
   moveNode: { muted: false, distance: 10 },
+  rotateNode: { muted: false, angle: 90 },
   loopNode: { muted: false, loopCount: 3 },
 };
 
 export const NODE_EXECUTORS = {
   startNode: (nodeData: NodeRegistry["startNode"]) => {
-    console.log("Executing Start Node:", nodeData);
+    if (nodeData.muted) {
+      console.log("muted, skipping");
+    } else {
+      console.log("Executing Start Node:", nodeData);
+    }
   },
   moveNode: (nodeData: NodeRegistry["moveNode"]) => {
-    console.log("Executing Move Node:", nodeData);
-    console.log("Distance:", nodeData.distance);
+    if (nodeData.muted) {
+      console.log("muted, skipping");
+    } else {
+      console.log("Executing Move Node:", nodeData);
+      console.log("Distance:", nodeData.distance);
+    }
   },
   loopNode: (nodeData: NodeRegistry["loopNode"]) => {
-    console.log("Executing Loop Node:", nodeData);
-    console.log("Loop count:", nodeData.loopCount);
+    if (nodeData.muted) {
+      console.log("muted, skipping");
+    } else {
+      console.log("Executing Loop Node:", nodeData);
+      console.log("Loop count:", nodeData.loopCount);
+    }
+  },
+  rotateNode: (nodeData: NodeRegistry["rotateNode"]) => {
+    if (nodeData.muted) {
+      console.log("muted, skipping");
+    } else {
+      console.log("Executing rotate Node:", nodeData);
+      console.log("angle:", nodeData.angle);
+    }
   },
 } satisfies Record<NodeType, (nodeData: any) => void>;
 
@@ -60,6 +82,7 @@ export type NodePropsFor<T extends NodeType> = NodeProps & {
 
 export type MoveNodeProps = NodePropsFor<"moveNode">;
 export type LoopNodeProps = NodePropsFor<"loopNode">;
+export type RotateNodeProps = NodePropsFor<"rotateNode">;
 
 export type NodeTree = {
   node: {

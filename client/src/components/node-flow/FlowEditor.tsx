@@ -40,12 +40,14 @@ import { useCutTool } from "@/hooks/CutTool";
 import { useLazyConnect } from "@/hooks/LazyConnect";
 import MouseTrail from "@/components/MouseTrail";
 import MouseLine from "@/components/MouseLine";
+import RotateNode from "@/components/node-flow/RotateNode";
 
 export const nodeTypes = {
   nodeBase: NodeBase,
   startNode: StartNode,
   moveNode: MoveNode,
   loopNode: LoopNode,
+  rotateNode: RotateNode,
 };
 
 type AppState = {
@@ -355,12 +357,12 @@ function Flow({ project }: { project: Project }) {
 
   const handleUnload = useCallback(
     (event: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        event.preventDefault();
+      // if (hasUnsavedChanges) {
+      //   event.preventDefault();
 
-        // legacy browser support
-        event.returnValue = true;
-      }
+      //   // legacy browser support
+      //   event.returnValue = true;
+      // }
     },
     [hasUnsavedChanges],
   );

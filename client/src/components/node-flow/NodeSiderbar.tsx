@@ -64,6 +64,9 @@ export default function NodeSidebar({ project }: { project: Project }) {
           <div onDragStart={(event) => onDragStart(event, "loopNode")} draggable>
             Loop Node
           </div>
+          <div onDragStart={(event) => onDragStart(event, "rotateNode")} draggable>
+            Rotate Node
+          </div>
         </SidebarGroup>
         <SidebarGroup>
           {/* <Button onClick={createNewFlow} variant="outline" className="w-full">
