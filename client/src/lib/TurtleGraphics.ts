@@ -1,5 +1,3 @@
-// TurtleGraphics.ts - Main turtle graphics engine for your project
-
 export interface TurtleState {
   id: string;
   x: number;
@@ -13,7 +11,7 @@ export interface TurtleState {
 }
 
 export interface TurtleCommand {
-  type: 'move' | 'rotate' | 'penUp' | 'penDown' | 'setColor' | 'setSpeed' | 'wait' | 'pen';
+  type: "move" | "rotate" | "penUp" | "penDown" | "setColor" | "setSpeed" | "wait" | "pen";
   value?: number;
   color?: string;
   duration?: number;
@@ -25,14 +23,15 @@ export class TurtleGraphicsEngine {
   private turtles: Map<string, TurtleState> = new Map();
   private animationId: number | null = null;
   private isRunning = false;
+  private drawDelay = 70;
   private commandQueues: Map<string, Array<TurtleCommand>> = new Map();
   private executingCommands: Map<string, boolean> = new Map();
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
     if (!context) {
-      throw new Error('Could not get 2D context from canvas');
+      throw new Error("Could not get 2D context from canvas");
     }
     this.ctx = context;
     this.setupCanvas();
@@ -42,7 +41,7 @@ export class TurtleGraphicsEngine {
     const width = this.canvas.width;
     const height = this.canvas.height;
 
-    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillStyle = "#ffffff";
     this.ctx.fillRect(0, 0, width, height);
 
     this.drawGrid();
@@ -56,7 +55,7 @@ export class TurtleGraphicsEngine {
     const gridSize = 20;
 
     this.ctx.save();
-    this.ctx.strokeStyle = '#f8f9fa';
+    this.ctx.strokeStyle = "#f8f9fa";
     this.ctx.lineWidth = 1;
 
     // Vertical lines
@@ -76,7 +75,7 @@ export class TurtleGraphicsEngine {
     }
 
     // Draw axes
-    this.ctx.strokeStyle = '#dee2e6';
+    this.ctx.strokeStyle = "#dee2e6";
     this.ctx.lineWidth = 2;
 
     // X-axis
@@ -107,7 +106,7 @@ export class TurtleGraphicsEngine {
       color: "#000",
       lineWidth: 2,
       speed: 1,
-      trail: []
+      trail: [],
     };
 
     this.turtles.set(id, turtle);
@@ -125,104 +124,87 @@ export class TurtleGraphicsEngine {
   }
 
   addCommands(turtleId: string, commands: Array<TurtleCommand>) {
-    commands.forEach(cmd => this.addCommand(turtleId, cmd));
+    commands.forEach((cmd) => this.addCommand(turtleId, cmd));
   }
 
   private async executeCommand(turtle: TurtleState, command: TurtleCommand): Promise<void> {
     return new Promise((resolve) => {
-      const startTime = Date.now();
-      const baseDuration = 150; // Base animation duration in ms
-      const duration = baseDuration / turtle.speed;
-
-      switch (command.type) {
-        case 'move': {
-          const distance = command.value || 0;
-          const startX = turtle.x;
-          const startY = turtle.y;
-          const endX = turtle.x + Math.cos(turtle.angle * Math.PI / 180) * distance;
-          const endY = turtle.y - Math.sin(turtle.angle * Math.PI / 180) * distance; // Flip Y
-
-          const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-
-            const currentX = startX + (endX - startX) * progress;
-            const currentY = startY + (endY - startY) * progress;
+      setTimeout(() => {
+        switch (command.type) {
+          case "move": {
+            const distance = command.value || 0;
+            const endX = turtle.x + Math.cos((turtle.angle * Math.PI) / 180) * distance;
+            const endY = turtle.y - Math.sin((turtle.angle * Math.PI) / 180) * distance; // Flip Y
 
             if (turtle.penDown) {
-              console.log("down")
+              console.log("down");
               this.ctx.save();
               this.ctx.fillStyle = turtle.color;
               this.ctx.strokeStyle = turtle.color;
               this.ctx.lineWidth = turtle.lineWidth;
-              this.ctx.lineCap = 'round';
-              this.ctx.lineJoin = 'round';
+              this.ctx.lineCap = "round";
+              this.ctx.lineJoin = "round";
               this.ctx.beginPath();
               this.ctx.moveTo(turtle.x, turtle.y);
-              this.ctx.lineTo(currentX, currentY);
+              this.ctx.lineTo(endX, endY);
               this.ctx.stroke();
               this.ctx.restore();
             }
-            turtle.x = currentX;
-            turtle.y = currentY;
-            turtle.trail.push({ x: currentX, y: currentY, penDown: turtle.penDown });
+            turtle.x = endX;
+            turtle.y = endY;
+            turtle.trail.push({ x: turtle.x, y: turtle.y, penDown: turtle.penDown });
 
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            } else {
-              resolve();
+            resolve();
+
+            break;
+          }
+
+          case "rotate": {
+            const angleChange = command.value || 0;
+            turtle.angle += angleChange;
+            resolve();
+            break;
+          }
+
+          case "pen": {
+            turtle.penDown = !!command.value;
+            turtle.color = command.color || "#000000";
+            resolve();
+            break;
+          }
+
+          case "penUp":
+            turtle.penDown = false;
+            resolve();
+            break;
+
+          case "penDown":
+            turtle.penDown = true;
+            resolve();
+            break;
+
+          case "setColor":
+            if (command.color) {
+              turtle.color = command.color;
             }
-          };
+            resolve();
+            break;
 
-          animate();
-          break;
+          case "setSpeed":
+            if (command.value) {
+              turtle.speed = Math.max(0.1, command.value);
+            }
+            resolve();
+            break;
+
+          case "wait":
+            setTimeout(resolve, command.duration || 500);
+            break;
+
+          default:
+            resolve();
         }
-
-        case 'rotate': {
-          const angleChange = command.value || 0;
-          turtle.angle += angleChange;
-          resolve();
-          break;
-        }
-
-        case 'pen': {
-          turtle.penDown = !!command.value
-          turtle.color = command.color || "#000000"
-          resolve();
-          break;
-        }
-
-        case 'penUp':
-          turtle.penDown = false;
-          resolve();
-          break;
-
-        case 'penDown':
-          turtle.penDown = true;
-          resolve();
-          break;
-
-        case 'setColor':
-          if (command.color) {
-            turtle.color = command.color;
-          }
-          resolve();
-          break;
-
-        case 'setSpeed':
-          if (command.value) {
-            turtle.speed = Math.max(0.1, command.value);
-          }
-          resolve();
-          break;
-
-        case 'wait':
-          setTimeout(resolve, command.duration || 500);
-          break;
-
-        default:
-          resolve();
-      }
+      }, this.drawDelay);
     });
   }
 
@@ -245,7 +227,7 @@ export class TurtleGraphicsEngine {
   }
 
   private drawTurtles() {
-    this.turtles.forEach(turtle => {
+    this.turtles.forEach((turtle) => {
       this.ctx.save();
 
       this.ctx.translate(turtle.x, turtle.y);
@@ -268,7 +250,7 @@ export class TurtleGraphicsEngine {
       this.processTurtleQueue(turtleId);
     });
 
-    this.drawTurtles();
+    // this.drawTurtles();
 
     this.animationId = requestAnimationFrame(this.animate);
   };
@@ -292,7 +274,7 @@ export class TurtleGraphicsEngine {
     this.setupCanvas();
 
     // Clear turtle trails
-    this.turtles.forEach(turtle => {
+    this.turtles.forEach((turtle) => {
       turtle.trail = [];
     });
   }
@@ -319,7 +301,9 @@ export class TurtleGraphicsEngine {
 
   // Utility method to check if any turtle is still executing commands
   isAnyTurtleExecuting(): boolean {
-    return Array.from(this.executingCommands.values()).some(executing => executing) ||
-           Array.from(this.commandQueues.values()).some(queue => queue.length > 0);
+    return (
+      Array.from(this.executingCommands.values()).some((executing) => executing) ||
+      Array.from(this.commandQueues.values()).some((queue) => queue.length > 0)
+    );
   }
 }

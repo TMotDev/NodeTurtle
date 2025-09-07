@@ -1,9 +1,6 @@
-// TurtleFlowExecutor.ts - Integration with your existing flowUtils
-
-import { getOutgoers } from "@xyflow/react";
 import { TurtleGraphicsEngine  } from './TurtleGraphics';
 import { createAsciiTree, createFlowSummary } from './flowUtils';
-import type {TurtleCommand, TurtleState} from './TurtleGraphics';
+import type {TurtleCommand} from './TurtleGraphics';
 
 import type { NodeRegistry, NodeTree} from './flowUtils';
 import type { Edge, Node } from "@xyflow/react";

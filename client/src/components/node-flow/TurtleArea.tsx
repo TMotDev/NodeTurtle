@@ -1,9 +1,8 @@
-// TurtleArea.tsx - Turtle canvas component to replace your existing turtle area
-
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Play, RotateCcw, Square, Trash2, Turtle, Zap } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Play, RotateCcw, Square, Trash2, Turtle, Zap } from "lucide-react";
+import { Slider } from "../ui/slider";
 import type { Edge, Node } from "@xyflow/react";
-import { TurtleFlowExecutor } from '@/lib/TurtleFlowExecutor';
+import { TurtleFlowExecutor } from "@/lib/TurtleFlowExecutor";
 
 interface TurtleAreaProps {
   nodes: Array<Node>;
@@ -32,7 +31,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges }) => {
 
   // Check if flow has start node
   useEffect(() => {
-    const startNodeExists = nodes.some(node => node.type === 'startNode');
+    const startNodeExists = nodes.some((node) => node.type === "startNode");
     setHasStartNode(startNodeExists);
   }, [nodes]);
 
@@ -43,11 +42,11 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges }) => {
     setIsExecuting(true);
 
     try {
-      console.log('Executing flow with nodes:', nodes.length, 'edges:', edges.length);
+      console.log("Executing flow with nodes:", nodes.length, "edges:", edges.length);
       await executorRef.current.executeFlow(nodes, edges);
       setTurtleCount(executorRef.current.getTurtleEngine().getTurtleCount());
     } catch (error) {
-      console.error('Error executing turtle flow:', error);
+      console.error("Error executing turtle flow:", error);
     } finally {
       setIsExecuting(false);
     }
@@ -75,17 +74,18 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges }) => {
   }, []);
 
   const getStatusColor = () => {
-    if (isExecuting) return 'text-blue-600';
-    if (!hasStartNode) return 'text-red-500';
-    if (turtleCount > 0) return 'text-green-600';
-    return 'text-gray-500';
+    if (isExecuting) return "text-blue-600";
+    if (!hasStartNode) return "text-red-500";
+    if (turtleCount > 0) return "text-green-600";
+    return "text-gray-500";
   };
 
   const getStatusText = () => {
-    if (isExecuting) return 'Executing...';
-    if (!hasStartNode) return 'No start node found';
-    if (turtleCount > 0) return `Completed with ${turtleCount} turtle${turtleCount !== 1 ? 's' : ''}`;
-    return 'Ready to execute';
+    if (isExecuting) return "Executing...";
+    if (!hasStartNode) return "No start node found";
+    if (turtleCount > 0)
+      return `Completed with ${turtleCount} turtle${turtleCount !== 1 ? "s" : ""}`;
+    return "Ready to execute";
   };
 
   return (
@@ -115,7 +115,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges }) => {
             className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Play size={14} />
-            {isExecuting ? 'Running...' : 'Run'}
+            {isExecuting ? "Running..." : "Run"}
           </button>
 
           <button
@@ -153,11 +153,11 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges }) => {
             height={400}
             className="border border-gray-300 rounded max-w-full max-h-full"
             style={{
-              aspectRatio: '1/1',
-              width: 'auto',
-              height: 'auto',
-              maxWidth: '100%',
-              maxHeight: '100%'
+              aspectRatio: "1/1",
+              width: "auto",
+              height: "auto",
+              maxWidth: "100%",
+              maxHeight: "100%",
             }}
           />
         </div>
@@ -173,9 +173,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges }) => {
         </div>
 
         {!hasStartNode && nodes.length > 0 && (
-          <div className="text-xs text-amber-600 mt-1">
-            Add a Start Node to begin execution
-          </div>
+          <div className="text-xs text-amber-600 mt-1">Add a Start Node to begin execution</div>
         )}
 
         {hasStartNode && nodes.length > 1 && !isExecuting && (
@@ -184,6 +182,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges }) => {
           </div>
         )}
       </div>
+      {/* <Slider max={10} step={1} value={[executorRef.current?.speed ?? 2]}/> */}
     </div>
   );
 };
