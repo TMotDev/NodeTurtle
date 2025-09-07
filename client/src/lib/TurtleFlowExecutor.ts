@@ -144,7 +144,7 @@ export class TurtleFlowExecutor {
       }
 
       case 'rotateNode': {
-        const angle = nodeData.angle || 90;
+        const angle = nodeData.angle || 0;
         commands.push({ type: 'rotate', value: angle });
         break;
       }
@@ -152,6 +152,13 @@ export class TurtleFlowExecutor {
       case 'loopNode':
         // Loop commands are handled in the execution logic, not here
         break;
+
+      case 'penNode': {
+        const color = nodeData.color
+        const penIsDown = nodeData.penDown ? 1 : 0;
+        commands.push({ type: 'pen', value: penIsDown , color})
+        break;
+      }
 
       default:
         console.warn(`Unknown node type: ${nodeType}`);
@@ -332,7 +339,7 @@ export class TurtleFlowExecutor {
       turtleEngine: this.turtleEngine,
       turtleId: mainTurtleId,
       position: { x: 0, y: 0 },
-      angle: 90,
+      angle: 0,
       branchIndex: 0,
       parentPath: []
     };

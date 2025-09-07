@@ -24,6 +24,7 @@ import type {
   OnNodesChange,
 } from "@xyflow/react";
 import type { Project } from "@/api/projects";
+import PenNode from "@/components/node-flow/PenNode";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import NodeBase from "@/components/node-flow/baseNode";
@@ -49,6 +50,7 @@ export const nodeTypes = {
   moveNode: MoveNode,
   loopNode: LoopNode,
   rotateNode: RotateNode,
+  penNode: PenNode
 };
 
 type AppState = {

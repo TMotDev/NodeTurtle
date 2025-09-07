@@ -13,7 +13,7 @@ export interface TurtleState {
 }
 
 export interface TurtleCommand {
-  type: 'move' | 'rotate' | 'penUp' | 'penDown' | 'setColor' | 'setSpeed' | 'wait';
+  type: 'move' | 'rotate' | 'penUp' | 'penDown' | 'setColor' | 'setSpeed' | 'wait' | 'pen';
   value?: number;
   color?: string;
   duration?: number;
@@ -104,7 +104,7 @@ export class TurtleGraphicsEngine {
       y: centerY - y, // Flip Y coordinate (canvas Y increases downward)
       angle,
       penDown: true,
-      color: this.getRandomColor(),
+      color: "#000",
       lineWidth: 2,
       speed: 1,
       trail: []
@@ -115,11 +115,6 @@ export class TurtleGraphicsEngine {
     this.executingCommands.set(id, false);
 
     return turtle;
-  }
-
-  private getRandomColor(): string {
-    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
-    return colors[Math.floor(Math.random() * colors.length)];
   }
 
   addCommand(turtleId: string, command: TurtleCommand) {
@@ -155,7 +150,9 @@ export class TurtleGraphicsEngine {
             const currentY = startY + (endY - startY) * progress;
 
             if (turtle.penDown) {
+              console.log("down")
               this.ctx.save();
+              this.ctx.fillStyle = turtle.color;
               this.ctx.strokeStyle = turtle.color;
               this.ctx.lineWidth = turtle.lineWidth;
               this.ctx.lineCap = 'round';
@@ -166,7 +163,6 @@ export class TurtleGraphicsEngine {
               this.ctx.stroke();
               this.ctx.restore();
             }
-
             turtle.x = currentX;
             turtle.y = currentY;
             turtle.trail.push({ x: currentX, y: currentY, penDown: turtle.penDown });
@@ -184,24 +180,15 @@ export class TurtleGraphicsEngine {
 
         case 'rotate': {
           const angleChange = command.value || 0;
-          const startAngle = turtle.angle;
-          const endAngle = turtle.angle + angleChange;
+          turtle.angle += angleChange;
+          resolve();
+          break;
+        }
 
-          const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / (duration / 3), 1); // Rotation is faster
-
-            turtle.angle = startAngle + (endAngle - startAngle) * progress;
-
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            } else {
-              turtle.angle = endAngle;
-              resolve();
-            }
-          };
-
-          animate();
+        case 'pen': {
+          turtle.penDown = !!command.value
+          turtle.color = command.color || "#000000"
+          resolve();
           break;
         }
 
@@ -264,9 +251,10 @@ export class TurtleGraphicsEngine {
       this.ctx.translate(turtle.x, turtle.y);
 
       this.ctx.fillStyle = turtle.color;
+      this.ctx.strokeStyle = turtle.color;
 
       this.ctx.beginPath();
-      this.ctx.arc(0, 0, 8, 0, 2 * Math.PI);
+      this.ctx.arc(0, 0, 3, 0, 2 * Math.PI);
       this.ctx.fill();
 
       this.ctx.restore();
