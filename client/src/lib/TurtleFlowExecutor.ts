@@ -164,6 +164,13 @@ export class TurtleFlowExecutor {
     return commands;
   }
 
+  setSpeed(speedLevel: number) {
+  // Convert speed level (1-10) to delay (higher speed = lower delay)
+  // Speed 1 = 150ms delay, Speed 10 = 10ms delay
+  const delay = Math.max(10, 160 - (speedLevel * 15));
+  this.turtleEngine.setDrawDelay(delay);
+}
+
   private async executeNodeTree(
     nodeTree: NodeTree,
     context: ExecutionContext,

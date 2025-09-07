@@ -47,6 +47,10 @@ export class TurtleGraphicsEngine {
     this.drawGrid();
   }
 
+  setDrawDelay(delay: number) {
+  this.drawDelay = Math.max(1, delay); // Ensure minimum delay of 1ms
+}
+
   private drawGrid() {
     const width = this.canvas.width;
     const height = this.canvas.height;
