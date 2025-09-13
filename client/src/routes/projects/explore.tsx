@@ -46,7 +46,6 @@ function ExploreProjects() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [filters, setFilters] = useState({
     sortBy: "last_edited_at", // last_edited_at, created_at, likes_count
@@ -60,7 +59,7 @@ function ExploreProjects() {
       try {
         const queryParams: any = {
           page,
-          limit: viewMode === "grid" ? 12 : 10,
+          limit: 10,
           is_public: true,
         };
 
@@ -88,7 +87,7 @@ function ExploreProjects() {
         setLoading(false);
       }
     },
-    [page, viewMode],
+    [page],
   );
 
   useEffect(() => {
@@ -157,22 +156,7 @@ function ExploreProjects() {
                 </Button>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
+
             </div>
 
             {/* Filters */}
@@ -221,11 +205,7 @@ function ExploreProjects() {
           {/* Projects Grid/List */}
           {!loading && projects.length > 0 && (
             <div
-              className={
-                viewMode === "grid"
-                  ? "flex flex-row gap-6 mb-8 flex-wrap items-center justify-center"
-                  : "space-y-4 mb-8"
-              }
+              className="flex flex-row gap-6 mb-8 flex-wrap items-center justify-center"
             >
               {projects.map((project) => (
                 <ExploreProjectCard
@@ -234,7 +214,6 @@ function ExploreProjects() {
                   onLike={handleLikeProject}
                   onUnlike={handleUnlikeProject}
                   isLiked={isProjectLiked(project.id)}
-                  viewMode={viewMode}
                 />
               ))}
             </div>

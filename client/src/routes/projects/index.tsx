@@ -25,6 +25,7 @@ import { API } from "@/services/api";
 import useAuthStore, { Role } from "@/lib/authStore";
 import { requireAuth } from "@/lib/utils";
 import { ProjectCard } from "@/components/ProjectCard";
+import { generateThumbnail } from "@/lib/ImageGenerator";
 
 export const Route = createFileRoute("/projects/")({
   beforeLoad: requireAuth(Role.User),
@@ -112,13 +113,14 @@ function ProjectPage() {
               </div>
 
               {userProjects.map((project) => (
+
                 <ProjectCard
                   key={project.id}
                   project={project}
                   onEdit={openEditDialog}
                   onDelete={openDeleteDialog}
                   isOwned={true}
-                />
+                  />
               ))}
             </div>
           </div>
@@ -135,10 +137,10 @@ function ProjectPage() {
               ) : (
                 likedProjects.map((project) => (
                   <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onUnlike={handleUnlike}
-                    isOwned={false}
+                  key={project.id}
+                  project={project}
+                  onUnlike={handleUnlike}
+                  isOwned={false}
                   />
                 ))
               )}

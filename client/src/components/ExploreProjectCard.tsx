@@ -3,19 +3,18 @@ import { Badge, Calendar, Heart, User } from "lucide-react";
 import type { Project } from "@/api/projects";
 import useAuthStore from "@/lib/authStore";
 import { getTimeSince } from "@/lib/utils";
+import { generateThumbnail } from "@/lib/ImageGenerator";
 
 export function ExploreProjectCard({
   project,
   onLike,
   onUnlike,
   isLiked,
-  viewMode = "grid",
 }: {
   project: Project;
   onLike: (p: Project) => void;
   onUnlike: (p: Project) => void;
   isLiked: boolean;
-  viewMode?: "grid" | "list";
 }) {
   const user = useAuthStore((state) => state.user);
 
@@ -33,100 +32,62 @@ export function ExploreProjectCard({
     }
   };
 
-  if (viewMode === "list") {
-    return (
-      <a
-        href={`/projects/${project.id}`}
-        className="block self-center justify-self-center p-4 rounded-lg border bg-white hover:shadow-md transition-all duration-200 hover:border-blue-300"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold truncate" title={project.title}>
-                  {project.title}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{project.description}</p>
-                <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    <span>{project.creator_username}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>Created {getTimeSince(project.created_at)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>Updated {getTimeSince(project.last_edited_at)}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 ml-4">
-                <button
-                  onClick={handleLikeClick}
-                  className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-                    isLiked
-                      ? "text-red-600 bg-red-50 hover:bg-red-100"
-                      : "text-gray-600 hover:text-red-600 hover:bg-red-50"
-                  }`}
-                >
-                  <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-                  <span className="text-sm">{project.likes_count}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </a>
-    );
-  }
-
   return (
     <a
       href={`/projects/${project.id}`}
-      className="block max-w-sm w-84 rounded-lg border bg-white hover:shadow-lg transition-all duration-200 hover:border-blue-300 overflow-hidden"
+      className="block max-w-sm w-64 rounded-lg border bg-white hover:shadow-lg transition-all duration-200 hover:border-blue-300 overflow-hidden"
     >
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-semibold line-clamp-2 flex-1 pr-2" title={project.title}>
-            {project.title}
-          </h3>
+      {/* Thumbnail Section with Heart Overlay */}
+      <div className="relative aspect-square">
+        <img
+          src={generateThumbnail(project.id)}
+          alt={project.title}
+          className="w-full h-full object-cover"
+        />
+
+        {/* Heart button with backdrop */}
+        <div className="absolute top-3 right-3">
           <button
             onClick={handleLikeClick}
-            className={`flex items-center gap-1 px-2 py-1 rounded transition-colors flex-shrink-0 ${
+            className={`flex items-center gap-1 px-2 py-1 rounded-md backdrop-blur-sm border transition-all ${
               isLiked
-                ? "text-red-600 bg-red-50 hover:bg-red-100"
-                : "text-gray-600 hover:text-red-600 hover:bg-red-50"
+                ? "text-red-600 bg-white/90 border-red-200 hover:bg-white shadow-sm"
+                : "text-gray-700 bg-white/80 border-white/50 hover:bg-white/90 hover:text-red-600"
             }`}
           >
             <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-            <span className="text-sm">{project.likes_count}</span>
+            <span className="text-sm font-medium">{project.likes_count}</span>
           </button>
         </div>
 
-        <p className="text-sm text-gray-600 line-clamp-3 mb-4">{project.description}</p>
+        {/* Featured badge if applicable */}
+        {project.featured_until && new Date(project.featured_until) > new Date() && (
+          <div className="absolute top-3 left-3">
+            <Badge className="bg-yellow-400/90 text-yellow-900 border-yellow-500/30 backdrop-blur-sm">
+              Featured
+            </Badge>
+          </div>
+        )}
+      </div>
+
+      {/* Content Section */}
+      <div className="p-4">
+        <h3 className="text-lg font-semibold line-clamp-2 mb-2" title={project.title}>
+          {project.title}
+        </h3>
+
+        <p className="text-sm text-gray-600 line-clamp-3 mb-3">{project.description}</p>
 
         <div className="space-y-2 text-sm text-gray-500">
           <div className="flex items-center gap-1">
-            <User className="h-3 w-3" />
+            <User className="h-3 w-3 flex-shrink-0" />
             <span className="truncate">by {project.creator_username}</span>
           </div>
           <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            <span>Created {getTimeSince(project.created_at)}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
+            <Calendar className="h-3 w-3 flex-shrink-0" />
             <span>Updated {getTimeSince(project.last_edited_at)}</span>
           </div>
         </div>
-
-        {project.featured_until && new Date(project.featured_until) > new Date() && (
-          <div className="mt-3">
-            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">Featured</Badge>
-          </div>
-        )}
       </div>
     </a>
   );
