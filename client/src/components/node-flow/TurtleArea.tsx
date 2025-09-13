@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, RotateCcw, Square, Trash2, Turtle, Zap } from 'lucide-react';
 import { Slider } from '../ui/slider';
 import type { Edge, Node } from "@xyflow/react";
-import { TurtleFlowExecutor } from '@/lib/TurtleFlowExecutor';
+import  { TurtleFlowExecutor } from '@/lib/TurtleFlowExecutor';
 
 interface TurtleAreaProps {
   nodes: Array<Node>;
@@ -52,7 +52,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges }) => {
     try {
       console.log('Executing flow with nodes:', nodes.length, 'edges:', edges.length);
       await executorRef.current.executeFlow(nodes, edges);
-      setTurtleCount(executorRef.current.getTurtleEngine().getTurtleCount());
+      // setTurtleCount(executorRef.current.getTurtleEngine().getTurtleCount());
     } catch (error) {
       console.error('Error executing turtle flow:', error);
     } finally {

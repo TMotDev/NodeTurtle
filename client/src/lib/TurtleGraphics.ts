@@ -7,11 +7,10 @@ export interface TurtleState {
   color: string;
   lineWidth: number;
   speed: number; // animation speed multiplier
-  trail: Array<{ x: number; y: number; penDown: boolean }>;
 }
 
 export interface TurtleCommand {
-  type: "move" | "rotate" | "penUp" | "penDown" | "setColor" | "setSpeed" | "wait" | "pen";
+  type: "move" | "rotate" | "pen";
   value?: number;
   color?: string;
   duration?: number;
@@ -21,7 +20,6 @@ export class TurtleGraphicsEngine {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private turtles: Map<string, TurtleState> = new Map();
-  private animationId: number | null = null;
   private isRunning = false;
   private drawDelay = 70;
   private commandQueues: Map<string, Array<TurtleCommand>> = new Map();
@@ -97,7 +95,7 @@ export class TurtleGraphicsEngine {
     this.ctx.restore();
   }
 
-  createTurtle(id: string, x: number = 0, y: number = 0, angle: number = 0): TurtleState {
+  createTurtle(id: string, x: number = 0, y: number = 0, angle: number = 0, color = "#000"): TurtleState {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
 
@@ -107,10 +105,9 @@ export class TurtleGraphicsEngine {
       y: centerY - y, // Flip Y coordinate (canvas Y increases downward)
       angle,
       penDown: true,
-      color: "#000",
+      color: color,
       lineWidth: 2,
       speed: 1,
-      trail: [],
     };
 
     this.turtles.set(id, turtle);
@@ -141,7 +138,6 @@ export class TurtleGraphicsEngine {
             const endY = turtle.y - Math.sin((turtle.angle * Math.PI) / 180) * distance; // Flip Y
 
             if (turtle.penDown) {
-              console.log("down");
               this.ctx.save();
               this.ctx.fillStyle = turtle.color;
               this.ctx.strokeStyle = turtle.color;
@@ -156,8 +152,6 @@ export class TurtleGraphicsEngine {
             }
             turtle.x = endX;
             turtle.y = endY;
-            turtle.trail.push({ x: turtle.x, y: turtle.y, penDown: turtle.penDown });
-
             resolve();
 
             break;
@@ -173,37 +167,10 @@ export class TurtleGraphicsEngine {
           case "pen": {
             turtle.penDown = !!command.value;
             turtle.color = command.color || "#000000";
+            console.log(turtle.color, turtle)
             resolve();
             break;
           }
-
-          case "penUp":
-            turtle.penDown = false;
-            resolve();
-            break;
-
-          case "penDown":
-            turtle.penDown = true;
-            resolve();
-            break;
-
-          case "setColor":
-            if (command.color) {
-              turtle.color = command.color;
-            }
-            resolve();
-            break;
-
-          case "setSpeed":
-            if (command.value) {
-              turtle.speed = Math.max(0.1, command.value);
-            }
-            resolve();
-            break;
-
-          case "wait":
-            setTimeout(resolve, command.duration || 500);
-            break;
 
           default:
             resolve();
@@ -247,7 +214,7 @@ export class TurtleGraphicsEngine {
     });
   }
 
-  private animate = () => {
+  private draw = () => {
     if (!this.isRunning) return;
 
     this.turtles.forEach((_, turtleId) => {
@@ -256,31 +223,22 @@ export class TurtleGraphicsEngine {
 
     // this.drawTurtles();
 
-    this.animationId = requestAnimationFrame(this.animate);
+    // this.animationId = requestAnimationFrame(this.animate);
   };
 
   start() {
     if (this.isRunning) return;
     this.isRunning = true;
-    this.animate();
+    this.draw();
   }
 
   stop() {
     this.isRunning = false;
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
   }
 
   clear() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.setupCanvas();
-
-    // Clear turtle trails
-    this.turtles.forEach((turtle) => {
-      turtle.trail = [];
-    });
   }
 
   reset() {
