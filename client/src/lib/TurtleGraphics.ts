@@ -6,14 +6,24 @@ export interface TurtleState {
   penDown: boolean;
   color: string;
   lineWidth: number;
-  speed: number; // animation speed multiplier
+}
+
+export interface MoveCommand {
+  distance: number;
+}
+
+export interface RotateCommand {
+  angle: number;
+}
+
+export interface PenCommand {
+  color: string;
+  isDrawing: boolean;
 }
 
 export interface TurtleCommand {
   type: "move" | "rotate" | "pen";
-  value?: number;
-  color?: string;
-  duration?: number;
+  value: MoveCommand | RotateCommand | PenCommand;
 }
 
 export class TurtleGraphicsEngine {
@@ -46,8 +56,8 @@ export class TurtleGraphicsEngine {
   }
 
   setDrawDelay(delay: number) {
-  this.drawDelay = Math.max(1, delay); // Ensure minimum delay of 1ms
-}
+    this.drawDelay = Math.max(1, delay); // Ensure minimum delay of 1ms
+  }
 
   private drawGrid() {
     const width = this.canvas.width;
@@ -95,7 +105,13 @@ export class TurtleGraphicsEngine {
     this.ctx.restore();
   }
 
-  createTurtle(id: string, x: number = 0, y: number = 0, angle: number = 0, color = "#000"): TurtleState {
+  createTurtle(
+    id: string,
+    x: number = 0,
+    y: number = 0,
+    angle: number = 0,
+    color = "#000",
+  ): TurtleState {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
 
@@ -107,7 +123,6 @@ export class TurtleGraphicsEngine {
       penDown: true,
       color: color,
       lineWidth: 2,
-      speed: 1,
     };
 
     this.turtles.set(id, turtle);
@@ -133,9 +148,9 @@ export class TurtleGraphicsEngine {
       setTimeout(() => {
         switch (command.type) {
           case "move": {
-            const distance = command.value || 0;
-            const endX = turtle.x + Math.cos((turtle.angle * Math.PI) / 180) * distance;
-            const endY = turtle.y - Math.sin((turtle.angle * Math.PI) / 180) * distance; // Flip Y
+            const cmd = command.value as MoveCommand;
+            const endX = turtle.x + Math.cos((turtle.angle * Math.PI) / 180) * cmd.distance;
+            const endY = turtle.y - Math.sin((turtle.angle * Math.PI) / 180) * cmd.distance; // Flip Y
 
             if (turtle.penDown) {
               this.ctx.save();
@@ -158,16 +173,16 @@ export class TurtleGraphicsEngine {
           }
 
           case "rotate": {
-            const angleChange = command.value || 0;
-            turtle.angle += angleChange;
+            const cmd = command.value as RotateCommand;
+            turtle.angle += cmd.angle;
             resolve();
             break;
           }
 
           case "pen": {
-            turtle.penDown = !!command.value;
-            turtle.color = command.color || "#000000";
-            console.log(turtle.color, turtle)
+            const cmd = command.value as PenCommand;
+            turtle.penDown = cmd.isDrawing;
+            turtle.color = cmd.color;
             resolve();
             break;
           }
