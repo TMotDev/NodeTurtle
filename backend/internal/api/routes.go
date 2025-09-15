@@ -92,7 +92,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 
 	// Public routes
 	e.GET("/api/projects/public", projectHandler.GetPublic)
-	e.GET("/projects/featured", projectHandler.GetFeatured)
+	e.GET("/api/projects/featured", projectHandler.GetFeatured)
 
 	e.POST("/api/users", authHandler.Register)
 	e.GET("/api/users/username/:username", userHandler.CheckUsername)

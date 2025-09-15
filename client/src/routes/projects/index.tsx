@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
-import { toast } from "sonner";
+import { Toaster, toast } from "sonner";
 import type { Project } from "@/api/projects";
 import Header from "@/components/Header";
 import EditProjectForm from "@/components/forms/EditProjectForm";

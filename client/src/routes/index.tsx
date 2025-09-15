@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ProjectCard } from "@/components/ProjectCard";
+import { Toaster } from "sonner";
 import { API } from "@/services/api";
 import { ExploreProjectCard } from "@/components/ExploreProjectCard";
 import useAuthStore from "@/lib/authStore";
@@ -45,22 +45,13 @@ function Homepage() {
     const fetchFeaturedProjects = async () => {
       setIsLoading(true);
       try {
-        // Replace with your actual API call for featured projects
         const response = await API.get("/projects/featured");
 
-        // Simulate loading delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
         if (response.success) {
-          // Filter projects that are actually featured (have featured_until date in the future)
-          const featured: Array<Project> = response.data.filter(
-            (project: Project) =>
-              project.featured_until && new Date(project.featured_until) > new Date(),
-          );
+          const featured: Array<Project> = response.data.projects
           setFeaturedProjects(featured);
         } else {
           console.error("Failed to fetch featured projects:", response.error);
-          // Fallback to empty array if API fails
           setFeaturedProjects([]);
         }
       } catch (error) {
@@ -182,7 +173,6 @@ function Homepage() {
                   onLike={handleLike}
                   onUnlike={handleUnlike}
                   isLiked={isProjectLiked(project.id)}
-                  viewMode="grid"
                 />
               ))}
             </div>
@@ -217,6 +207,8 @@ function Homepage() {
           </div>
         )}
       </main>
+        <Toaster richColors position="top-center" expand />
+
     </div>
   );
 }

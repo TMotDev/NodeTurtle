@@ -13,10 +13,13 @@ export const useDragDrop = () => {
   }, []);
 
   const onDrop = useCallback(
-    (event: { preventDefault: () => void; clientX: any; clientY: any }) => {
+    (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
 
-      if (!type) {
+      const nodeType = event.dataTransfer.getData("text/plain");
+      console.log(event)
+      if (!nodeType) {
+        console.error("Node type is missing");
         return;
       }
 
@@ -24,22 +27,22 @@ export const useDragDrop = () => {
         x: event.clientX,
         y: event.clientY,
       });
+
       const newNode = {
-        id: `${type}_${uuidv4()}`,
-        type,
+        id: `${nodeType}_${uuidv4()}`,
+        type: nodeType,
         position,
-        data: INITIAL_NODE_DATA[type as keyof typeof INITIAL_NODE_DATA],
+        data: INITIAL_NODE_DATA[nodeType as keyof typeof INITIAL_NODE_DATA],
       };
 
-      setNodes((nds: Array<any>) => nds.concat(newNode));
+      setNodes((nds) => nds.concat(newNode));
     },
-    [screenToFlowPosition, type, setNodes],
+    [screenToFlowPosition, setNodes],
   );
 
-  const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
-    const nodeType = event.dataTransfer.getData("text/plain");
-    setType(nodeType);
+  const onDragStart = (event: React.DragEvent<HTMLElement>, nodeType: string) => {
     event.dataTransfer.setData("text/plain", nodeType);
+    setType(nodeType);
     event.dataTransfer.effectAllowed = "move";
   };
 
@@ -69,3 +72,4 @@ export default DnDContext;
 export const useDnD = () => {
   return useContext(DnDContext);
 };
+

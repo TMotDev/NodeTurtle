@@ -1,5 +1,6 @@
 import {
   Background,
+  Panel,
   ReactFlow,
   ReactFlowProvider,
   SelectionMode,
@@ -15,6 +16,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import { TurtleArea } from "./TurtleArea";
+import ToolboxIsland from "./ToolboxIsland";
 import type {
   Connection,
   Edge,
@@ -50,7 +52,7 @@ export const nodeTypes = {
   moveNode: MoveNode,
   loopNode: LoopNode,
   rotateNode: RotateNode,
-  penNode: PenNode
+  penNode: PenNode,
 };
 
 type AppState = {
@@ -63,7 +65,6 @@ type AppState = {
   setEdges: (edges: Array<Edge>) => void;
   setData: (nodes: Array<Node>, edges: Array<Edge>) => void;
 };
-
 
 const useStore = create<AppState>((set, get) => ({
   nodes: [],
@@ -109,7 +110,7 @@ function Flow({ project }: { project: Project }) {
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setData, setEdges } = useStore(
     useShallow(selector),
   );
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { markAsModified, hasUnsavedChanges } = useFlowManagerContext();
 
   useEffect(() => {
@@ -134,7 +135,6 @@ function Flow({ project }: { project: Project }) {
     // Only mark as modified if we're not in initial load
     markAsModified();
   }, [nodes, edges, markAsModified, isInitialLoad]);
-
 
   const { copyElements, pasteElements } = useClipboard();
   const { reactFlowWrapper, handleMouseMove } = useMousePosition();
@@ -363,7 +363,6 @@ function Flow({ project }: { project: Project }) {
     (event: BeforeUnloadEvent) => {
       // if (hasUnsavedChanges) {
       //   event.preventDefault();
-
       //   // legacy browser support
       //   event.returnValue = true;
       // }
@@ -380,7 +379,6 @@ function Flow({ project }: { project: Project }) {
 
   return (
     <main className="w-screen h-screen relative flex">
-      {/* Left side - Flow Editor */}
       <div className="flex-1 flex flex-col">
         <div
           className={`w-full h-full ${toolStates.cutTool ? "cursor-crosshair" : "cursor-default"}`}
@@ -395,7 +393,6 @@ function Flow({ project }: { project: Project }) {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onDrop={onDrop}
-            onDragStart={onDragStart}
             zoomOnDoubleClick={false}
             onDragOver={onDragOver}
             onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
@@ -424,6 +421,9 @@ function Flow({ project }: { project: Project }) {
               isActive={toolStates.lazyConnect && !toolStates.cutTool}
               connectionValid={connectionValid}
             />
+            <Panel position="bottom-center" className="text-secondary-foreground">
+              <ToolboxIsland />
+            </Panel>
           </ReactFlow>
         </div>
         {contextMenu && (
@@ -444,7 +444,6 @@ function Flow({ project }: { project: Project }) {
         )}
       </div>
 
-      {/* Right side - Turtle Graphics */}
       <TurtleArea nodes={nodes} edges={edges} />
     </main>
   );
