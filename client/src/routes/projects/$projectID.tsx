@@ -28,14 +28,12 @@ const fetchProjectById = async (projectId: string) => {
   const result = await API.get(`/projects/${projectId}`);
 
   if (result.success) {
-    const proj = result.data.project
+    const proj = result.data.project;
 
-    try{
-      const flowData:Flow = JSON.parse(proj.data)
-      proj.data = flowData
-    }
-    catch (e) {
-    }
+    try {
+      const flowData: Flow = JSON.parse(proj.data);
+      proj.data = flowData;
+    } catch (e) {}
     return proj;
   } else {
     throw notFound();
@@ -48,7 +46,7 @@ function Project() {
   return (
     <div>
       <FlowEditor project={project} />
-      <Toaster />
+      <Toaster richColors position="top-center" expand />
     </div>
   );
 }

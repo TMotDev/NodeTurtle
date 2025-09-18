@@ -1,20 +1,19 @@
-import { ArrowRight, Eraser, Flag, FlagTriangleRight, Pen, Play, Repeat2, RotateCcw, Save, Scissors } from "lucide-react";
+import { ArrowRight, Eraser, Flag, Pen, Play, Repeat2, RotateCcw, Save } from "lucide-react";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { Separator } from "../ui/separator";
+import type { Project } from "@/api/projects";
 import { useDragDrop } from "@/hooks/FlowDragAndDropContext";
+import { useFlowManagerContext } from "@/hooks/FlowManager";
 
-export default function ToolboxIsland() {
+export default function ToolboxIsland({ project }: { project: Project }) {
   const { onDragStart } = useDragDrop();
+  const [showNodes, setShowNodes] = useState(true);
+  const { saveFlow, hasUnsavedChanges } = useFlowManagerContext();
 
-  const [showNodes, setShowNodes] = useState(true)
-
-  function handleShowTools(){
-    if(!showNodes)
-    {
-      setShowNodes(true)
+  function handleShowTools() {
+    if (!showNodes) {
+      setShowNodes(true);
     }
-
   }
 
   const tools = [
@@ -52,22 +51,27 @@ export default function ToolboxIsland() {
 
   return (
     <div className="flex flex-col items-center gap-2 transition-all duration-1000 ease-linear">
-      <div className="bg-gray-500/20 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-500/30 p-1 flex flex-row items-center">
+      <div className="bg-gray-500/20 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-500/30 p-1 flex flex-col lg:flex-row items-center">
         <div className={`flex-col gap-2 ${showNodes ? "flex" : "hidden"}`}>
-          <div className="text-lg text-center font-bold text-gray-500" onClick={()=>setShowNodes((st)=>!st)}>Nodes</div>
+          <div
+            className="text-lg text-center font-bold text-gray-500"
+            onClick={() => setShowNodes((st) => !st)}
+          >
+            Nodes
+          </div>
           <div className="flex flex-row gap-2 px-2 pb-2">
             {tools.map((tool) => {
               const IconComponent = tool.icon;
               return (
-                <Tooltip>
+                <Tooltip key={tool.id}>
                   <TooltipTrigger>
                     <div
-                      key={tool.id}
+                      // key={tool.id}
                       onDragStart={(event) => onDragStart(event, tool.id)}
                       draggable
                       className="group relative cursor-grab active:cursor-grabbing"
                     >
-                      <div className="min-w-16 min-h-16 rounded-xl bg-white/40 hover:bg-white/60 border-2 border-gray-500/20 shadow-md transition-all duration-200 ease-out flex items-center justify-center hover:scale-105 active:scale-95">
+                      <div className="min-w-16 min-h-16 rounded-xl bg-white/40 hover:bg-white/60 border-2 border-gray-500/20 shadow-md transition-all duration-200 ease-out flex items-center justify-center  active:scale-95">
                         <IconComponent
                           size={22}
                           className={`text-gray-700 transition-colors duration-200 ${tool.hoverColor}`}
@@ -81,16 +85,17 @@ export default function ToolboxIsland() {
             })}
           </div>
         </div>
-        <div className={`h-16 w-1 rounded-lg bg-gray-500/20 hover:scale-105 transition-scale duration-300 ease-out cursor-pointer ${!showNodes && 'mx-4 w-2'}`} onClick={handleShowTools}></div>
+        <div
+          className={`h-1 w-16 lg:h-16 lg:w-1 rounded-lg bg-gray-500/20  transition-scale duration-300 ease-out ${!showNodes && "lg:mx-4 lg:w-2 my-4 h-2 cursor-pointer"}`}
+          onClick={handleShowTools}
+        ></div>
         <div className="flex flex-col gap-2">
           <div className="text-lg text-center font-bold text-gray-500">Actions</div>
           <div className="flex flex-row gap-2 px-2 pb-2">
             <Tooltip>
               <TooltipTrigger>
-                <div
-                  className="group relative cursor-grab active:cursor-grabbing"
-                >
-                  <div className="min-w-16 min-h-16 rounded-xl bg-white/40 hover:bg-white/60 border-2 border-gray-500/20 shadow-md transition-all duration-200 ease-out flex items-center justify-center hover:scale-105 active:scale-95">
+                <div className="cursor-pointer group relative">
+                  <div className="min-w-16 min-h-16 rounded-xl bg-white/40 hover:bg-white/60 border-2 border-gray-500/20 shadow-md transition-all duration-200 ease-out flex items-center justify-center active:scale-95">
                     <Eraser
                       size={22}
                       className={`text-gray-700 transition-colors duration-200 group-hover:text-pink-700`}
@@ -98,17 +103,22 @@ export default function ToolboxIsland() {
                   </div>
                 </div>
               </TooltipTrigger>
-              <TooltipContent sideOffset={5}>{"Cut"}</TooltipContent>
+              <TooltipContent sideOffset={5}>{"Eraser"}</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger>
                 <div
-                  className="group relative cursor-grab active:cursor-grabbing"
+                  className={`cursor-pointer group relative disabled:cursor-default`}
+                  onClick={() => saveFlow(project.id)}
+                  role="button"
+                  aria-disabled={!hasUnsavedChanges}
                 >
-                  <div className="min-w-16 min-h-16 rounded-xl bg-white/40 hover:bg-white/60 border-2 border-gray-500/20 shadow-md transition-all duration-200 ease-out flex items-center justify-center hover:scale-105 active:scale-95">
+                  <div
+                    className={`min-w-16 min-h-16 rounded-xl bg-white/40 hover:bg-white/60 border-2 border-gray-500/20 ${hasUnsavedChanges && "shadow-orange-300"} shadow-md transition-all duration-200 ease-out flex items-center justify-center active:scale-95`}
+                  >
                     <Save
                       size={22}
-                      className={`text-gray-700 transition-colors duration-200 group-hover:text-blue-600`}
+                      className={`group-disabled:text-gray-400 text-gray-700 transition-colors duration-200 group-hover:text-blue-600`}
                     />
                   </div>
                 </div>
@@ -117,10 +127,8 @@ export default function ToolboxIsland() {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger>
-                <div
-                  className="group relative cursor-grab active:cursor-grabbing"
-                >
-                  <div className="min-w-16 min-h-16 rounded-xl bg-white/40 hover:bg-white/60 border-2 border-gray-500/20 shadow-md transition-all duration-200 ease-out flex items-center justify-center hover:scale-105 active:scale-95">
+                <div className="cursor-pointer group relative">
+                  <div className="min-w-16 min-h-16 rounded-xl bg-white/40 hover:bg-white/60 border-2 border-gray-500/20 shadow-md transition-all duration-200 ease-out flex items-center justify-center active:scale-95">
                     <Play
                       size={22}
                       className={`text-gray-700 transition-colors duration-200 group-hover:text-green-600`}

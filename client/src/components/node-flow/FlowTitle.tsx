@@ -6,10 +6,7 @@ interface FlowTitleEditorProps {
   onTitleChange: (title: string) => void;
 }
 
-export const FlowTitle = ({
-  title,
-  onTitleChange,
-}: FlowTitleEditorProps) => {
+export const FlowTitle = ({ title, onTitleChange }: FlowTitleEditorProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
 
@@ -20,7 +17,7 @@ export const FlowTitle = ({
 
   const handleSubmit = () => {
     onTitleChange(editValue.trim() || "Untitled Flow");
-    setEditValue(editValue.trim())
+    setEditValue(editValue.trim());
     setIsEditing(false);
   };
 
@@ -28,11 +25,11 @@ export const FlowTitle = ({
     if (e.key === "Enter") {
       handleSubmit();
     } else if (e.key === "Escape") {
-      handleCancel()
+      handleCancel();
     }
   };
 
-  function handleCancel(){
+  function handleCancel() {
     setEditValue(title);
     setIsEditing(false);
   }
@@ -44,7 +41,7 @@ export const FlowTitle = ({
         onChange={(e) => setEditValue(e.target.value)}
         onBlur={handleCancel}
         onKeyDown={handleKeyDown}
-        className="w-64 h-8 text-lg font-medium"
+        className="h-8 text-xl font-medium w-full"
         autoFocus
       />
     );
@@ -52,11 +49,11 @@ export const FlowTitle = ({
 
   return (
     <div
-      className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+      className="flex w-full items-center gap-2 font-bold text-xl cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
       onDoubleClick={handleDoubleClick}
       title="Double-click to edit title"
     >
-      <span className="text-lg font-medium">{title}</span>
+      <span>{title}</span>
     </div>
   );
 };

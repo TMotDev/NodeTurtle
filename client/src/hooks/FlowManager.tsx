@@ -1,24 +1,18 @@
 import { useReactFlow } from "@xyflow/react";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { ReactNode } from "react";
 import type { Flow, Project } from "@/api/projects";
+import type { ApiResponse } from "@/api/utils";
+import { API } from "@/services/api";
 
 const FLOWS_STORAGE_KEY = "savedFlows";
 const CURRENT_FLOW_KEY = "currentFlowId";
 
 export const useLocalProjectManager = () => {
-  const { getNodes, getEdges, setNodes, setEdges, setViewport, getViewport } =
-    useReactFlow();
+  const { getNodes, getEdges, setNodes, setEdges, setViewport, getViewport } = useReactFlow();
   const [currentProjectID, setCurrentProjectID] = useState<string | null>(null);
-  const [currentProjectTitle, setCurrentProjectTitle] =
-    useState<string>("Untitled Project");
+  const [currentProjectTitle, setCurrentProjectTitle] = useState<string>("Untitled Project");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const getLocalProjects = useCallback((): Array<Project> => {
@@ -71,25 +65,25 @@ export const useLocalProjectManager = () => {
 
     const projects = getLocalProjects();
 
-    const flowData:Flow = {
+    const flowData: Flow = {
       nodes: getNodes(),
-      edges:   getEdges(),
+      edges: getEdges(),
       viewport: getViewport(),
-      nodeCount: getNodes().length
-    }
+      nodeCount: getNodes().length,
+    };
 
     const currentProject: Project = {
       id: currentProjectID,
       title: currentProjectTitle,
-      created_at: projects.find((f) => f.id === currentProjectID)?.created_at ||
-        new Date().toISOString(),
+      created_at:
+        projects.find((f) => f.id === currentProjectID)?.created_at || new Date().toISOString(),
       last_edited_at: new Date().toISOString(),
       description: "-",
       creator_id: "-",
       creator_username: "-",
       likes_count: 0,
       is_public: false,
-      data: flowData
+      data: flowData,
     };
 
     const updatedFlows = projects.filter((f) => f.id !== currentProjectID);
@@ -98,14 +92,31 @@ export const useLocalProjectManager = () => {
     localStorage.setItem(FLOWS_STORAGE_KEY, JSON.stringify(updatedFlows));
     localStorage.setItem(CURRENT_FLOW_KEY, currentProjectID);
     setHasUnsavedChanges(false);
-  }, [
-    currentProjectID,
-    currentProjectTitle,
-    getNodes,
-    getEdges,
-    getViewport,
-    getLocalProjects,
-  ]);
+  }, [currentProjectID, currentProjectTitle, getNodes, getEdges, getViewport, getLocalProjects]);
+
+  async function saveFlow(projectID: string) {
+    const flowData: Flow = {
+      nodes: getNodes(),
+      edges: getEdges(),
+      viewport: getViewport(),
+      nodeCount: getNodes().length,
+    };
+
+    const result = await API.patch(`/projects/${projectID}`, { data: JSON.stringify(flowData) });
+
+    if (!result.success) {
+      console.log(result.error);
+      return;
+    }
+
+    setHasUnsavedChanges(false);
+  }
+
+  async function changeTitle(projectID: string, newTitle: string): Promise<ApiResponse> {
+    const result = await API.patch(`/projects/${projectID}`, { title: newTitle });
+
+    return result;
+  }
 
   const createNewFlow = useCallback(() => {
     const newId = `flow_${uuidv4()}`;
@@ -146,6 +157,8 @@ export const useLocalProjectManager = () => {
     getSavedFlows: getLocalProjects,
     saveCurrentFlow: saveLocalProject,
     loadFlow: loadLocalProject,
+    saveFlow,
+    changeTitle,
     createNewFlow,
     deleteFlow,
     updateFlowTitle,
@@ -153,32 +166,22 @@ export const useLocalProjectManager = () => {
   };
 };
 
-const FlowManagerContext = createContext<ReturnType<
-  typeof useLocalProjectManager
-> | null>(null);
+const FlowManagerContext = createContext<ReturnType<typeof useLocalProjectManager> | null>(null);
 
 interface FlowManagerProviderProps {
   children: ReactNode;
 }
 
-export const FlowManagerProvider: React.FC<FlowManagerProviderProps> = ({
-  children,
-}) => {
+export const FlowManagerProvider: React.FC<FlowManagerProviderProps> = ({ children }) => {
   const flowManager = useLocalProjectManager();
 
-  return (
-    <FlowManagerContext.Provider value={flowManager}>
-      {children}
-    </FlowManagerContext.Provider>
-  );
+  return <FlowManagerContext.Provider value={flowManager}>{children}</FlowManagerContext.Provider>;
 };
 
 export const useFlowManagerContext = () => {
   const context = useContext(FlowManagerContext);
   if (!context) {
-    throw new Error(
-      "useFlowManagerContext must be used within a FlowManagerProvider",
-    );
+    throw new Error("useFlowManagerContext must be used within a FlowManagerProvider");
   }
   return context;
 };

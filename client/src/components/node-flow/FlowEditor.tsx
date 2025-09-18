@@ -422,7 +422,7 @@ function Flow({ project }: { project: Project }) {
               connectionValid={connectionValid}
             />
             <Panel position="bottom-center" className="text-secondary-foreground">
-              <ToolboxIsland />
+              <ToolboxIsland project={project} />
             </Panel>
           </ReactFlow>
         </div>
@@ -444,7 +444,7 @@ function Flow({ project }: { project: Project }) {
         )}
       </div>
 
-      <TurtleArea nodes={nodes} edges={edges} />
+      <TurtleArea project={project} nodes={nodes} edges={edges} />
     </main>
   );
 }
@@ -454,13 +454,13 @@ export function FlowEditor({ project }: { project: Project }) {
     <ReactFlowProvider>
       <FlowManagerProvider>
         <DnDProvider>
-          <SidebarProvider>
-            <NodeSiderbar project={project} />
-            <SidebarTrigger />
-            <MouseProvider>
-              <Flow project={project} />
-            </MouseProvider>
-          </SidebarProvider>
+          {/* <SidebarProvider> */}
+          {/* <NodeSiderbar project={project} /> */}
+          {/* <SidebarTrigger /> */}
+          <MouseProvider>
+            <Flow project={project} />
+          </MouseProvider>
+          {/* </SidebarProvider> */}
         </DnDProvider>
       </FlowManagerProvider>
     </ReactFlowProvider>
