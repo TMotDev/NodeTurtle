@@ -190,7 +190,7 @@ export class TurtleGraphicsEngine {
           default:
             resolve();
         }
-      }, this.drawDelay);
+      }, this.drawDelay === 10 ? 0 : this.drawDelay);
     });
   }
 

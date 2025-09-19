@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 interface FlowTitleEditorProps {
   title: string;
   onTitleChange: (title: string) => void;
+  editable?: boolean;
 }
 
-export const FlowTitle = ({ title, onTitleChange }: FlowTitleEditorProps) => {
+export const FlowTitle = ({ title, onTitleChange, editable = false }: FlowTitleEditorProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
 
@@ -50,7 +51,7 @@ export const FlowTitle = ({ title, onTitleChange }: FlowTitleEditorProps) => {
   return (
     <div
       className="flex w-full items-center gap-2 font-bold text-xl cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-      onDoubleClick={handleDoubleClick}
+      onDoubleClick={() => editable && handleDoubleClick}
       title="Double-click to edit title"
     >
       <span>{title}</span>

@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Play, RotateCcw, Square, Trash2, Turtle, Zap } from "lucide-react";
+import { Home, Play, RotateCcw, Save, Square, Trash2, Turtle, Undo2, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { Link, useRouter } from "@tanstack/react-router";
 import { Slider } from "../ui/slider";
+import { Button } from "../ui/button";
 import { FlowTitle } from "./FlowTitle";
 import type { Edge, Node } from "@xyflow/react";
 import type { Project } from "@/api/projects";
 import { TurtleFlowExecutor } from "@/lib/TurtleFlowExecutor";
 import { useFlowManagerContext } from "@/hooks/FlowManager";
+import useAuthStore from "@/lib/authStore";
 
 interface TurtleAreaProps {
   nodes: Array<Node>;
@@ -23,6 +26,9 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
   const [speed, setSpeed] = useState([5]); // Speed from 1-10, default 5
   const { changeTitle } = useFlowManagerContext();
   const [title, setTitle] = useState(project.title);
+  const { saveFlow, hasUnsavedChanges } = useFlowManagerContext();
+  const { user } = useAuthStore();
+  const router = useRouter();
   // Initialize turtle executor
   useEffect(() => {
     if (canvasRef.current) {
@@ -73,41 +79,12 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
     }
   }, []);
 
-  const clearCanvas = useCallback(() => {
-    if (executorRef.current) {
-      executorRef.current.clear();
-    }
-  }, []);
-
-  const resetTurtles = useCallback(() => {
-    if (executorRef.current) {
-      executorRef.current.reset();
-      setIsExecuting(false);
-      setTurtleCount(0);
-    }
-  }, []);
-
-  const getStatusColor = () => {
-    if (isExecuting) return "text-blue-600";
-    if (!hasStartNode) return "text-red-500";
-    if (turtleCount > 0) return "text-green-600";
-    return "text-gray-500";
-  };
-
-  const getStatusText = () => {
-    if (isExecuting) return "Executing...";
-    if (!hasStartNode) return "No start node found";
-    if (turtleCount > 0)
-      return `Completed with ${turtleCount} turtle${turtleCount !== 1 ? "s" : ""}`;
-    return "Ready to execute";
-  };
-
   const getSpeedLabel = (value: number) => {
     if (value <= 2) return "Very Slow";
     if (value <= 4) return "Slow";
     if (value <= 6) return "Normal";
-    if (value <= 8) return "Fast";
-    return "Very Fast";
+    if (value <= 9) return "Fast";
+    return "instant";
   };
 
   async function handleChangeTitle(t: string) {
@@ -124,35 +101,74 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
   return (
     <div className="bg-white w-[30vw] flex flex-col border-l border">
       {/* Header */}
-      <div className="bg-white border-b border p-4">
-        <div className="flex items-center justify-between mb-3">
-          <FlowTitle title={title} onTitleChange={(t) => handleChangeTitle(t)} />
-
-          <div className="text-sm text-primary">
-            {turtleCount > 0 && (
-              <div className="flex items-center gap-1">
-                <Zap size={14} />
-                <span className="font-medium">{turtleCount}</span>
+      <div className="bg-white border-b border">
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between border-b-1 bg-gray-200 p-4 border-white">
+            <div className="flex flex-row items-center justify-between gap-3">
+              {user?.id === project.creator_id && (
+                <button
+                  className={`cursor-pointer group relative disabled:cursor-default`}
+                  onClick={() => saveFlow(project.id)}
+                  disabled={!hasUnsavedChanges}
+                >
+                  <div
+                    className={`min-w-12 min-h-12 rounded-xl bg-white/40 hover:bg-white/60 border-2 ${hasUnsavedChanges ? "border-blue-600/40" : "border-gray-500/20"} transition-all duration-200 ease-out flex items-center justify-center active:scale-95`}
+                  >
+                    <Save
+                      size={22}
+                      className={`group-disabled:text-gray-400 text-gray-700 transition-colors duration-200 group-hover:text-blue-600`}
+                    />
+                  </div>
+                </button>
+              )}
+              <FlowTitle
+                editable={user?.id === project.creator_id}
+                title={title}
+                onTitleChange={(t) => handleChangeTitle(t)}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-primary">
+                {turtleCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Zap size={14} />
+                    <span className="font-medium">{turtleCount}</span>
+                  </div>
+                )}
               </div>
-            )}
+              <button
+                className="cursor-pointer group relative"
+                onClick={() => {
+                  console.log(router.history.canGoBack())
+                  if (router.history.canGoBack()) {
+                    router.history.back();
+                    console.log("going back")
+                  } else {
+                    router.navigate({ to: "/" });
+                    console.log("root")
+                  }
+                }}
+              >
+                <div className="min-w-12 min-h-12 rounded-xl bg-white/40 hover:bg-white/60 border-2 border-gray-500/20 transition-all duration-200 ease-out flex items-center justify-center active:scale-95">
+                  {router.history.canGoBack() ? (
+                    <Undo2
+                      size={22}
+                      className="text-gray-700 transition-colors duration-200 group-hover:text-blue-600"
+                    />
+                  ) : (
+                    <Home
+                      size={22}
+                      className="text-gray-700 transition-colors duration-200 group-hover:text-blue-600"
+                    />
+                  )}
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
-        {/* Status Bar */}
-        <div className="bg-white border-t border p-3 my-2">
-          <div className={`text-sm flex items-center gap-2 ${getStatusColor()}`}>
-            {isExecuting && (
-              <div className="animate-spin h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-            )}
-            <span>{getStatusText()}</span>
-          </div>
-
-          {!hasStartNode && nodes.length > 0 && (
-            <div className="text-xs text-primary mt-1">Add a Start Node to begin execution</div>
-          )}
-
-          {hasStartNode && nodes.length > 1 && !isExecuting && (
-            <div className="text-xs text-primary mt-1">
-              Flow ready with {nodes.length} nodes, {edges.length} connections
+          {nodes.length > 0 && (
+            <div className="text-xs text-primary mt-1 flex flex-col items-start justify-center bg-gray-200 p-4 ">
+              <span className="text-md">{nodes.length} nodes</span>
+              <span className="font-md">{edges.length} connections</span>
             </div>
           )}
         </div>
@@ -179,36 +195,14 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
         {/* Controls */}
         <div className="flex gap-2 mb-4">
           <button
-            onClick={executeFlow}
-            disabled={isExecuting || !hasStartNode}
-            className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            onClick={isExecuting ? stopExecution : executeFlow}
+            disabled={!hasStartNode && !isExecuting}
+            className={`flex items-center gap-2 px-3 py-2 rounded text-sm text-white transition-colors ${
+              isExecuting ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            <Play size={14} />
-            {isExecuting ? "Running..." : "Run"}
-          </button>
-
-          <button
-            onClick={stopExecution}
-            disabled={!isExecuting}
-            className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Square size={14} />
-            Stop
-          </button>
-
-          <button
-            onClick={clearCanvas}
-            className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-          >
-            <Trash2 size={14} />
-            Clear
-          </button>
-
-          <button
-            onClick={resetTurtles}
-            className="flex items-center gap-1 px-2 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
-          >
-            <RotateCcw size={14} />
+            {isExecuting ? <Square size={14} /> : <Play size={14} />}
+            {isExecuting ? "Stop" : "Run"}
           </button>
         </div>
 

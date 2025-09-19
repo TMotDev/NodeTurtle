@@ -64,12 +64,6 @@ export default function Header() {
                   <ul className="grid w-[300px] gap-4">
                     <li>
                       <NavigationMenuLink asChild>
-                        <Link to="/admin/dashboard">
-                          <div className="font-medium">Dashboard</div>
-                          <div className="text-muted-foreground">Overview and analytics</div>
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
                         <Link to="/admin/users">
                           <div className="font-medium">Users</div>
                           <div className="text-muted-foreground">Manage user accounts</div>

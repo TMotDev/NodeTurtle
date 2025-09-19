@@ -1,4 +1,5 @@
 import { Heart, HeartOff, MoreHorizontal } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,8 +25,9 @@ export const ProjectCard = ({
   isOwned: boolean;
 }) => {
   return (
-    <a
-      href={`/projects/${project.id}`}
+    <Link
+      to={"/projects/$projectID"}
+      params={{ projectID: project.id }}
       className="relative h-32 rounded-sm border-2 cursor-pointer active:scale-95 transition-all duration-200 flex-shrink-0 bg-blue-50 border-gray-300 hover:border-blue-700 flex overflow-hidden"
       title={project.title}
     >
@@ -50,7 +52,9 @@ export const ProjectCard = ({
             <DropdownMenuContent align="end">
               {isOwned ? (
                 <>
-                  <DropdownMenuItem onClick={() => onEdit?.(project)}>Edit Project</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onEdit?.(project)}>
+                    Edit Project
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onDelete?.(project)}
                     className="text-red-600 focus:text-red-600"
@@ -103,6 +107,6 @@ export const ProjectCard = ({
           </div>
         </div>
       </div>
-    </a>
+    </Link>
   );
 };

@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { Badge, Calendar, Heart, Star, User } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import type { Project } from "@/api/projects";
 import useAuthStore from "@/lib/authStore";
 import { getTimeSince } from "@/lib/utils";
@@ -25,9 +26,9 @@ export function ExploreProjectCard({
       toast.error("Please log in to like projects");
       return;
     }
-    if(project.creator_id === user.id ){
+    if (project.creator_id === user.id) {
       toast.error("Can't like the projects you own");
-      return
+      return;
     }
     if (isLiked) {
       onUnlike(project);
@@ -37,8 +38,10 @@ export function ExploreProjectCard({
   };
 
   return (
-    <a
+    <Link
       href={`/projects/${project.id}`}
+      to={"/projects/$projectID"}
+      params={{ projectID: project.id }}
       className="block max-w-sm w-64 rounded-lg border bg-white hover:shadow-lg transition-all duration-200 hover:border-blue-300 overflow-hidden"
     >
       {/* Thumbnail Section with Heart Overlay */}
@@ -67,8 +70,7 @@ export function ExploreProjectCard({
         {/* Featured badge if applicable */}
         {project.featured_until && new Date(project.featured_until) > new Date() && (
           <div className="absolute top-3 left-3 bg-yellow-400/90 text-yellow-900 flex gap-2 p-1 rounded-sm items-center">
-            <Star className="border-yellow-500/30 backdrop-blur-sm">
-            </Star>
+            <Star className="border-yellow-500/30 backdrop-blur-sm"></Star>
           </div>
         )}
       </div>
@@ -92,6 +94,6 @@ export function ExploreProjectCard({
           </div>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
