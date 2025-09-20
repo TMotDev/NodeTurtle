@@ -73,10 +73,10 @@ type ProjectFilter struct {
 	Limit int `query:"limit" validate:"min=1,max=100"`
 
 	// Filters
-	SearchTerm  string     `query:"search_term" validate:"omitempty"`
-	CreatorUsername   *string `query:"creator" validate:"omitempty"`
-	IsPublic    *bool      `query:"is_public"`
-	IsFeatured  *bool      `query:"is_featured"`
+	SearchTerm      string  `query:"search_term" validate:"omitempty"`
+	CreatorUsername *string `query:"creator" validate:"omitempty"`
+	// IsPublic    *bool      `query:"is_public"`
+	IsFeatured *bool `query:"is_featured"`
 
 	// Time fields
 	CreatedBefore    *time.Time `query:"created_before" validate:"omitempty"`

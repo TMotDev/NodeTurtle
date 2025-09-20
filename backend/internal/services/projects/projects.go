@@ -562,10 +562,10 @@ func (s ProjectService) ListProjects(filters data.ProjectFilter) ([]data.Project
 	}
 
 	// Filter by public status
-	if filters.IsPublic != nil {
-		whereClause = append(whereClause, "p.is_public = $"+fmt.Sprint(len(args)+1))
-		args = append(args, *filters.IsPublic)
-	}
+	// if filters.IsPublic != nil {
+	whereClause = append(whereClause, "p.is_public = true")
+	// args = append(args, *filters.IsPublic)
+	// }
 
 	// Filter by featured status
 	if filters.IsFeatured != nil {

@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Eye, MoreHorizontal, Search, Star } from "lucide-react";
+import { MoreHorizontal, Search, Star } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import type { Project } from "@/api/projects";
 import useAuthStore, { Role } from "@/lib/authStore";
@@ -49,13 +49,11 @@ export const Route = createFileRoute("/admin/projects")({
 });
 
 function AdminProjects() {
-  const contextUser = useAuthStore((state) => state.user);
   const [projects, setProjects] = useState<Array<Project>>([]);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [filters, setFilters] = useState({
-    is_public: "all",
     is_featured: "all",
   });
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,8 +67,6 @@ function AdminProjects() {
       try {
         const queryParams: any = { page, limit: 10 };
 
-        if (currentFilters.is_public !== "all")
-          queryParams.is_public = currentFilters.is_public === "public";
         if (currentFilters.is_featured !== "all")
           queryParams.is_featured = currentFilters.is_featured === "featured";
         if (currentFilters.search_term) queryParams.search_term = currentFilters.search_term;
@@ -100,28 +96,13 @@ function AdminProjects() {
     fetchProjects({ ...filters, search_term: searchTerm });
   };
 
-  const handleFilterChange = (key: "is_public" | "is_featured", value: string) => {
+  const handleFilterChange = (key: "is_featured", value: string) => {
     setPage(1);
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const getStatusBadges = (project: Project) => {
     const badges = [];
-
-    if (project.is_public) {
-      badges.push(
-        <Badge key="public" variant="default" className="bg-green-500">
-          <Eye className="w-3 h-3 mr-1" />
-          Public
-        </Badge>,
-      );
-    } else {
-      badges.push(
-        <Badge key="private" variant="secondary">
-          Private
-        </Badge>,
-      );
-    }
 
     if (project.featured_until) {
       const isFeaturedActive =
@@ -178,20 +159,6 @@ function AdminProjects() {
     fetchProjects(filters);
   };
 
-  // const handleToggleVisibility = async (projectId: string, isPublic: boolean) => {
-  //   const result = await API.put(`/admin/projects/${projectId}`, {
-  //     is_public: !isPublic
-  //   });
-
-  //   if (result.success) {
-  //     toast.success(`Project visibility updated`);
-  //   } else {
-  //     toast.error(`Error when updating visibility: ${result.error}`);
-  //   }
-
-  //   fetchProjects(filters);
-  // };
-
   const isFeaturedActive = (featuredUntil?: string) => {
     return featuredUntil && new Date(featuredUntil) > new Date();
   };
@@ -218,19 +185,6 @@ function AdminProjects() {
               />
               <Button onClick={handleSearch}>Search</Button>
             </div>
-            <Select
-              value={filters.is_public}
-              onValueChange={(value) => handleFilterChange("is_public", value)}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by visibility" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Visibility</SelectItem>
-                <SelectItem value="public">Public</SelectItem>
-                <SelectItem value="private">Private</SelectItem>
-              </SelectContent>
-            </Select>
             <Select
               value={filters.is_featured}
               onValueChange={(value) => handleFilterChange("is_featured", value)}
@@ -311,12 +265,6 @@ function AdminProjects() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => console.log("toggle visibility")}
-                            // onClick={() => handleToggleVisibility(project.id, project.is_public)}
-                          >
-                            {project.is_public ? "Make Private" : "Make Public"}
-                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {project.featured_until && isFeaturedActive(project.featured_until) ? (
                             <DropdownMenuItem

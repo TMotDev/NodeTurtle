@@ -34,7 +34,7 @@ export default function UserMenu() {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger>{isLoading ? "Loading..." : "Account"}</DropdownMenuTrigger>
+        <DropdownMenuTrigger>{isLoading ? "Loading..." : user.username}</DropdownMenuTrigger>
         <DropdownMenuContent>
           {isLoading ? (
             // Skeleton loaders while loading

@@ -490,8 +490,8 @@ func TestListProjects(t *testing.T) {
 	now := td.Projects[ProjectAlicePublic].CreatedAt
 
 	tests := map[string]struct {
-		filters      data.ProjectFilter
-		expectErr    error
+		filters   data.ProjectFilter
+		expectErr error
 	}{
 		"Default fetch": {
 			filters: data.ProjectFilter{
@@ -514,11 +514,11 @@ func TestListProjects(t *testing.T) {
 		},
 		"Filter by creator username": {
 			filters: data.ProjectFilter{
-				Page:           1,
-				Limit:          10,
+				Page:            1,
+				Limit:           10,
 				CreatorUsername: utils.Ptr(td.Users[UserBob].Username),
-				SortField:      "created_at",
-				SortOrder:      "desc",
+				SortField:       "created_at",
+				SortOrder:       "desc",
 			},
 			expectErr: nil,
 		},
@@ -526,7 +526,6 @@ func TestListProjects(t *testing.T) {
 			filters: data.ProjectFilter{
 				Page:      1,
 				Limit:     10,
-				IsPublic:  utils.Ptr(true),
 				SortField: "created_at",
 				SortOrder: "desc",
 			},
@@ -536,7 +535,6 @@ func TestListProjects(t *testing.T) {
 			filters: data.ProjectFilter{
 				Page:      1,
 				Limit:     10,
-				IsPublic:  utils.Ptr(false),
 				SortField: "created_at",
 				SortOrder: "desc",
 			},
@@ -564,23 +562,23 @@ func TestListProjects(t *testing.T) {
 		},
 		"Filter by created_before": {
 			filters: data.ProjectFilter{
-				Page:         1,
-				Limit:        10,
+				Page:          1,
+				Limit:         10,
 				CreatedBefore: utils.Ptr(now.Add(1 * time.Minute)),
-				SortField:    "created_at",
-				SortOrder:    "desc",
+				SortField:     "created_at",
+				SortOrder:     "desc",
 			},
 			expectErr: nil,
 		},
 		"Filter by created_after (future, expect none)": {
 			filters: data.ProjectFilter{
-				Page:        1,
-				Limit:       10,
+				Page:         1,
+				Limit:        10,
 				CreatedAfter: utils.Ptr(now.Add(24 * time.Hour)),
-				SortField:   "created_at",
-				SortOrder:   "desc",
+				SortField:    "created_at",
+				SortOrder:    "desc",
 			},
-			expectErr:    nil,
+			expectErr: nil,
 		},
 	}
 
