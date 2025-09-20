@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"NodeTurtleAPI/internal/data"
+	"NodeTurtleAPI/internal/services"
 	"NodeTurtleAPI/internal/services/projects"
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -404,5 +406,48 @@ func (h *ProjectHandler) List(c echo.Context) error {
 			"total": total,
 			"page":  filters.Page,
 		},
+	})
+}
+
+func (h *ProjectHandler) Feature(c echo.Context) error {
+	idStr := c.Param("id")
+	projectID, err := uuid.Parse(idStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	var payload struct {
+		Duration *int `json:"duration" validate:"omitempty"`
+	}
+
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+	}
+
+	var featuredUntil *time.Time
+
+	if payload.Duration != nil {
+		if *payload.Duration <= 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Duration must be greater than 0")
+		}
+
+		t := time.Now().UTC().Add(time.Duration(*payload.Duration) * time.Hour)
+		featuredUntil = &t
+	}
+
+	project, err := h.projectService.FeatureProject(projectID, featuredUntil)
+	if err != nil {
+		if err == services.ErrProjectNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "Project not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to feature project")
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"project": project,
 	})
 }

@@ -11,6 +11,7 @@ var (
 	ErrAccountSuspended   = errors.New("account is suspended")
 	ErrUserExists         = errors.New("user already exists")
 	ErrUserNotFound       = errors.New("user not found")
+	ErrProjectNotFound    = errors.New("project not found")
 	ErrDuplicateEmail     = errors.New("email already in use")
 	ErrDuplicateUsername  = errors.New("username already in use")
 	ErrRecordNotFound     = errors.New("record not found")

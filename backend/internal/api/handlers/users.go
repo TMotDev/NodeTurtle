@@ -114,8 +114,8 @@ func (h *UserHandler) UpdateCurrent(c echo.Context) error {
 	}
 
 	var payload struct {
-		Username *string `json:"username,omitempty" validate:"omitempty,min=3,max=20,alphanum"`
-		Email    *string `json:"email,omitempty" validate:"omitempty,email"`
+		Username *string `json:"username" validate:"omitempty,min=3,max=20,alphanum"`
+		Email    *string `json:"email" validate:"omitempty,email"`
 		Password string  `json:"password" validate:"required"`
 	}
 

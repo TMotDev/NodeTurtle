@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { buildQueryParams, handleApiError, uuidSchema, validateData } from "./utils";
-import type { ApiResponse, PaginatedResponse } from "./utils";
+import type { PaginatedResponse } from "./utils";
 
 import { API } from "@/services/api";
 

@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Eye, MoreHorizontal, Search, Star } from "lucide-react";
 import { Toaster, toast } from "sonner";
+import type { Project } from "@/api/projects";
 import useAuthStore, { Role } from "@/lib/authStore";
 import {
   Table,
@@ -46,21 +47,6 @@ export const Route = createFileRoute("/admin/projects")({
   beforeLoad: requireAuth(Role.Admin),
   component: AdminProjects,
 });
-
-// Assuming Project type structure based on the filter
-interface Project {
-  id: string;
-  title: string;
-  description?: string;
-  creator_username: string;
-  creator_id: string;
-  is_public: boolean;
-  is_featured: boolean;
-  featured_until?: string;
-  likes_count: number;
-  created_at: string;
-  last_edited_at: string;
-}
 
 function AdminProjects() {
   const contextUser = useAuthStore((state) => state.user);
@@ -137,12 +123,12 @@ function AdminProjects() {
       );
     }
 
-    if (project.is_featured) {
+    if (project.featured_until) {
       const isFeaturedActive =
         project.featured_until && new Date(project.featured_until) > new Date();
 
       if (isFeaturedActive) {
-        const timeRemaining = getTimeUntil(project.featured_until!);
+        const timeRemaining = getTimeUntil(project.featured_until);
         badges.push(
           <Badge key="featured" variant="default" className="bg-yellow-500">
             <Star className="w-3 h-3 mr-1" />
@@ -172,7 +158,7 @@ function AdminProjects() {
   };
 
   const handleUnfeatureProject = async (projectId: string) => {
-    const result = await API.delete(`/admin/projects/feature/${projectId}`);
+    const result = await API.patch(`/admin/projects/${projectId}`, {});
     if (result.success) {
       toast.success(`Project successfully unfeatured`);
     } else {
@@ -217,10 +203,7 @@ function AdminProjects() {
         <Toaster richColors position="top-center" expand />
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">Project Management</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage user projects, visibility, and featured status
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight">Project Management</h1>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -306,7 +289,9 @@ function AdminProjects() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">{getStatusBadges(project)}</div>
+                      <div className="flex flex-wrap gap-1 flex-col">
+                        {getStatusBadges(project)}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -333,7 +318,7 @@ function AdminProjects() {
                             {project.is_public ? "Make Private" : "Make Public"}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          {project.is_featured && isFeaturedActive(project.featured_until) ? (
+                          {project.featured_until && isFeaturedActive(project.featured_until) ? (
                             <DropdownMenuItem
                               onClick={() => handleUnfeatureProject(project.id)}
                               className="text-orange-600"

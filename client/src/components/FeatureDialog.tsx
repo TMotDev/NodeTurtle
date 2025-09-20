@@ -97,8 +97,7 @@ export default function FeatureDialog({
       }
 
       const result = await API.patch(`/admin/projects/${selectedProject.id}`, {
-        project_id: selectedProject.id,
-        feature_duration_hours: durationInHours,
+        duration: durationInHours,
       });
 
       if (result.success) {

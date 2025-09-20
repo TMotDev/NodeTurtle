@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"NodeTurtleAPI/internal/data"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -95,4 +96,15 @@ func (m *MockProjectService) ListProjects(filters data.ProjectFilter) ([]data.Pr
 		return nil, args.Int(1), args.Error(2)
 	}
 	return args.Get(0).([]data.Project), args.Int(1), args.Error(2)
+}
+
+func (m *MockProjectService) FeatureProject(projectID uuid.UUID, expiresAt *time.Time) (*data.Project, error) {
+	args := m.Called(projectID, expiresAt)
+
+	var project *data.Project
+	if args.Get(0) != nil {
+		project = args.Get(0).(*data.Project)
+	}
+
+	return project, args.Error(1)
 }

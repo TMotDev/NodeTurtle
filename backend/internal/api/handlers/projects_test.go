@@ -4,6 +4,7 @@ import (
 	"NodeTurtleAPI/internal/data"
 	"NodeTurtleAPI/internal/mocks"
 	"NodeTurtleAPI/internal/services"
+	"NodeTurtleAPI/internal/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -1465,12 +1466,11 @@ func TestGetPublicProjects(t *testing.T) {
 	mockProjectService.AssertExpectations(t)
 }
 
-func TestListProjects(t *testing.T){
+func TestListProjects(t *testing.T) {
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
 
 	mockProjectService := mocks.MockProjectService{}
-
 
 	handler := NewProjectHandler(&mockProjectService)
 
@@ -1524,6 +1524,99 @@ func TestListProjects(t *testing.T){
 			c := e.NewContext(req, rec)
 
 			err := handler.List(c)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				if he, ok := err.(*echo.HTTPError); ok {
+					assert.Equal(t, tt.wantCode, he.Code)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantCode, rec.Code)
+			}
+		})
+	}
+
+	mockProjectService.AssertExpectations(t)
+}
+
+func TestFeatureProject(t *testing.T) {
+	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	mockProjectService := mocks.MockProjectService{}
+
+	handler := NewProjectHandler(&mockProjectService)
+
+	project := data.Project{
+		ID: uuid.New(),
+	}
+
+	mockProjectService.On("FeatureProject", project.ID, mock.Anything).Return(utils.Ptr(project), nil)
+	mockProjectService.On("FeatureProject", mock.Anything, mock.Anything).Return(nil, services.ErrProjectNotFound)
+
+	tests := map[string]struct {
+		projectID string
+		duration  *int
+		wantCode  int
+		wantError bool
+	}{
+		"Successful feature add": {
+			projectID: project.ID.String(),
+			duration:  utils.Ptr(50),
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
+		"Successful feature remove": {
+			projectID: project.ID.String(),
+			duration:  nil,
+			wantCode:  http.StatusOK,
+			wantError: false,
+		},
+		"Negative duration": {
+			projectID: project.ID.String(),
+			duration:  utils.Ptr(-5),
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"Zero duration": {
+			projectID: project.ID.String(),
+			duration:  utils.Ptr(0),
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"Invalid project ID": {
+			projectID: "invalid-uuid",
+			duration:  utils.Ptr(20),
+			wantCode:  http.StatusBadRequest,
+			wantError: true,
+		},
+		"Project not found": {
+			projectID: uuid.New().String(),
+			duration:  utils.Ptr(20),
+			wantCode:  http.StatusNotFound,
+			wantError: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			var requestBody string
+			if tt.duration == nil {
+				requestBody = `{}`
+			} else {
+				requestBody = fmt.Sprintf(`{"duration":%d}`, *tt.duration)
+			}
+
+			req := httptest.NewRequest(http.MethodPatch, "/admin/projects/"+tt.projectID, strings.NewReader(requestBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetPath("/admin/projects/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.projectID)
+
+			err := handler.Feature(c)
 
 			if tt.wantError {
 				assert.Error(t, err)

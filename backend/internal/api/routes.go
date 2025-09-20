@@ -134,8 +134,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	admin.GET("/projects/all", projectHandler.List)
 	admin.GET("/users/:id", userHandler.Get)
 	admin.PUT("/users/:id", userHandler.Update)
-	// TODO: change visibility, feature date
-	// admin.PATCH("/projects/:id", projectHandler.AdminUpdate)
+	admin.PATCH("/projects/:id", projectHandler.Feature)
 	admin.DELETE("/users/:id", userHandler.Delete)
 	admin.POST("/users/ban", userHandler.Ban)
 	admin.DELETE("/users/ban/:userID", userHandler.Unban)

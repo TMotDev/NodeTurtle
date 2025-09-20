@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -17,6 +18,7 @@ type IProjectService interface {
 	GetProject(projectID, requestingUserID uuid.UUID) (*data.Project, error)
 	GetUserProjects(profileUserID, requestingUserID uuid.UUID) ([]data.Project, error)
 	GetFeaturedProjects(limit, offset int) ([]data.Project, error)
+	FeatureProject(projectID uuid.UUID, expiresAt *time.Time) (*data.Project, error)
 	GetLikedProjects(userID uuid.UUID) ([]data.Project, error)
 	LikeProject(projectID, userID uuid.UUID) error
 	UnlikeProject(projectID, userID uuid.UUID) error
@@ -213,6 +215,50 @@ func (s ProjectService) GetFeaturedProjects(limit, page int) ([]data.Project, er
 	}
 
 	return projects, nil
+}
+
+func (s ProjectService) FeatureProject(projectID uuid.UUID, expiresAt *time.Time) (*data.Project, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var project data.Project
+
+	query := `
+		UPDATE projects
+		SET featured_until = $2, last_edited_at = NOW()
+		WHERE id = $1
+		RETURNING id, title, description, data, creator_id, (SELECT username FROM users WHERE id = creator_id), likes_count, featured_until, created_at, last_edited_at, is_public
+	`
+	err = tx.QueryRow(query, projectID, expiresAt).Scan(
+		&project.ID,
+		&project.Title,
+		&project.Description,
+		&project.Data,
+		&project.CreatorID,
+		&project.CreatorUsername,
+		&project.LikesCount,
+		&project.FeaturedUntil,
+		&project.CreatedAt,
+		&project.LastEditedAt,
+		&project.IsPublic,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, services.ErrProjectNotFound
+		}
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &project, nil
+
 }
 
 // GetLikedProjects retrieves all projects liked by a specific user.
