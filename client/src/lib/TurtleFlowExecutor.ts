@@ -20,8 +20,8 @@ export class TurtleFlowExecutor {
   private turtleEngine: TurtleGraphicsEngine;
   private pathCounter = 0;
 
-  constructor(canvas: HTMLCanvasElement) {
-    this.turtleEngine = new TurtleGraphicsEngine(canvas);
+  constructor(drawingCanvas: HTMLCanvasElement, turtleCanvas: HTMLCanvasElement) {
+    this.turtleEngine = new TurtleGraphicsEngine(drawingCanvas, turtleCanvas);
   }
 
   private convertFlowToNodeTree(nodes: Array<Node>, edges: Array<Edge>): NodeTree | null {

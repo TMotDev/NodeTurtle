@@ -19,6 +19,7 @@ interface TurtleAreaProps {
 
 export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const turtleCanvasRef = useRef<HTMLCanvasElement>(null);
   const executorRef = useRef<TurtleFlowExecutor | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [turtleCount, setTurtleCount] = useState(0);
@@ -29,10 +30,14 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
   const { saveFlow, hasUnsavedChanges } = useFlowManagerContext();
   const { user } = useAuthStore();
   const router = useRouter();
+
   // Initialize turtle executor
   useEffect(() => {
-    if (canvasRef.current) {
-      executorRef.current = new TurtleFlowExecutor(canvasRef.current);
+    if (canvasRef.current && turtleCanvasRef.current) {
+      executorRef.current = new TurtleFlowExecutor(
+        canvasRef.current,
+        turtleCanvasRef.current,
+      );
     }
 
     return () => {
@@ -64,7 +69,6 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
     try {
       console.log("Executing flow with nodes:", nodes.length, "edges:", edges.length);
       await executorRef.current.executeFlow(nodes, edges);
-      // setTurtleCount(executorRef.current.getTurtleEngine().getTurtleCount());
     } catch (error) {
       console.error("Error executing turtle flow:", error);
     } finally {
@@ -139,13 +143,10 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
               <button
                 className="cursor-pointer group relative"
                 onClick={() => {
-                  console.log(router.history.canGoBack())
                   if (router.history.canGoBack()) {
                     router.history.back();
-                    console.log("going back")
                   } else {
                     router.navigate({ to: "/" });
-                    console.log("root")
                   }
                 }}
               >
@@ -173,28 +174,35 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
           )}
         </div>
 
-          // TODO: additional canvas for turtle position
         {/* Canvas Container */}
         <div className="flex-1 p-4">
           <div className="bg-white rounded-lg shadow-sm border h-full flex items-center justify-center">
-            <canvas
-              ref={canvasRef}
-              width={400}
-              height={400}
-              className="border border-gray-300 rounded max-w-full max-h-full"
-              style={{
-                aspectRatio: "1/1",
-                width: "auto",
-                height: "auto",
-                maxWidth: "100%",
-                maxHeight: "100%",
-              }}
-            />
+            {/* Wrapper for positioning canvases */}
+            <div
+              className="relative"
+              style={{ width: '400px', height: '400px', maxWidth: '100%', maxHeight: '100%', aspectRatio: '1 / 1' }}
+            >
+              {/* Drawing Canvas (bottom layer) */}
+              <canvas
+                ref={canvasRef}
+                width={400}
+                height={400}
+                className="absolute inset-0 w-full h-full border border-gray-300 rounded"
+              />
+              {/* Turtle Canvas (top layer) */}
+              <canvas
+                ref={turtleCanvasRef}
+                width={400}
+                height={400}
+                className="absolute inset-0 w-full h-full"
+                style={{ pointerEvents: 'none' }}
+              />
+            </div>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 p-4 pt-0">
           <button
             onClick={isExecuting ? stopExecution : executeFlow}
             disabled={!hasStartNode && !isExecuting}
@@ -208,7 +216,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
         </div>
 
         {/* Speed Control */}
-        <div className="space-y-2">
+        <div className="space-y-2 px-4 pb-4">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-primary">
               Speed: {getSpeedLabel(speed[0])}

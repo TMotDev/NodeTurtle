@@ -28,21 +28,32 @@ export interface TurtleCommand {
 
 export class TurtleGraphicsEngine {
   private canvas: HTMLCanvasElement;
-  // TODO: drawing CTX, position CTX
-  private ctx: CanvasRenderingContext2D;
+  private turtleCanvas: HTMLCanvasElement;
+  private drawingCtx: CanvasRenderingContext2D;
+  private turtleCtx: CanvasRenderingContext2D;
   private turtles: Map<string, TurtleState> = new Map();
   private isRunning = false;
   private drawDelay = 70;
   private commandQueues: Map<string, Array<TurtleCommand>> = new Map();
   private executingCommands: Map<string, boolean> = new Map();
+  private animationId: number | null = null;
 
-  constructor(canvas: HTMLCanvasElement) {
-    this.canvas = canvas;
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("Could not get 2D context from canvas");
+  constructor(drawingCanvas: HTMLCanvasElement, turtleCanvas: HTMLCanvasElement) {
+    this.canvas = drawingCanvas;
+    this.turtleCanvas = turtleCanvas;
+
+    const dContext = drawingCanvas.getContext("2d");
+    if (!dContext) {
+      throw new Error("Could not get 2D context from drawing canvas");
     }
-    this.ctx = context;
+    this.drawingCtx = dContext;
+
+    const tContext = turtleCanvas.getContext("2d");
+    if (!tContext) {
+      throw new Error("Could not get 2D context from turtle canvas");
+    }
+    this.turtleCtx = tContext;
+
     this.setupCanvas();
   }
 
@@ -50,8 +61,8 @@ export class TurtleGraphicsEngine {
     const width = this.canvas.width;
     const height = this.canvas.height;
 
-    this.ctx.fillStyle = "#ffffff";
-    this.ctx.fillRect(0, 0, width, height);
+    this.drawingCtx.fillStyle = "#ffffff";
+    this.drawingCtx.fillRect(0, 0, width, height);
 
     this.drawGrid();
   }
@@ -67,43 +78,43 @@ export class TurtleGraphicsEngine {
     const centerY = height / 2;
     const gridSize = 20;
 
-    this.ctx.save();
-    this.ctx.strokeStyle = "#f8f9fa";
-    this.ctx.lineWidth = 1;
+    this.drawingCtx.save();
+    this.drawingCtx.strokeStyle = "#f8f9fa";
+    this.drawingCtx.lineWidth = 1;
 
     // Vertical lines
     for (let x = 0; x <= width; x += gridSize) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, 0);
-      this.ctx.lineTo(x, height);
-      this.ctx.stroke();
+      this.drawingCtx.beginPath();
+      this.drawingCtx.moveTo(x, 0);
+      this.drawingCtx.lineTo(x, height);
+      this.drawingCtx.stroke();
     }
 
     // Horizontal lines
     for (let y = 0; y <= height; y += gridSize) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, y);
-      this.ctx.lineTo(width, y);
-      this.ctx.stroke();
+      this.drawingCtx.beginPath();
+      this.drawingCtx.moveTo(0, y);
+      this.drawingCtx.lineTo(width, y);
+      this.drawingCtx.stroke();
     }
 
     // Draw axes
-    this.ctx.strokeStyle = "#dee2e6";
-    this.ctx.lineWidth = 2;
+    this.drawingCtx.strokeStyle = "#dee2e6";
+    this.drawingCtx.lineWidth = 2;
 
     // X-axis
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, centerY);
-    this.ctx.lineTo(width, centerY);
-    this.ctx.stroke();
+    this.drawingCtx.beginPath();
+    this.drawingCtx.moveTo(0, centerY);
+    this.drawingCtx.lineTo(width, centerY);
+    this.drawingCtx.stroke();
 
     // Y-axis
-    this.ctx.beginPath();
-    this.ctx.moveTo(centerX, 0);
-    this.ctx.lineTo(centerX, height);
-    this.ctx.stroke();
+    this.drawingCtx.beginPath();
+    this.drawingCtx.moveTo(centerX, 0);
+    this.drawingCtx.lineTo(centerX, height);
+    this.drawingCtx.stroke();
 
-    this.ctx.restore();
+    this.drawingCtx.restore();
   }
 
   createTurtle(
@@ -154,17 +165,17 @@ export class TurtleGraphicsEngine {
             const endY = turtle.y - Math.sin((turtle.angle * Math.PI) / 180) * cmd.distance; // Flip Y
 
             if (turtle.penDown) {
-              this.ctx.save();
-              this.ctx.fillStyle = turtle.color;
-              this.ctx.strokeStyle = turtle.color;
-              this.ctx.lineWidth = turtle.lineWidth;
-              this.ctx.lineCap = "round";
-              this.ctx.lineJoin = "round";
-              this.ctx.beginPath();
-              this.ctx.moveTo(turtle.x, turtle.y);
-              this.ctx.lineTo(endX, endY);
-              this.ctx.stroke();
-              this.ctx.restore();
+              this.drawingCtx.save();
+              this.drawingCtx.fillStyle = turtle.color;
+              this.drawingCtx.strokeStyle = turtle.color;
+              this.drawingCtx.lineWidth = turtle.lineWidth;
+              this.drawingCtx.lineCap = "round";
+              this.drawingCtx.lineJoin = "round";
+              this.drawingCtx.beginPath();
+              this.drawingCtx.moveTo(turtle.x, turtle.y);
+              this.drawingCtx.lineTo(endX, endY);
+              this.drawingCtx.stroke();
+              this.drawingCtx.restore();
             }
             turtle.x = endX;
             turtle.y = endY;
@@ -214,47 +225,59 @@ export class TurtleGraphicsEngine {
   }
 
   private drawTurtles() {
-    // TODO: this.positionCanvasCTX
+    this.turtleCtx.clearRect(0, 0, this.turtleCanvas.width, this.turtleCanvas.height);
     this.turtles.forEach((turtle) => {
-      this.ctx.save();
+      this.turtleCtx.save();
 
-      this.ctx.translate(turtle.x, turtle.y);
+      this.turtleCtx.translate(turtle.x, turtle.y);
+      this.turtleCtx.rotate((-turtle.angle + 90) * Math.PI / 180); // Orient the turtle
 
-      this.ctx.fillStyle = turtle.color;
-      this.ctx.strokeStyle = turtle.color;
+      // Draw a triangle for the turtle
+      this.turtleCtx.fillStyle = turtle.color;
+      this.turtleCtx.strokeStyle = "#FFF";
+      this.turtleCtx.lineWidth = 1.5;
 
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, 3, 0, 2 * Math.PI);
-      this.ctx.fill();
+      this.turtleCtx.beginPath();
+      this.turtleCtx.moveTo(0, -8); // Tip
+      this.turtleCtx.lineTo(6, 6);  // Right corner
+      this.turtleCtx.lineTo(-6, 6); // Left corner
+      this.turtleCtx.closePath();
+      this.turtleCtx.fill();
+      this.turtleCtx.stroke();
 
-      this.ctx.restore();
+      this.turtleCtx.restore();
     });
   }
 
-  private draw = () => {
+  private animate = () => {
     if (!this.isRunning) return;
 
     this.turtles.forEach((_, turtleId) => {
       this.processTurtleQueue(turtleId);
     });
 
-    // this.drawTurtles();
+    this.drawTurtles();
 
-    // this.animationId = requestAnimationFrame(this.animate);
+    this.animationId = requestAnimationFrame(this.animate);
   };
 
   start() {
     if (this.isRunning) return;
     this.isRunning = true;
-    this.draw();
+    this.animate();
   }
 
   stop() {
     this.isRunning = false;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
   }
 
   clear() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.drawingCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.turtleCtx.clearRect(0, 0, this.turtleCanvas.width, this.turtleCanvas.height);
     this.setupCanvas();
   }
 
