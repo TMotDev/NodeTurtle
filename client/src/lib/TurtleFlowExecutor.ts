@@ -14,6 +14,7 @@ interface NodeTree {
     data: any;
   };
   children: Array<NodeTree>;
+  loopChildren?: Array<NodeTree>;
 }
 
 export class TurtleFlowExecutor {
@@ -41,114 +42,111 @@ export class TurtleFlowExecutor {
       const newVisited = new Set(visited);
       newVisited.add(nodeId);
 
-      const outgoingEdges = edges.filter((edge) => edge.source === nodeId);
-      const children = outgoingEdges.map((edge) => buildTree(edge.target, newVisited));
+      let outgoingEdges = edges.filter((edge) => edge.source === nodeId);
+      let loopBodyEdges: Array<Edge> = [];
 
-      return {
+      if (node.type === "loopNode") {
+        loopBodyEdges = outgoingEdges.filter((edge) => edge.sourceHandle === "loop");
+        outgoingEdges = outgoingEdges.filter(
+          (edge) => edge.sourceHandle === "out" || !edge.sourceHandle,
+        );
+      }
+
+      const children = outgoingEdges.map((edge) => buildTree(edge.target, newVisited));
+      const loopChildren = loopBodyEdges.map((edge) => buildTree(edge.target, newVisited));
+
+      const treeNode: NodeTree = {
         node: { id: node.id, type: node.type || "unknown", data: node.data },
         children,
       };
+
+      if (loopChildren.length > 0) {
+        treeNode.loopChildren = loopChildren;
+      }
+
+      return treeNode;
     };
 
     return buildTree(startNode.id);
   }
 
-  // Convert node to commands
   private nodeToCommands(node: NodeTree["node"]): Array<TurtleCommand> {
     if (node.data.muted) return [];
 
     switch (node.type) {
       case "startNode":
         return [];
-
       case "moveNode": {
         const cmd: MoveCommand = { distance: node.data.distance || 10 };
         return [{ type: "move", value: cmd }];
       }
-
       case "rotateNode": {
         const cmd: RotateCommand = { angle: -node.data.angle || 0 };
         return [{ type: "rotate", value: cmd }];
       }
-
       case "penNode": {
         const cmd: PenCommand = { isDrawing: node.data.penDown, color: node.data.color || "#000" };
-        return [
-          {
-            type: "pen",
-            value: cmd,
-          },
-        ];
+        return [{ type: "pen", value: cmd }];
       }
-
       case "loopNode":
-        return []; // Loops are handled in path collection
-
+        return []; // Loop logic is handled during path collection
       default:
         return [];
     }
   }
 
-  // PHASE 1: Collect all execution paths
+  private collectSubtreeCommands(node: NodeTree): Array<TurtleCommand> {
+    const commands: Array<TurtleCommand> = [];
+    let currentNode: NodeTree | undefined = node;
+
+    while (currentNode) {
+      commands.push(...this.nodeToCommands(currentNode.node));
+
+      // Handle nested loops within the loop body
+      if (currentNode.node.type === "loopNode" && currentNode.loopChildren) {
+        const loopCount = currentNode.node.data?.loopCount || 3;
+        let loopBodyCmds: Array<TurtleCommand> = [];
+        if (currentNode.loopChildren.length > 0) {
+          loopBodyCmds = this.collectSubtreeCommands(currentNode.loopChildren[0]);
+        }
+        for (let i = 0; i < loopCount; i++) {
+          commands.push(...loopBodyCmds);
+        }
+      }
+
+      currentNode = currentNode.children.length > 0 ? currentNode.children[0] : undefined;
+    }
+
+    return commands;
+  }
+
   private collectPaths(nodeTree: NodeTree): Array<ExecutionPath> {
     const paths: Array<ExecutionPath> = [];
 
     const walkPath = (node: NodeTree, commandsSoFar: Array<TurtleCommand> = []) => {
-      // Add current node's commands
       const nodeCommands = this.nodeToCommands(node.node);
       const currentCommands = [...commandsSoFar, ...nodeCommands];
 
-      // Handle loop nodes specially
-      if (node.node.type === "loopNode") {
+      if (node.node.type === "loopNode" && node.loopChildren && node.loopChildren.length > 0) {
         const loopCount = node.node.data?.loopCount || 3;
+        const loopBodyCommands = this.collectSubtreeCommands(node.loopChildren[0]);
 
-        // For each child, repeat it loopCount times, then continue
+        for (let i = 0; i < loopCount; i++) {
+          currentCommands.push(...loopBodyCommands);
+        }
+
         if (node.children.length === 0) {
-          // Loop with no children - just create a path with current commands
-          paths.push({
-            id: `path_${++this.pathCounter}`,
-            commands: currentCommands,
-          });
-        } else if (node.children.length === 1) {
-          // Single child - repeat it in sequence
-          let loopCommands = [...currentCommands];
-          for (let i = 0; i < loopCount; i++) {
-            // Add child commands for each iteration
-            const childCommands = this.collectChildCommands(node.children[0]);
-            loopCommands = [...loopCommands, ...childCommands];
-          }
-
-          // Continue with children of the loop child
-          this.continueAfterLoop(node.children[0], loopCommands, paths);
+          paths.push({ id: `path_${++this.pathCounter}`, commands: currentCommands });
         } else {
-          // Multiple children - each gets repeated, then branches
-          node.children.forEach((child) => {
-            let branchCommands = [...currentCommands];
-            for (let i = 0; i < loopCount; i++) {
-              const childCommands = this.collectChildCommands(child);
-              branchCommands = [...branchCommands, ...childCommands];
-            }
-            this.continueAfterLoop(child, branchCommands, paths);
-          });
+          node.children.forEach((child) => walkPath(child, currentCommands));
         }
         return;
       }
 
-      // Regular node handling
       if (node.children.length === 0) {
-        // Leaf node - end of path
-        paths.push({
-          id: `path_${++this.pathCounter}`,
-          commands: currentCommands,
-        });
-      } else if (node.children.length === 1) {
-        // Single child - continue same path
-        walkPath(node.children[0], currentCommands);
+        paths.push({ id: `path_${++this.pathCounter}`, commands: currentCommands });
       } else {
-        // Multiple children - create separate paths
-        node.children.forEach((child) => {
-          walkPath(child, currentCommands);
-        });
+        node.children.forEach((child) => walkPath(child, currentCommands));
       }
     };
 
@@ -156,105 +154,30 @@ export class TurtleFlowExecutor {
     return paths;
   }
 
-  // Helper: collect commands from a subtree without executing it
-  private collectChildCommands(node: NodeTree): Array<TurtleCommand> {
-    const commands: Array<TurtleCommand> = [];
-
-    const collect = (n: NodeTree) => {
-      commands.push(...this.nodeToCommands(n.node));
-      // For loops inside loops, we'd need to handle this recursively
-      if (n.node.type === "loopNode") {
-        const loopCount = n.node.data?.loopCount || 3;
-        for (let i = 0; i < loopCount; i++) {
-          n.children.forEach((child) => collect(child));
-        }
-      } else {
-        // Just take first child for collecting commands in sequence
-        if (n.children.length > 0) {
-          collect(n.children[0]);
-        }
-      }
-    };
-
-    collect(node);
-    return commands;
-  }
-
-  // Helper: continue path after loop
-  private continueAfterLoop(
-    loopChild: NodeTree,
-    commands: Array<TurtleCommand>,
-    paths: Array<ExecutionPath>,
-  ) {
-    if (loopChild.children.length === 0) {
-      paths.push({
-        id: `path_${++this.pathCounter}`,
-        commands,
-      });
-    } else {
-      loopChild.children.forEach((child) => {
-        this.walkPathFrom(child, commands, paths);
-      });
-    }
-  }
-
-  // Helper: continue walking from a specific node
-  private walkPathFrom(
-    node: NodeTree,
-    commandsSoFar: Array<TurtleCommand>,
-    paths: Array<ExecutionPath>,
-  ) {
-    const nodeCommands = this.nodeToCommands(node.node);
-    const currentCommands = [...commandsSoFar, ...nodeCommands];
-
-    if (node.children.length === 0) {
-      paths.push({
-        id: `path_${++this.pathCounter}`,
-        commands: currentCommands,
-      });
-    } else if (node.children.length === 1) {
-      this.walkPathFrom(node.children[0], currentCommands, paths);
-    } else {
-      node.children.forEach((child) => {
-        this.walkPathFrom(child, currentCommands, paths);
-      });
-    }
-  }
-
-  // PHASE 2: Execute all paths
   async executeFlow(nodes: Array<Node>, edges: Array<Edge>): Promise<void> {
-    // Convert to tree
+    this.pathCounter = 0;
     const nodeTree = this.convertFlowToNodeTree(nodes, edges);
     if (!nodeTree) {
-      console.error("Could not create node tree");
+      console.error("Could not create node tree from flow");
       return;
     }
 
-    // Collect all paths
     const paths = this.collectPaths(nodeTree);
     console.log(`Found ${paths.length} execution paths:`);
-    paths.forEach((path) => {
-      console.log(`  ${path.id}: ${path.commands.length} commands`);
-    });
 
-    // Reset engine
     this.turtleEngine.reset();
 
-    // Create one turtle per path
-    paths.forEach((path) => {
-      const turtle = this.turtleEngine.createTurtle(path.id, 0, 0, 90);
-      console.log(`Created turtle ${path.id} with ${path.commands.length} commands`);
-    });
+    if (paths.length === 0 && nodes.some(n => n.type === 'startNode')) {
+        this.turtleEngine.createTurtle('default', 0, 0, 90);
+    } else {
+        paths.forEach((path) => {
+            this.turtleEngine.createTurtle(path.id, 0, 0, 90);
+            this.turtleEngine.addCommands(path.id, path.commands);
+        });
+    }
 
-    // Queue all commands for all turtles BEFORE starting
-    paths.forEach((path) => {
-      this.turtleEngine.addCommands(path.id, path.commands);
-    });
-
-    // Start all turtles simultaneously
     this.turtleEngine.start();
 
-    // Wait for completion
     await this.waitForCompletion();
     console.log("All paths completed");
   }
@@ -273,7 +196,7 @@ export class TurtleFlowExecutor {
   }
 
   setSpeed(speedLevel: number) {
-    const delay = Math.max(10, 160 - speedLevel * 15);
+    const delay = speedLevel === 10 ? 0 : Math.max(10, 160 - speedLevel * 15);
     this.turtleEngine.setDrawDelay(delay);
   }
 
@@ -281,12 +204,9 @@ export class TurtleFlowExecutor {
     this.turtleEngine.stop();
   }
 
-  clear() {
-    this.turtleEngine.clear();
-  }
-
   reset() {
     this.turtleEngine.reset();
     this.pathCounter = 0;
   }
 }
+
