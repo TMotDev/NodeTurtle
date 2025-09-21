@@ -489,7 +489,7 @@ func (s ProjectService) GetPublicProjects(filters data.PublicProjectFilter) ([]d
 	var total int
 	err := s.db.QueryRow(countQuery, args...).Scan(&total)
 	if err != nil {
-		return nil, 0, err
+		return []data.Project{}, 0, err
 	}
 
 	query := `
@@ -502,7 +502,7 @@ func (s ProjectService) GetPublicProjects(filters data.PublicProjectFilter) ([]d
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
-		return nil, 0, err
+		return []data.Project{}, 0, err
 	}
 	defer rows.Close()
 
@@ -522,13 +522,13 @@ func (s ProjectService) GetPublicProjects(filters data.PublicProjectFilter) ([]d
 			&project.LastEditedAt,
 			&project.IsPublic,
 		); err != nil {
-			return nil, 0, err
+			return []data.Project{}, 0, err
 		}
 		projects = append(projects, project)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, 0, err
+		return []data.Project{}, 0, err
 	}
 
 	return projects, total, nil
@@ -623,7 +623,7 @@ func (s ProjectService) ListProjects(filters data.ProjectFilter) ([]data.Project
 	var total int
 	err := s.db.QueryRow(countQuery, args...).Scan(&total)
 	if err != nil {
-		return nil, 0, err
+		return []data.Project{}, 0, err
 	}
 
 	query := `
@@ -639,7 +639,7 @@ func (s ProjectService) ListProjects(filters data.ProjectFilter) ([]data.Project
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
-		return nil, 0, err
+		return []data.Project{}, 0, err
 	}
 	defer rows.Close()
 
@@ -654,7 +654,7 @@ func (s ProjectService) ListProjects(filters data.ProjectFilter) ([]data.Project
 			&featuredUntil, &project.CreatedAt, &project.LastEditedAt, &project.IsPublic,
 		)
 		if err != nil {
-			return nil, 0, err
+			return []data.Project{}, 0, err
 		}
 
 		if featuredUntil.Valid {
@@ -665,7 +665,7 @@ func (s ProjectService) ListProjects(filters data.ProjectFilter) ([]data.Project
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, 0, err
+		return []data.Project{}, 0, err
 	}
 
 	return projects, total, nil

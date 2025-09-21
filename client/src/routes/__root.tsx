@@ -16,7 +16,7 @@ function Root() {
   }, [checkAuthStatus]);
 
   return (
-    <div className="h-screen w-screen overflow-x-hidden">
+    <div className="h-screen w-screen overflow-x-hidden" style={{scrollbarGutter:"stable"}}>
       <Outlet />
     </div>
   );

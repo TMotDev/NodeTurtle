@@ -28,7 +28,7 @@ export const ProjectCard = ({
     <Link
       to={"/projects/$projectID"}
       params={{ projectID: project.id }}
-      className="relative h-32 rounded-sm border-2 cursor-pointer active:scale-95 transition-all duration-200 flex-shrink-0 bg-blue-50 border-gray-300 hover:border-blue-700 flex overflow-hidden"
+      className="h-32 w-full lg:w-auto rounded-sm border-2 cursor-pointer active:scale-95 transition-all duration-200 bg-blue-50 border-gray-300 hover:border-blue-700 flex overflow-hidden"
       title={project.title}
     >
       {/* Image Section */}
@@ -41,7 +41,7 @@ export const ProjectCard = ({
       </div>
 
       {/* Content Section */}
-      <div className="flex-1 p-4 relative">
+      <div className="p-4 relative w-full">
         <div className="absolute top-4 right-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -52,11 +52,19 @@ export const ProjectCard = ({
             <DropdownMenuContent align="end">
               {isOwned ? (
                 <>
-                  <DropdownMenuItem onClick={() => onEdit?.(project)}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit?.(project);
+                    }}
+                  >
                     Edit Project
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => onDelete?.(project)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete?.(project);
+                    }}
                     className="text-red-600 focus:text-red-600"
                   >
                     Delete Project
@@ -75,7 +83,7 @@ export const ProjectCard = ({
           </DropdownMenu>
         </div>
 
-        <div className="pr-12">
+        <div>
           <h3 className="font-semibold truncate text-lg leading-tight overflow-hidden w-48">
             <Badge
               className={`px-1 mb-1 ${

@@ -173,6 +173,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
           )}
         </div>
 
+          // TODO: additional canvas for turtle position
         {/* Canvas Container */}
         <div className="flex-1 p-4">
           <div className="bg-white rounded-lg shadow-sm border h-full flex items-center justify-center">

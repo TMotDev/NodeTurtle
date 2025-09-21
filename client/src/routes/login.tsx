@@ -23,7 +23,7 @@ function LoginPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-grow flex flex-col justify-center items-center p-4">
+      <main className="flex-grow flex flex-col justify-center items-center p-4 pattern">
         <LoginForm />
         <div className="flex flex-col gap-2">
           <p className="flex gap-2 font-medium">

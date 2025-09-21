@@ -36,7 +36,7 @@ function Homepage() {
   // Use the custom hook for liked projects
   const { likedProjectIds, likeProject, unlikeProject, isProjectLiked } = useLikedProjects();
 
-  const itemsPerRow = 4;
+  const itemsPerRow = 6;
   const totalRows = Math.ceil(featuredProjects.length / itemsPerRow);
   const visibleProjects = featuredProjects.slice(0, visibleRows * itemsPerRow);
   const hasMore = visibleRows < totalRows;
@@ -48,7 +48,7 @@ function Homepage() {
         const response = await API.get("/projects/featured");
 
         if (response.success) {
-          const featured: Array<Project> = response.data.projects
+          const featured: Array<Project> = response.data.projects;
           setFeaturedProjects(featured);
         } else {
           console.error("Failed to fetch featured projects:", response.error);
@@ -104,68 +104,68 @@ function Homepage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-grow px-4 py-8">
-        <div className="mb-8">
-          <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-            Turtle Graphics
-          </h1>
-          <p className="leading-7 [&:not(:first-child)]:mt-6">
-            Create beautiful patterns and designs with node-based programming.
-          </p>
-        </div>
-
-        <div className="mb-8 text-center">
-          <div className="flex justify-center gap-4 mb-4">
-            {user ? (
-              // Show buttons for logged in users
-              <>
-                <button
-                  onClick={handleCreateProject}
-                  className="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
-                >
-                  Create a Project
-                </button>
-                <button
-                  onClick={handleGoToProjects}
-                  className="px-6 py-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium"
-                >
-                  My Projects
-                </button>
-              </>
-            ) : (
-              // Show buttons for non-logged in users
-              <>
-                <button
-                  onClick={handleCreateProject}
-                  className="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
-                >
-                  Create a Project
-                </button>
-                <button
-                  onClick={handleCreateAccount}
-                  className="px-6 py-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Create an Account
-                </button>
-              </>
-            )}
+      <main className="flex-grow">
+        <div className="pattern p-16 pb-24">
+          <div className="mb-8 px-16">
+            <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+              Turtle Graphics
+            </h1>
+            <p className="leading-7 [&:not(:first-child)]:mt-6">
+              Create beautiful patterns and designs with node-based programming.
+            </p>
           </div>
-          <p className="text-sm text-gray-600 max-w-md mx-auto">
-            {user
-              ? `Welcome back, ${user.username}! Create new projects or manage your existing ones.`
-              : "Creating an account allows registered users to save multiple projects instead of just one locally saved project."}
-          </p>
+          <div className="mb-8 text-center">
+            <div className="flex justify-center gap-4 mb-4">
+              {user ? (
+                // Show buttons for logged in users
+                <>
+                  <button
+                    onClick={handleCreateProject}
+                    className="hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 font-medium"
+                  >
+                    Create a Project
+                  </button>
+                  <button
+                    onClick={handleGoToProjects}
+                    className="hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer px-6 py-3 border border-gray-300 rounded-md hover:bg-gray-100 font-medium bg-gray-50"
+                  >
+                    My Projects
+                  </button>
+                </>
+              ) : (
+                // Show buttons for non-logged in users
+                <>
+                  <button
+                    onClick={handleCreateProject}
+                    className="hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 font-medium"
+                  >
+                    Create a Project
+                  </button>
+                  <button
+                    onClick={handleCreateAccount}
+                    className="hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer px-6 py-3 border border-gray-300 rounded-md hover:bg-gray-100 font-medium bg-gray-50"
+                  >
+                    Create an Account
+                  </button>
+                </>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 max-w-md mx-auto">
+              {!user &&
+                "Creating an account allows registered users to save multiple projects instead of just one locally saved project."}
+            </p>
+          </div>
         </div>
 
         {featuredProjects.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-8 flex flex-col items-center content-center">
             <div className="mb-6">
-              <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+              <h2 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0 -translate-y-4 bg-white px-12 py-3 rounded-t-lg">
                 Featured Projects
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+            <div className="flex flex-wrap items-center content-center gap-6 mb-6">
               {visibleProjects.map((project) => (
                 <ExploreProjectCard
                   key={project.id}
@@ -207,8 +207,7 @@ function Homepage() {
           </div>
         )}
       </main>
-        <Toaster richColors position="top-center" expand />
-
+      <Toaster richColors position="top-center" expand />
     </div>
   );
 }

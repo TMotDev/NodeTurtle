@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Plus } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import { ChevronDown, Plus } from "lucide-react";
+import { toast } from "sonner";
 import type { Project } from "@/api/projects";
 import Header from "@/components/Header";
 import EditProjectForm from "@/components/forms/EditProjectForm";
@@ -20,12 +20,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import AddProjectForm from "@/components/forms/AddProjectForm";
 import { API } from "@/services/api";
 import useAuthStore, { Role } from "@/lib/authStore";
 import { requireAuth } from "@/lib/utils";
 import { ProjectCard } from "@/components/ProjectCard";
-import { generateThumbnail } from "@/lib/ImageGenerator";
 
 export const Route = createFileRoute("/projects/")({
   beforeLoad: requireAuth(Role.User),
@@ -64,11 +69,10 @@ function ProjectPage() {
     }
   };
 
-  // TODO: tanstack query to refetch data after changes
   const fetchProjects = useCallback(async () => {
     const result = await API.get(`/users/${contextUser?.id}/projects`);
 
-    console.log(result)
+    console.log(result);
     if (result.success) {
       setUserProjects(result.data.projects);
     } else {
@@ -92,60 +96,77 @@ function ProjectPage() {
   }, [fetchProjects, fetchLikedProjects]);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen overflow-x-hidden">
       <Header />
-      <main className="w-full">
+      <main className="w-full lg:w-3/4 self-center">
         <div className="space-y-6 px-6">
-          <div className="space-y-4">
-            <div className="text-lg font-bold">Your Projects</div>
-
-            <div className="flex gap-4 overflow-x-auto pb-2 p-2">
-              <div
-                className="relative w-64 h-32 rounded-sm border-2 border-dashed border-gray-300 p-4 cursor-pointer hover:border-gray-400 transition-colors duration-200 flex-shrink-0 flex items-center justify-center bg-gray-50 hover:bg-gray-100"
-                onClick={() => {
-                  setAddDialogOpen(true);
-                }}
-              >
-                <div className="text-center text-gray-600">
-                  <Plus className="h-8 w-8 mx-auto mb-2" />
-                  <span className="text-sm font-medium">Add New Project</span>
+          <Accordion
+            type="multiple"
+            defaultValue={["user-projects", "liked-projects"]}
+            className="w-full"
+          >
+            <AccordionItem value="user-projects">
+              <AccordionTrigger className="text-lg font-bold hover:no-underline">
+                Your Projects ({userProjects.length})
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4">
+                  {userProjects.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      onEdit={openEditDialog}
+                      onDelete={openDeleteDialog}
+                      isOwned={true}
+                    />
+                  ))}
+                  <div
+                    className="relative h-32 w-32 rounded-sm border-2 border-dashed border-gray-300 p-4 cursor-pointer hover:border-gray-400 transition-colors duration-200 flex items-center justify-center bg-gray-50 hover:bg-gray-100"
+                    onClick={() => {
+                      setAddDialogOpen(true);
+                    }}
+                  >
+                    <div className="text-center text-gray-600">
+                      <Plus className="h-8 w-8 mx-auto mb-2" />
+                      <span className="text-sm font-medium">Add New Project</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </AccordionContent>
+            </AccordionItem>
 
-              {userProjects.map((project) => (
-
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onEdit={openEditDialog}
-                  onDelete={openDeleteDialog}
-                  isOwned={true}
-                  />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="text-lg font-bold">Liked Projects</div>
-
-            <div className="flex gap-4 overflow-x-auto pb-2 p-2">
-              {likedProjects.length === 0 ? (
-                <div className="flex flex-col items-center justify-center w-64 h-32 text-gray-500 text-sm bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                  No liked projects yet
-                  <Link to="/projects/explore" className="underline underline-offset-2 font-bold">Explore</Link>
+            <AccordionItem value="liked-projects">
+              <AccordionTrigger className="text-lg font-bold hover:no-underline">
+                Liked Projects ({likedProjects.length})
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pt-4">
+                  {likedProjects.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center w-full h-32 text-gray-500 text-sm bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                      No liked projects yet
+                      <Link
+                        to="/projects/explore"
+                        className="underline underline-offset-2 font-bold mt-2"
+                      >
+                        Explore Projects
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4">
+                      {likedProjects.map((project) => (
+                        <ProjectCard
+                          key={project.id}
+                          project={project}
+                          onUnlike={handleUnlike}
+                          isOwned={false}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                likedProjects.map((project) => (
-                  <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onUnlike={handleUnlike}
-                  isOwned={false}
-                  />
-                ))
-              )}
-            </div>
-          </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </main>
 
@@ -164,8 +185,8 @@ function ProjectPage() {
           </DialogHeader>
           <EditProjectForm
             project={selectedProject}
-            onCancel={()=>{
-              setAddDialogOpen(false)
+            onCancel={() => {
+              setEditDialogOpen(false);
             }}
             onSuccess={() => {
               setEditDialogOpen(false), fetchProjects();
@@ -215,4 +236,3 @@ function ProjectPage() {
     </div>
   );
 }
-

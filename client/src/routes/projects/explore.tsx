@@ -76,7 +76,11 @@ function ExploreProjects() {
         const result = await API.get(`/projects/public?${params}`);
 
         if (result.success) {
-          setProjects(result.data.projects);
+          if (result.data.projects) {
+            setProjects(result.data.projects);
+          } else {
+            setProjects([]);
+          }
           setTotalPages(Math.ceil(result.data.meta.total / queryParams.limit));
         } else {
           toast.error(`Failed to fetch projects. ${result.error}`);
@@ -128,8 +132,7 @@ function ExploreProjects() {
       <Header />
       <main className="flex-grow">
         <Toaster richColors position="top-center" expand />
-
-        <div className="container mx-auto py-8 px-4">
+        <div className="pattern px-16 py-8 pb-6">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">Explore Projects</h1>
@@ -137,7 +140,6 @@ function ExploreProjects() {
               Discover amazing projects created by the community
             </p>
           </div>
-
           {/* Controls */}
           <div className="flex flex-col gap-4 mb-8">
             {/* Search and View Toggle */}
@@ -149,16 +151,13 @@ function ExploreProjects() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="pl-8"
+                  className="pl-8 bg-background"
                 />
                 <Button onClick={handleSearch} disabled={loading}>
                   Search
                 </Button>
               </div>
-
-
             </div>
-
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-4 items-center">
               <div className="flex items-center gap-2">
@@ -176,12 +175,11 @@ function ExploreProjects() {
                     <SelectItem value="likes_count">Likes Count</SelectItem>
                   </SelectContent>
                 </Select>
-
                 <ToggleGroup
                   type="single"
                   value={filters.sortOrder}
                   onValueChange={(value) => value && handleFilterChange("sortOrder", value)}
-                  className="border rounded-md"
+                  className="border rounded-md bg-background"
                 >
                   <ToggleGroupItem value="desc" aria-label="Descending" size="sm">
                     <ArrowDown className="h-4 w-4" />
@@ -193,120 +191,118 @@ function ExploreProjects() {
               </div>
             </div>
           </div>
-
-          {/* Loading State */}
-          {loading && (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="text-muted-foreground mt-2">Loading projects...</p>
-            </div>
-          )}
-
-          {/* Projects Grid/List */}
-          {!loading && projects.length > 0 && (
-            <div
-              className="flex flex-row gap-6 mb-8 flex-wrap items-center justify-center"
-            >
-              {projects.map((project) => (
-                <ExploreProjectCard
-                  key={project.id}
-                  project={project}
-                  onLike={handleLikeProject}
-                  onUnlike={handleUnlikeProject}
-                  isLiked={isProjectLiked(project.id)}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && projects.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-lg font-semibold mb-2">No projects found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm
-                  ? "Try adjusting your search or filters"
-                  : "No public projects are available yet"}
-              </p>
-              {searchTerm && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearchTerm("");
-                    setFilters({ sortBy: "last_edited_at", sortOrder: "desc" });
-                    setPage(1);
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {!loading && totalPages > 1 && (
-            <div className="mt-8">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (page > 1) setPage((p) => p - 1);
-                      }}
-                      className={page === 1 ? "pointer-events-none opacity-50" : ""}
-                    />
-                  </PaginationItem>
-
-                  {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (page <= 3) {
-                      pageNum = i + 1;
-                    } else if (page >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = page - 2 + i;
-                    }
-
-                    return (
-                      <PaginationItem key={pageNum}>
-                        <PaginationLink
-                          href="#"
-                          isActive={page === pageNum}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setPage(pageNum);
-                          }}
-                        >
-                          {pageNum}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  })}
-
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (page < totalPages) setPage((p) => p + 1);
-                      }}
-                      className={page === totalPages ? "pointer-events-none opacity-50" : ""}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-
-              <div className="text-center mt-4 text-sm text-muted-foreground">
-                Page {page} of {totalPages}
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground mt-2">Loading projects...</p>
+          </div>
+        )}
+
+        {/* Projects Grid/List */}
+        {!loading && projects.length > 0 && (
+          <div className="flex flex-row gap-6 mb-8 flex-wrap items-center justify-center py-2">
+            {projects.map((project) => (
+              <ExploreProjectCard
+                key={project.id}
+                project={project}
+                onLike={handleLikeProject}
+                onUnlike={handleUnlikeProject}
+                isLiked={isProjectLiked(project.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && projects.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-lg font-semibold mb-2">No projects found</h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm
+                ? "Try adjusting your search or filters"
+                : "No public projects are available yet"}
+            </p>
+            {searchTerm && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilters({ sortBy: "last_edited_at", sortOrder: "desc" });
+                  setPage(1);
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
+          <div className="mt-8">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page > 1) setPage((p) => p - 1);
+                    }}
+                    className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+
+                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        href="#"
+                        isActive={page === pageNum}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setPage(pageNum);
+                        }}
+                      >
+                        {pageNum}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page < totalPages) setPage((p) => p + 1);
+                    }}
+                    className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+
+            <div className="text-center mt-4 text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

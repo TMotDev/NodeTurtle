@@ -28,6 +28,7 @@ export interface TurtleCommand {
 
 export class TurtleGraphicsEngine {
   private canvas: HTMLCanvasElement;
+  // TODO: drawing CTX, position CTX
   private ctx: CanvasRenderingContext2D;
   private turtles: Map<string, TurtleState> = new Map();
   private isRunning = false;
@@ -213,6 +214,7 @@ export class TurtleGraphicsEngine {
   }
 
   private drawTurtles() {
+    // TODO: this.positionCanvasCTX
     this.turtles.forEach((turtle) => {
       this.ctx.save();
 

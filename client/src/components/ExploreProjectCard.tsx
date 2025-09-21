@@ -69,7 +69,10 @@ export function ExploreProjectCard({
 
         {/* Featured badge if applicable */}
         {project.featured_until && new Date(project.featured_until) > new Date() && (
-          <div className="absolute top-3 left-3 bg-yellow-400/90 text-yellow-900 flex gap-2 p-1 rounded-sm items-center">
+          <div
+            className="absolute top-3 left-3 bg-yellow-400/90 text-yellow-900 flex gap-2 p-1 rounded-sm items-center"
+            title="Featured project"
+          >
             <Star className="border-yellow-500/30 backdrop-blur-sm"></Star>
           </div>
         )}
