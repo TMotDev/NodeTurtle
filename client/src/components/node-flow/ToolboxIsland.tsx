@@ -1,10 +1,9 @@
-import { ArrowRight, Eraser, Flag, Pen, Repeat2, RotateCcw } from "lucide-react";
+import { ArrowRight, Flag, Pen, Repeat2, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import type { Project } from "@/api/projects";
 import { useDragDrop } from "@/hooks/FlowDragAndDropContext";
 
-export default function ToolboxIsland({ project }: { project: Project }) {
+export default function ToolboxIsland() {
   const { onDragStart } = useDragDrop();
   const [showNodes, setShowNodes] = useState(true);
 

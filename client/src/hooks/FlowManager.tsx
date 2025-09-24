@@ -28,7 +28,9 @@ export const useLocalProjectManager = () => {
       if (p && p.data) {
         setNodes(p.data.nodes);
         setEdges(p.data.edges);
-        setViewport(p.data.viewport);
+        if (p.data.viewport) {
+          setViewport(p.data.viewport);
+        }
         setCurrentProjectID(p.id);
         setCurrentProjectTitle(p.title);
         localStorage.setItem(CURRENT_FLOW_KEY, p.id);
@@ -38,33 +40,20 @@ export const useLocalProjectManager = () => {
     [setNodes, setEdges, setViewport, getLocalProjects],
   );
 
-  // Load current flow ID on mount
+  // Initialize with empty state rather than trying to load
   useEffect(() => {
-    const savedCurrentId = localStorage.getItem(CURRENT_FLOW_KEY);
-    if (savedCurrentId) {
-      setCurrentProjectID(savedCurrentId);
-      const flows = getLocalProjects();
-      const currentFlow = flows.find((f) => f.id === savedCurrentId);
-      loadLocalProject(savedCurrentId);
-      if (currentFlow) {
-        setCurrentProjectTitle(currentFlow.title);
-      }
-    } else {
-      const newId = `flow_${uuidv4()}`;
-      setCurrentProjectID(newId);
-      setCurrentProjectTitle("Untitled flow");
-    }
-  }, [getLocalProjects, loadLocalProject]);
+    // Don't auto-load on mount - let the UI handle project selection
+    // This prevents the flash of loading an old project
+  }, []);
 
   const markAsModified = useCallback(() => {
     setHasUnsavedChanges(true);
   }, []);
 
-  const saveLocalProject = useCallback(() => {
-    if (!currentProjectID) return;
-
+  const saveLocalProject = useCallback((projectID: string) => {
     const projects = getLocalProjects();
 
+    console.log(projects)
     const flowData: Flow = {
       nodes: getNodes(),
       edges: getEdges(),
@@ -73,10 +62,10 @@ export const useLocalProjectManager = () => {
     };
 
     const currentProject: Project = {
-      id: currentProjectID,
+      id: projectID,
       title: currentProjectTitle,
       created_at:
-        projects.find((f) => f.id === currentProjectID)?.created_at || new Date().toISOString(),
+        projects.find((f) => f.id === projectID)?.created_at || new Date().toISOString(),
       last_edited_at: new Date().toISOString(),
       description: "-",
       creator_id: "-",
@@ -86,15 +75,24 @@ export const useLocalProjectManager = () => {
       data: flowData,
     };
 
-    const updatedFlows = projects.filter((f) => f.id !== currentProjectID);
+    const updatedFlows = projects.filter((f) => f.id !== projectID);
     updatedFlows.push(currentProject);
 
     localStorage.setItem(FLOWS_STORAGE_KEY, JSON.stringify(updatedFlows));
-    localStorage.setItem(CURRENT_FLOW_KEY, currentProjectID);
-    setHasUnsavedChanges(false);
-  }, [currentProjectID, currentProjectTitle, getNodes, getEdges, getViewport, getLocalProjects]);
+    localStorage.setItem(CURRENT_FLOW_KEY, projectID);
 
-  async function saveFlow(projectID: string) {
+    console.log("saved", currentProject, updatedFlows)
+    setHasUnsavedChanges(false);
+  }, [currentProjectTitle, getNodes, getEdges, getViewport, getLocalProjects]);
+
+  async function saveFlow(projectID: string, local: boolean = false) {
+
+    console.log("saving", projectID)
+    if(local){
+      console.log("local")
+      saveLocalProject(projectID);
+      return;
+    }
     const flowData: Flow = {
       nodes: getNodes(),
       edges: getEdges(),
@@ -118,16 +116,19 @@ export const useLocalProjectManager = () => {
     return result;
   }
 
-  const createNewFlow = useCallback(() => {
+  const createNewFlow = useCallback((title?: string) => {
     const newId = `flow_${uuidv4()}`;
-    const newTitle = "Untitled flow";
+    const newTitle = title || "Untitled flow";
 
     setNodes([]);
     setEdges([]);
+    console.log(newId)
     setCurrentProjectID(newId);
     setCurrentProjectTitle(newTitle);
     localStorage.setItem(CURRENT_FLOW_KEY, newId);
-    setHasUnsavedChanges(false);
+    setHasUnsavedChanges(true);
+
+    return newId;
   }, [setNodes, setEdges]);
 
   const deleteFlow = useCallback(
@@ -136,18 +137,36 @@ export const useLocalProjectManager = () => {
       const updatedFlows = flows.filter((f) => f.id !== flowId);
       localStorage.setItem(FLOWS_STORAGE_KEY, JSON.stringify(updatedFlows));
 
-      // If deleting current flow, create new one
+      // If deleting current flow, clear current project
       if (flowId === currentProjectID) {
-        createNewFlow();
+        setCurrentProjectID(null);
+        setCurrentProjectTitle("Untitled Project");
+        localStorage.removeItem(CURRENT_FLOW_KEY);
+        setNodes([]);
+        setEdges([]);
+        setHasUnsavedChanges(false);
       }
     },
-    [getLocalProjects, currentProjectID, createNewFlow],
+    [getLocalProjects, currentProjectID, setNodes, setEdges],
   );
 
   const updateFlowTitle = useCallback((newTitle: string) => {
     setCurrentProjectTitle(newTitle);
     setHasUnsavedChanges(true);
   }, []);
+
+  // Method to load a project by ID
+  const loadFlow = useCallback((projectID?: string) => {
+    if (projectID) {
+      loadLocalProject(projectID);
+    } else {
+      // Load the most recent project if no ID specified
+      const savedCurrentId = localStorage.getItem(CURRENT_FLOW_KEY);
+      if (savedCurrentId) {
+        loadLocalProject(savedCurrentId);
+      }
+    }
+  }, [loadLocalProject]);
 
   return {
     currentFlowId: currentProjectID,
@@ -156,7 +175,7 @@ export const useLocalProjectManager = () => {
     setHasUnsavedChanges,
     getSavedFlows: getLocalProjects,
     saveCurrentFlow: saveLocalProject,
-    loadFlow: loadLocalProject,
+    loadFlow,
     saveFlow,
     changeTitle,
     createNewFlow,

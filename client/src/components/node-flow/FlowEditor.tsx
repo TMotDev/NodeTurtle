@@ -15,6 +15,7 @@ import "@xyflow/react/dist/style.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
+import { FolderOpen } from "lucide-react";
 import { TurtleArea } from "./TurtleArea";
 import ToolboxIsland from "./ToolboxIsland";
 import type {
@@ -28,9 +29,7 @@ import type {
 import type { Project } from "@/api/projects";
 import PenNode from "@/components/node-flow/PenNode";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import NodeBase from "@/components/node-flow/baseNode";
-import NodeSiderbar from "@/components/node-flow/NodeSiderbar";
 import { DevTools } from "@/components/devtools";
 import { MouseProvider, useMousePosition } from "@/hooks/FlowMousePosition";
 import { useClipboard } from "@/hooks/FlowClipBoardContext";
@@ -45,6 +44,7 @@ import { useLazyConnect } from "@/hooks/LazyConnect";
 import MouseTrail from "@/components/MouseTrail";
 import MouseLine from "@/components/MouseLine";
 import RotateNode from "@/components/node-flow/RotateNode";
+import { Button } from "@/components/ui/button";
 
 export const nodeTypes = {
   nodeBase: NodeBase,
@@ -106,21 +106,48 @@ const selector = (state: AppState) => ({
   setData: state.setData,
 });
 
-function Flow({ project }: { project: Project }) {
+function Flow({
+  project,
+  onSwitchProject
+}: {
+  project: Project | null;
+  onSwitchProject?: () => void;
+}) {
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setData, setEdges } = useStore(
     useShallow(selector),
   );
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { markAsModified, hasUnsavedChanges } = useFlowManagerContext();
 
+  // Create a default empty project if none provided
+  const effectiveProject: Project = project || {
+    id: 'empty',
+    title: 'New Project',
+    created_at: new Date().toISOString(),
+    last_edited_at: new Date().toISOString(),
+    description: '',
+    creator_id: '',
+    creator_username: '',
+    likes_count: 0,
+    is_public: false,
+    data: {
+      nodes: [],
+      edges: [],
+      viewport: { x: 0, y: 0, zoom: 1 },
+      nodeCount: 0,
+    }
+  };
+
   useEffect(() => {
-    if (project.data) {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      const n = project.data.nodes ?? [];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      const e = project.data.edges ?? [];
+    if (project?.data) {
+      const n = project.data.nodes;
+      const e = project.data.edges;
       console.log("Project prop changed, updating Zustand store...");
       setData(n, e);
+      setIsInitialLoad(true);
+    } else if (project === null) {
+      // Handle null project - start with empty state
+      setData([], []);
       setIsInitialLoad(true);
     }
   }, [project, setData]);
@@ -422,8 +449,21 @@ function Flow({ project }: { project: Project }) {
               connectionValid={connectionValid}
             />
             <Panel position="bottom-center" className="text-secondary-foreground">
-              <ToolboxIsland project={project} />
+              <ToolboxIsland />
             </Panel>
+            {onSwitchProject && (
+              <Panel position="top-right">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onSwitchProject}
+                  className="bg-background/80 backdrop-blur-sm"
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  Switch Project
+                </Button>
+              </Panel>
+            )}
           </ReactFlow>
         </div>
         {contextMenu && (
@@ -444,12 +484,18 @@ function Flow({ project }: { project: Project }) {
         )}
       </div>
 
-      <TurtleArea project={project} nodes={nodes} edges={edges} />
+      <TurtleArea project={effectiveProject} nodes={nodes} edges={edges} />
     </main>
   );
 }
 
-export function FlowEditor({ project }: { project: Project }) {
+export function FlowEditor({
+  project,
+  onSwitchProject
+}: {
+  project: Project | null;
+  onSwitchProject?: () => void;
+}) {
   return (
     <ReactFlowProvider>
       <FlowManagerProvider>
@@ -458,7 +504,7 @@ export function FlowEditor({ project }: { project: Project }) {
           {/* <NodeSiderbar project={project} /> */}
           {/* <SidebarTrigger /> */}
           <MouseProvider>
-            <Flow project={project} />
+            <Flow project={project} onSwitchProject={onSwitchProject} />
           </MouseProvider>
           {/* </SidebarProvider> */}
         </DnDProvider>

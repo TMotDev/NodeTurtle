@@ -18,8 +18,8 @@ import { Route as CreateImport } from './routes/create'
 import { Route as IndexImport } from './routes/index'
 import { Route as ProjectsIndexImport } from './routes/projects/index'
 import { Route as ResetTokenImport } from './routes/reset/$token'
-import { Route as ProjectsNewImport } from './routes/projects/new'
 import { Route as ProjectsExploreImport } from './routes/projects/explore'
+import { Route as ProjectsCreateImport } from './routes/projects/create'
 import { Route as ProjectsProjectIDImport } from './routes/projects/$projectID'
 import { Route as DeactivateTokenImport } from './routes/deactivate/$token'
 import { Route as AdminUsersImport } from './routes/admin/users'
@@ -70,15 +70,15 @@ const ResetTokenRoute = ResetTokenImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const ProjectsNewRoute = ProjectsNewImport.update({
-  id: '/projects/new',
-  path: '/projects/new',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const ProjectsExploreRoute = ProjectsExploreImport.update({
   id: '/projects/explore',
   path: '/projects/explore',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ProjectsCreateRoute = ProjectsCreateImport.update({
+  id: '/projects/create',
+  path: '/projects/create',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -186,18 +186,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIDImport
       parentRoute: typeof rootRoute
     }
+    '/projects/create': {
+      id: '/projects/create'
+      path: '/projects/create'
+      fullPath: '/projects/create'
+      preLoaderRoute: typeof ProjectsCreateImport
+      parentRoute: typeof rootRoute
+    }
     '/projects/explore': {
       id: '/projects/explore'
       path: '/projects/explore'
       fullPath: '/projects/explore'
       preLoaderRoute: typeof ProjectsExploreImport
-      parentRoute: typeof rootRoute
-    }
-    '/projects/new': {
-      id: '/projects/new'
-      path: '/projects/new'
-      fullPath: '/projects/new'
-      preLoaderRoute: typeof ProjectsNewImport
       parentRoute: typeof rootRoute
     }
     '/reset/$token': {
@@ -230,8 +230,8 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/projects/$projectID': typeof ProjectsProjectIDRoute
+  '/projects/create': typeof ProjectsCreateRoute
   '/projects/explore': typeof ProjectsExploreRoute
-  '/projects/new': typeof ProjectsNewRoute
   '/reset/$token': typeof ResetTokenRoute
   '/projects': typeof ProjectsIndexRoute
 }
@@ -247,8 +247,8 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/projects/$projectID': typeof ProjectsProjectIDRoute
+  '/projects/create': typeof ProjectsCreateRoute
   '/projects/explore': typeof ProjectsExploreRoute
-  '/projects/new': typeof ProjectsNewRoute
   '/reset/$token': typeof ResetTokenRoute
   '/projects': typeof ProjectsIndexRoute
 }
@@ -265,8 +265,8 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/deactivate/$token': typeof DeactivateTokenRoute
   '/projects/$projectID': typeof ProjectsProjectIDRoute
+  '/projects/create': typeof ProjectsCreateRoute
   '/projects/explore': typeof ProjectsExploreRoute
-  '/projects/new': typeof ProjectsNewRoute
   '/reset/$token': typeof ResetTokenRoute
   '/projects/': typeof ProjectsIndexRoute
 }
@@ -284,8 +284,8 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/deactivate/$token'
     | '/projects/$projectID'
+    | '/projects/create'
     | '/projects/explore'
-    | '/projects/new'
     | '/reset/$token'
     | '/projects'
   fileRoutesByTo: FileRoutesByTo
@@ -300,8 +300,8 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/deactivate/$token'
     | '/projects/$projectID'
+    | '/projects/create'
     | '/projects/explore'
-    | '/projects/new'
     | '/reset/$token'
     | '/projects'
   id:
@@ -316,8 +316,8 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/deactivate/$token'
     | '/projects/$projectID'
+    | '/projects/create'
     | '/projects/explore'
-    | '/projects/new'
     | '/reset/$token'
     | '/projects/'
   fileRoutesById: FileRoutesById
@@ -334,8 +334,8 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   DeactivateTokenRoute: typeof DeactivateTokenRoute
   ProjectsProjectIDRoute: typeof ProjectsProjectIDRoute
+  ProjectsCreateRoute: typeof ProjectsCreateRoute
   ProjectsExploreRoute: typeof ProjectsExploreRoute
-  ProjectsNewRoute: typeof ProjectsNewRoute
   ResetTokenRoute: typeof ResetTokenRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
@@ -351,8 +351,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   DeactivateTokenRoute: DeactivateTokenRoute,
   ProjectsProjectIDRoute: ProjectsProjectIDRoute,
+  ProjectsCreateRoute: ProjectsCreateRoute,
   ProjectsExploreRoute: ProjectsExploreRoute,
-  ProjectsNewRoute: ProjectsNewRoute,
   ResetTokenRoute: ResetTokenRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
 }
@@ -377,8 +377,8 @@ export const routeTree = rootRoute
         "/admin/users",
         "/deactivate/$token",
         "/projects/$projectID",
+        "/projects/create",
         "/projects/explore",
-        "/projects/new",
         "/reset/$token",
         "/projects/"
       ]
@@ -413,11 +413,11 @@ export const routeTree = rootRoute
     "/projects/$projectID": {
       "filePath": "projects/$projectID.tsx"
     },
+    "/projects/create": {
+      "filePath": "projects/create.tsx"
+    },
     "/projects/explore": {
       "filePath": "projects/explore.tsx"
-    },
-    "/projects/new": {
-      "filePath": "projects/new.tsx"
     },
     "/reset/$token": {
       "filePath": "reset/$token.tsx"

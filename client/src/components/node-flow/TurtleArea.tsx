@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Home, Play, RotateCcw, Save, Square, Trash2, Turtle, Undo2, Zap } from "lucide-react";
+import { Home, Play,  Save, Square, Undo2, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { Link, useRouter } from "@tanstack/react-router";
+import {  useRouter } from "@tanstack/react-router";
 import { Slider } from "../ui/slider";
-import { Button } from "../ui/button";
 import { FlowTitle } from "./FlowTitle";
 import type { Edge, Node } from "@xyflow/react";
 import type { Project } from "@/api/projects";
@@ -109,10 +108,10 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
         <div className="flex flex-col">
           <div className="flex items-center justify-between border-b-1 bg-gray-200 p-4 border-white">
             <div className="flex flex-row items-center justify-between gap-3">
-              {user?.id === project.creator_id && (
+              {(user?.id === project.creator_id || project.creator_id === '-') && (
                 <button
                   className={`cursor-pointer group relative disabled:cursor-default`}
-                  onClick={() => saveFlow(project.id)}
+                  onClick={() => saveFlow(project.id, project.creator_id === '-')}
                   disabled={!hasUnsavedChanges}
                 >
                   <div

@@ -50,9 +50,9 @@ export const FlowTitle = ({ title, onTitleChange, editable = false }: FlowTitleE
 
   return (
     <div
-      className="flex w-full items-center gap-2 font-bold text-xl cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+      className={`flex w-full items-center gap-2 font-bold text-xl ${editable && "hover:bg-gray-100 cursor-pointer"} px-2 py-1 rounded`}
       onDoubleClick={() => {editable && handleDoubleClick()}}
-      title="Double-click to edit title"
+      title={editable ? `Double-click to edit title` : ''}
     >
       <span>{title}</span>
     </div>

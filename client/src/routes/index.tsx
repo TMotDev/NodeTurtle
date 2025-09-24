@@ -90,7 +90,7 @@ function Homepage() {
   };
 
   const handleCreateProject = () => {
-    navigate({ to: "/projects/new" });
+    navigate({ to: "/projects/create" });
   };
 
   const handleCreateAccount = () => {

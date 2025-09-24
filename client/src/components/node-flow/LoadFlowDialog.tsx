@@ -1,7 +1,7 @@
 import { Clock, FileText, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import type { SavedFlow } from "@/types/flow";
+import type { Project } from "@/api/projects";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ export const LoadFlowDialog = ({
 
   const { getSavedFlows } = useFlowManagerContext();
 
-  const [flows, setFlows] = useState<Array<SavedFlow>>([]);
+  const [flows, setFlows] = useState<Array<Project>>([]);
   useEffect(() => {
     const f = getSavedFlows();
     setFlows(f);
@@ -108,8 +108,8 @@ export const LoadFlowDialog = ({
               flows
                 .sort(
                   (a, b) =>
-                    new Date(b.lastModified).getTime() -
-                    new Date(a.lastModified).getTime(),
+                    new Date(b.last_edited_at).getTime() -
+                    new Date(a.last_edited_at).getTime(),
                 )
                 .map((flow) => (
                   <div
@@ -122,10 +122,10 @@ export const LoadFlowDialog = ({
                       <div>
                         <h3 className="font-medium">{flow.title}</h3>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>{flow.nodeCount} nodes</span>
+                          <span>{flow.data?.nodeCount} nodes</span>
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            <span>{getTimeSince(flow.lastModified)}</span>
+                            <span>{getTimeSince(flow.last_edited_at)}</span>
                           </div>
                         </div>
                       </div>
