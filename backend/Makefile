@@ -1,11 +1,19 @@
 
 # Database connection info
-DB_HOST 	?=
-DB_PORT 	?=
-DB_USER 	?=
-DB_PASSWORD ?=
-DB_NAME 	?=
+DB_HOST 	?= host
+DB_PORT 	?= 1234
+DB_USER 	?= user
+DB_PASSWORD ?= password
+DB_NAME 	?= name
 DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+
+# Test Database connection info
+TEST_DB_HOST 	?= host
+TEST_DB_PORT 	?= 1234
+TEST_DB_USER 	?= user
+TEST_DB_PASSWORD ?= password
+TEST_DB_NAME 	?= name
+TEST_DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 
 # Migration variables
 MIGRATIONS_DIR := migrations
