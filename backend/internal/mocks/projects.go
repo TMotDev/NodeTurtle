@@ -21,7 +21,7 @@ func (m *MockProjectService) CreateProject(p data.ProjectCreate) (*data.Project,
 	return project, args.Error(1)
 }
 
-func (m *MockProjectService) GetProject(projectID, requestingUserID uuid.UUID) (*data.Project, error) {
+func (m *MockProjectService) GetProject(projectID uuid.UUID, requestingUserID *uuid.UUID) (*data.Project, error) {
 	args := m.Called(projectID, requestingUserID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

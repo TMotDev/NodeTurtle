@@ -15,7 +15,7 @@ import (
 // IProjectService defines the interface for project management operations.
 type IProjectService interface {
 	CreateProject(p data.ProjectCreate) (*data.Project, error)
-	GetProject(projectID, requestingUserID uuid.UUID) (*data.Project, error)
+	GetProject(projectID uuid.UUID, requestingUserID *uuid.UUID) (*data.Project, error)
 	GetUserProjects(profileUserID, requestingUserID uuid.UUID) ([]data.Project, error)
 	GetFeaturedProjects(limit, offset int) ([]data.Project, error)
 	FeatureProject(projectID uuid.UUID, expiresAt *time.Time) (*data.Project, error)
@@ -87,7 +87,7 @@ func (s ProjectService) CreateProject(p data.ProjectCreate) (*data.Project, erro
 }
 
 // GetProject retrieves a single project by its ID, ensuring the requesting user has permission to view it.
-func (s ProjectService) GetProject(projectID, requestingUserID uuid.UUID) (*data.Project, error) {
+func (s ProjectService) GetProject(projectID uuid.UUID, requestingUserID *uuid.UUID) (*data.Project, error) {
 	var project data.Project
 	query := `
 		SELECT p.id, p.title, p.description, p.data, p.creator_id, u.username, p.likes_count, p.featured_until, p.created_at, p.last_edited_at, p.is_public
@@ -95,7 +95,7 @@ func (s ProjectService) GetProject(projectID, requestingUserID uuid.UUID) (*data
 		JOIN users u ON p.creator_id = u.id
 		WHERE p.id = $1 AND (p.is_public = TRUE OR p.creator_id = $2)`
 
-	err := s.db.QueryRow(query, projectID, requestingUserID).Scan(
+	err := s.db.QueryRow(query, projectID, &requestingUserID).Scan(
 		&project.ID,
 		&project.Title,
 		&project.Description,

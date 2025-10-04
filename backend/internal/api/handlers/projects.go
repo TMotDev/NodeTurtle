@@ -27,9 +27,12 @@ func NewProjectHandler(projectService projects.IProjectService) ProjectHandler {
 
 // Get handles the request to retrieve a single project.
 func (h *ProjectHandler) Get(c echo.Context) error {
-	contextUser, ok := c.Get("user").(*data.User)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	var userID *uuid.UUID
+
+	if contextUser := c.Get("user"); contextUser != nil {
+		if user, ok := contextUser.(*data.User); ok {
+			userID = &user.ID
+		}
 	}
 
 	idStr := c.Param("id")
@@ -38,7 +41,7 @@ func (h *ProjectHandler) Get(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
 	}
 
-	project, err := h.projectService.GetProject(projectID, contextUser.ID)
+	project, err := h.projectService.GetProject(projectID, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve project")
 	}

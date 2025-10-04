@@ -960,9 +960,12 @@ func TestGetProject(t *testing.T) {
 		"User not authenticated": {
 			contextUser: nil,
 			projectID:   projectID.String(),
-			setupMocks:  func() {},
-			wantCode:    http.StatusUnauthorized,
-			wantError:   true,
+			setupMocks: func() {
+				mockProjectService.On("GetProject", projectID, (*uuid.UUID)(nil)).
+					Return(expectedProject, nil)
+			},
+			wantCode:  http.StatusOK,
+			wantError: false,
 		},
 		"Invalid project ID": {
 			contextUser: validUser,
@@ -975,7 +978,7 @@ func TestGetProject(t *testing.T) {
 			contextUser: validUser,
 			projectID:   projectID.String(),
 			setupMocks: func() {
-				mockProjectService.On("GetProject", projectID, validUser.ID).
+				mockProjectService.On("GetProject", projectID, &validUser.ID).
 					Return(nil, services.ErrRecordNotFound)
 			},
 			wantCode:  http.StatusInternalServerError,
@@ -985,7 +988,7 @@ func TestGetProject(t *testing.T) {
 			contextUser: validUser,
 			projectID:   projectID.String(),
 			setupMocks: func() {
-				mockProjectService.On("GetProject", projectID, validUser.ID).
+				mockProjectService.On("GetProject", projectID, &validUser.ID).
 					Return(nil, fmt.Errorf("database error"))
 			},
 			wantCode:  http.StatusInternalServerError,
@@ -995,7 +998,7 @@ func TestGetProject(t *testing.T) {
 			contextUser: validUser,
 			projectID:   projectID.String(),
 			setupMocks: func() {
-				mockProjectService.On("GetProject", projectID, validUser.ID).
+				mockProjectService.On("GetProject", projectID, &validUser.ID).
 					Return(expectedProject, nil)
 			},
 			wantCode:  http.StatusOK,

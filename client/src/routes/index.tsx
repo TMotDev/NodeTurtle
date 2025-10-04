@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Toaster } from "sonner";
 import { API } from "@/services/api";
 import { ExploreProjectCard } from "@/components/ExploreProjectCard";
 import useAuthStore from "@/lib/authStore";

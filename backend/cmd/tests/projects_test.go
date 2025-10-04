@@ -98,7 +98,7 @@ func TestGetProject(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			p, err := s.GetProject(tt.projectID, tt.requestingUserID)
+			p, err := s.GetProject(tt.projectID, &tt.requestingUserID)
 
 			if tt.err != nil {
 				assert.Error(t, err)
@@ -229,7 +229,7 @@ func TestLikeProject(t *testing.T) {
 	} else {
 		assert.Equal(t, nil, err)
 
-		p, err := s.GetProject(project.ID, user.ID)
+		p, err := s.GetProject(project.ID, &user.ID)
 
 		assert.NoError(t, err)
 
@@ -258,7 +258,7 @@ func TestUnlikeProject(t *testing.T) {
 	} else {
 		assert.Equal(t, nil, err)
 
-		p, err := s.GetProject(project.ID, userID)
+		p, err := s.GetProject(project.ID, &userID)
 
 		assert.NoError(t, err)
 
@@ -287,7 +287,7 @@ func TestUnlikeProject_NotLikedInitially(t *testing.T) {
 	} else {
 		assert.Equal(t, nil, err)
 
-		p, err := s.GetProject(project.ID, userID)
+		p, err := s.GetProject(project.ID, &userID)
 
 		assert.NoError(t, err)
 

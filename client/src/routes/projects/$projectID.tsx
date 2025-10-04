@@ -7,7 +7,7 @@ import { requireAuth } from "@/lib/utils";
 import { Role } from "@/lib/authStore";
 
 export const Route = createFileRoute("/projects/$projectID")({
-  beforeLoad: requireAuth(Role.User),
+  // beforeLoad: requireAuth(Role.User),
   component: Project,
   loader: async ({ params }) => {
     const { projectID } = params;

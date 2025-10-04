@@ -93,6 +93,7 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	// Public routes
 	e.GET("/api/projects/public", projectHandler.GetPublic)
 	e.GET("/api/projects/featured", projectHandler.GetFeatured)
+	e.GET("/api/projects/:id", projectHandler.Get)
 
 	e.POST("/api/users", authHandler.Register)
 	e.GET("/api/users/username/:username", userHandler.CheckUsername)
@@ -119,7 +120,6 @@ func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *h
 	api.POST("/users/me/deactivate", tokenHandler.RequestDeactivationToken)
 
 	api.POST("/projects", projectHandler.Create)
-	api.GET("/projects/:id", projectHandler.Get)
 	api.POST("/projects/:id/likes", projectHandler.Like)
 	api.DELETE("/projects/:id/likes", projectHandler.Unlike)
 	api.GET("/users/:id/projects", projectHandler.GetUserProjects)

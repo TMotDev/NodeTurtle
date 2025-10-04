@@ -14,7 +14,6 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as RegisterImport } from './routes/register'
 import { Route as NotfoundImport } from './routes/notfound'
 import { Route as LoginImport } from './routes/login'
-import { Route as CreateImport } from './routes/create'
 import { Route as IndexImport } from './routes/index'
 import { Route as ProjectsIndexImport } from './routes/projects/index'
 import { Route as ResetTokenImport } from './routes/reset/$token'
@@ -44,12 +43,6 @@ const NotfoundRoute = NotfoundImport.update({
 const LoginRoute = LoginImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const CreateRoute = CreateImport.update({
-  id: '/create',
-  path: '/create',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -128,13 +121,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/create': {
-      id: '/create'
-      path: '/create'
-      fullPath: '/create'
-      preLoaderRoute: typeof CreateImport
       parentRoute: typeof rootRoute
     }
     '/login': {
@@ -235,7 +221,6 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/create': typeof CreateRoute
   '/login': typeof LoginRoute
   '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
@@ -253,7 +238,6 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/create': typeof CreateRoute
   '/login': typeof LoginRoute
   '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
@@ -272,7 +256,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/create': typeof CreateRoute
   '/login': typeof LoginRoute
   '/notfound': typeof NotfoundRoute
   '/register': typeof RegisterRoute
@@ -292,7 +275,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/create'
     | '/login'
     | '/notfound'
     | '/register'
@@ -309,7 +291,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/create'
     | '/login'
     | '/notfound'
     | '/register'
@@ -326,7 +307,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/create'
     | '/login'
     | '/notfound'
     | '/register'
@@ -345,7 +325,6 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CreateRoute: typeof CreateRoute
   LoginRoute: typeof LoginRoute
   NotfoundRoute: typeof NotfoundRoute
   RegisterRoute: typeof RegisterRoute
@@ -363,7 +342,6 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CreateRoute: CreateRoute,
   LoginRoute: LoginRoute,
   NotfoundRoute: NotfoundRoute,
   RegisterRoute: RegisterRoute,
@@ -390,7 +368,6 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/create",
         "/login",
         "/notfound",
         "/register",
@@ -408,9 +385,6 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.tsx"
-    },
-    "/create": {
-      "filePath": "create.tsx"
     },
     "/login": {
       "filePath": "login.tsx"
