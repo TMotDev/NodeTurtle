@@ -95,7 +95,6 @@ function LocalProject() {
 
       {!showProjectDialog && <FlowEditor project={project} onSwitchProject={handleSwitchProject} />}
 
-      <Toaster richColors position="top-center" expand />
     </div>
   );
 }

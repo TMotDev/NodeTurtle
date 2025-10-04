@@ -222,7 +222,6 @@ function AdminUsers() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow flex justify-center p-4">
-        <Toaster richColors position="top-center" expand />
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight">

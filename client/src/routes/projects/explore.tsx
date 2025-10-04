@@ -129,7 +129,6 @@ function ExploreProjects() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-        <Toaster richColors position="top-center" expand />
         <div className="pattern px-16 py-8 pb-6">
           {/* Header */}
           <div className="mb-8">

@@ -66,7 +66,6 @@ function Project() {
   return (
     <div>
       <FlowEditor project={project} />
-      <Toaster richColors position="top-center" expand />
     </div>
   );
 }

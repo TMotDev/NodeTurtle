@@ -207,7 +207,6 @@ function Homepage() {
           </div>
         )}
       </main>
-      <Toaster richColors position="top-center" expand />
       <footer className="pattern h-[10vh]"></footer>
     </div>
   );
