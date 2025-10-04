@@ -8,8 +8,8 @@ interface UseLikedProjectsReturn {
   likedProjectIds: Set<string>;
   isLoading: boolean;
   error: string | null;
-  likeProject: (project: Project) => Promise<boolean>;
-  unlikeProject: (project: Project) => Promise<boolean>;
+  likeProject: (projectID: string) => Promise<boolean>;
+  unlikeProject: (projectID: string) => Promise<boolean>;
   isProjectLiked: (projectId: string) => boolean;
   refreshLikedProjects: () => Promise<void>;
 }
@@ -49,17 +49,17 @@ export const useLikedProjects = (): UseLikedProjectsReturn => {
   }, [user]);
 
   const likeProject = useCallback(
-    async (project: Project): Promise<boolean> => {
+    async (projectID: string): Promise<boolean> => {
       if (!user) {
         toast.error("Please log in to like projects");
         return false;
       }
 
       try {
-        const result = await API.post(`/projects/${project.id}/likes`);
+        const result = await API.post(`/projects/${projectID}/likes`);
 
         if (result.success) {
-          setLikedProjectIds((prev) => new Set(prev).add(project.id));
+          setLikedProjectIds((prev) => new Set(prev).add(projectID));
           toast.success("Project liked!");
           return true;
         } else {
@@ -75,19 +75,19 @@ export const useLikedProjects = (): UseLikedProjectsReturn => {
   );
 
   const unlikeProject = useCallback(
-    async (project: Project): Promise<boolean> => {
+    async (projectID: string): Promise<boolean> => {
       if (!user) {
         toast.error("Please log in to unlike projects");
         return false;
       }
 
       try {
-        const result = await API.delete(`/projects/${project.id}/likes`);
+        const result = await API.delete(`/projects/${projectID}/likes`);
 
         if (result.success) {
           setLikedProjectIds((prev) => {
             const newSet = new Set(prev);
-            newSet.delete(project.id);
+            newSet.delete(projectID);
             return newSet;
           });
           toast.success("Project unliked!");

@@ -35,7 +35,6 @@ function ExploreProjects() {
   const user = useAuthStore((state) => state.user);
   const [projects, setProjects] = useState<Array<Project>>([]);
 
-  // Use the custom hook for liked projects
   const {
     likedProjectIds,
     likeProject: hookLikeProject,
@@ -109,7 +108,7 @@ function ExploreProjects() {
   };
 
   const handleLikeProject = async (project: Project) => {
-    const success = await hookLikeProject(project);
+    const success = await hookLikeProject(project.id);
     if (success) {
       setProjects((prev) =>
         prev.map((p) => (p.id === project.id ? { ...p, likes_count: p.likes_count + 1 } : p)),
@@ -118,9 +117,8 @@ function ExploreProjects() {
   };
 
   const handleUnlikeProject = async (project: Project) => {
-    const success = await hookUnlikeProject(project);
+    const success = await hookUnlikeProject(project.id);
     if (success) {
-      // Update the local projects state to reflect the new like count
       setProjects((prev) =>
         prev.map((p) => (p.id === project.id ? { ...p, likes_count: p.likes_count - 1 } : p)),
       );
@@ -304,6 +302,7 @@ function ExploreProjects() {
           </div>
         )}
       </main>
+      <footer className="pattern h-[10vh]"></footer>
     </div>
   );
 }

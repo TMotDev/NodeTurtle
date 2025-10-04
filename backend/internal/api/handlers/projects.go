@@ -321,6 +321,9 @@ func (h *ProjectHandler) GetUserProjects(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"projects": projects,
+		"meta": map[string]interface{}{
+			"username": projects[0].CreatorUsername,
+		},
 	})
 }
 

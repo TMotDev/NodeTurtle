@@ -33,7 +33,27 @@ const fetchProjectById = async (projectId: string) => {
     try {
       const flowData: Flow = JSON.parse(proj.data);
       proj.data = flowData;
-    } catch (e) {}
+
+      if (!proj.data.nodes) {
+        proj.data.nodes = [];
+      }
+      if (!proj.data.edges) {
+        proj.data.nodes = [];
+      }
+      if (!proj.data.viewport) {
+        proj.data.viewport = { x: 0, y: 0, zoom: 1 };
+      }
+      if (!proj.data.nodeCount) {
+        proj.data.nodeCount = 0;
+      }
+    } catch (e) {
+      proj.data = {
+        nodes: [],
+        edges: [],
+        viewport: { x: 0, y: 0, zoom: 1 },
+        nodeCount: 0,
+      };
+    }
     return proj;
   } else {
     throw notFound();

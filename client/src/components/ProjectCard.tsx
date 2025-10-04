@@ -72,7 +72,10 @@ export const ProjectCard = ({
                 </>
               ) : (
                 <DropdownMenuItem
-                  onClick={() => onUnlike?.(project)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUnlike?.(project);
+                  }}
                   className="text-red-600 focus:text-red-600"
                 >
                   <HeartOff className="h-4 w-4 mr-2" />

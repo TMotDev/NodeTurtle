@@ -13,10 +13,10 @@ function Root() {
     if (!user) {
       checkAuthStatus();
     }
-  }, [checkAuthStatus]);
+  }, [checkAuthStatus, user]);
 
   return (
-    <div className="h-screen w-screen overflow-x-hidden" style={{scrollbarGutter:"stable"}}>
+    <div className="h-screen w-screen overflow-x-hidden">
       <Outlet />
     </div>
   );

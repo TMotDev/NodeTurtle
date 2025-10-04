@@ -70,7 +70,7 @@ function Homepage() {
   };
 
   const handleLike = async (project: Project) => {
-    const success = await likeProject(project);
+    const success = await likeProject(project.id);
     if (success) {
       setFeaturedProjects((prev) =>
         prev.map((p) => (p.id === project.id ? { ...p, likes_count: p.likes_count + 1 } : p)),
@@ -79,7 +79,7 @@ function Homepage() {
   };
 
   const handleUnlike = async (project: Project) => {
-    const success = await unlikeProject(project);
+    const success = await unlikeProject(project.id);
     if (success) {
       setFeaturedProjects((prev) =>
         prev.map((p) =>
@@ -105,12 +105,12 @@ function Homepage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow">
-        <div className="pattern p-16 pb-24">
-          <div className="mb-8 px-16">
+        <div className="pattern p-16 pb-24 flex flex-col">
+          <div className="mb-8 px-16 self-center">
             <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
               Turtle Graphics
             </h1>
-            <p className="leading-7 [&:not(:first-child)]:mt-6">
+            <p className="leading-7 text-xl [&:not(:first-child)]:mt-6">
               Create beautiful patterns and designs with node-based programming.
             </p>
           </div>
@@ -160,12 +160,12 @@ function Homepage() {
         {featuredProjects.length > 0 && (
           <div className="mb-8 flex flex-col items-center content-center">
             <div className="mb-6">
-              <h2 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0 -translate-y-4 bg-white px-12 py-3 rounded-t-lg">
+              <h2 className="scroll-m-20 pb-2 tracking-wider text-3xl font-bold first:mt-0 -translate-y-4 bg-white px-12 py-3 rounded-t-lg">
                 Featured Projects
               </h2>
             </div>
 
-            <div className="flex flex-wrap items-center content-center gap-6 mb-6">
+            <div className="flex flex-wrap items-center content-center gap-6 mb-6 px-6">
               {visibleProjects.map((project) => (
                 <ExploreProjectCard
                   key={project.id}
@@ -208,6 +208,7 @@ function Homepage() {
         )}
       </main>
       <Toaster richColors position="top-center" expand />
+      <footer className="pattern h-[10vh]"></footer>
     </div>
   );
 }

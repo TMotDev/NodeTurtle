@@ -89,7 +89,17 @@ export function ExploreProjectCard({
         <div className="space-y-2 text-sm text-gray-500">
           <div className="flex items-center gap-1">
             <User className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">by {project.creator_username}</span>
+            <span
+              className="truncate"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              by{" "}
+              <Link className="hover:underline" to={`/projects/user/$userID`} params={{ userID: project.creator_id }}>
+                {project.creator_username}
+              </Link>
+            </span>
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3 flex-shrink-0" />
