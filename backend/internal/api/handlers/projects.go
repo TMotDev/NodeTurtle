@@ -322,12 +322,17 @@ func (h *ProjectHandler) GetUserProjects(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user projects")
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	response := map[string]interface{}{
 		"projects": projects,
-		"meta": map[string]interface{}{
+	}
+
+	if len(projects) > 0 {
+		response["meta"] = map[string]interface{}{
 			"username": projects[0].CreatorUsername,
-		},
-	})
+		}
+	}
+
+	return c.JSON(http.StatusOK, response)
 }
 
 func (h *ProjectHandler) GetLikedProjects(c echo.Context) error {

@@ -2,9 +2,6 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import type { Flow, Project } from "@/api/projects";
 import { API } from "@/services/api";
 import { FlowEditor } from "@/components/node-flow/FlowEditor";
-import { Toaster } from "@/components/ui/sonner";
-import { requireAuth } from "@/lib/utils";
-import { Role } from "@/lib/authStore";
 
 export const Route = createFileRoute("/projects/$projectID")({
   // beforeLoad: requireAuth(Role.User),

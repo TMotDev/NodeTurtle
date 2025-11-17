@@ -97,7 +97,7 @@ db/create:
 # Drop database (Windows compatible)
 db/drop:
 	@echo "Dropping database..."
-	@set PGPASSWORD=$(DB_PASSWORD) && dropdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) --if-exists $(DB_NAME)
+	@set PGPASSWORD=$(DB_PASSWORD) && dropdb -databse $(DB_URL)
 
 # Reset database (drop, create, migrate)
 db/reset: db/drop db/create db/migrations/up

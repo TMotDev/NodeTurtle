@@ -83,3 +83,37 @@ func CheckBan(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
+
+func OptionalJWT(authService auth.IAuthService, userService users.IUserService) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			var tokenString string
+
+			cookie, err := c.Cookie("access_token")
+			if err == nil && cookie.Value != "" {
+				tokenString = cookie.Value
+			} else {
+				// Fallback to the Authorization header
+				authHeader := c.Request().Header.Get("Authorization")
+				if authHeader != "" {
+					parts := strings.Split(authHeader, " ")
+					if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+						tokenString = parts[1]
+					}
+				}
+			}
+
+			if tokenString != "" {
+				claims, err := authService.VerifyToken(tokenString)
+				if err == nil {
+					user, err := userService.GetUserByID(uuid.MustParse(claims.Subject))
+					if err == nil {
+						c.Set("user", user)
+					}
+				}
+			}
+
+			return next(c)
+		}
+	}
+}

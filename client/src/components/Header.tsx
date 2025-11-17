@@ -22,7 +22,7 @@ export default function Header() {
         <div className="flex items-center space-x-4">
           <Link to="/" className="flex items-center space-x-2">
             <Turtle size={32} className="text-primary" />
-            <span className="hidden font-bold sm:inline-block">App</span>
+            <span className="hidden font-bold sm:inline-block">Turtle Graphics</span>
           </Link>
         </div>
 
