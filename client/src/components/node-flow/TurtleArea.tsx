@@ -29,6 +29,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
   const { saveFlow, hasUnsavedChanges } = useFlowManagerContext();
   const { user } = useAuthStore();
   const router = useRouter();
+  const [confirmedGoBack, setConfirmedGoBack] = useState(false);
 
   // Initialize turtle executor
   useEffect(() => {
@@ -111,7 +112,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
               {(user?.id === project.creator_id || project.creator_id === '-') && (
                 <button
                   className={`cursor-pointer group relative disabled:cursor-default`}
-                  onClick={() => saveFlow(project.id, project.creator_id === '-')}
+                  onClick={() => {saveFlow(project.id, project.creator_id === '-'); setConfirmedGoBack(false)}}
                   disabled={!hasUnsavedChanges}
                 >
                   <div
@@ -142,7 +143,10 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
               <button
                 className="cursor-pointer group relative"
                 onClick={() => {
-                  if (router.history.canGoBack()) {
+                  if (hasUnsavedChanges && !confirmedGoBack) {
+                    toast.warning("You have unsaved changes, go back?");
+                    setConfirmedGoBack(true);
+                  } else if (router.history.canGoBack()) {
                     router.history.back();
                   } else {
                     router.navigate({ to: "/" });

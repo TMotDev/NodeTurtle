@@ -157,7 +157,6 @@ export class TurtleGraphicsEngine {
 
   private async executeCommand(turtle: TurtleState, command: TurtleCommand): Promise<void> {
     return new Promise((resolve) => {
-      setTimeout(() => {
         switch (command.type) {
           case "move": {
             const cmd = command.value as MoveCommand;
@@ -202,7 +201,6 @@ export class TurtleGraphicsEngine {
           default:
             resolve();
         }
-      }, this.drawDelay === 10 ? 0 : this.drawDelay);
     });
   }
 

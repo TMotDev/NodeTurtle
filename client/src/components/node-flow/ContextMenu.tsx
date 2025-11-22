@@ -21,6 +21,7 @@ export const ContextMenu = ({
     style={{ top: data.top, left: data.left }}
     className="fixed z-50 p-4 -m-8"
     onMouseLeave={onClose}
+    onContextMenu={(e)=>{e.preventDefault()}}
   >
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-1">
       <Button

@@ -388,11 +388,11 @@ function Flow({
 
   const handleUnload = useCallback(
     (event: BeforeUnloadEvent) => {
-      // if (hasUnsavedChanges) {
-      //   event.preventDefault();
-      //   // legacy browser support
-      //   event.returnValue = true;
-      // }
+      if (hasUnsavedChanges) {
+        event.preventDefault();
+        // legacy browser support
+        event.returnValue = true;
+      }
     },
     [hasUnsavedChanges],
   );
@@ -428,6 +428,7 @@ function Flow({
             }}
             isValidConnection={isValidConnection}
             onNodeContextMenu={onNodeContextMenu}
+            onEdgeContextMenu={(e)=>{ e.preventDefault()}}
             onPaneClick={onPaneClick}
             onSelectionContextMenu={onSelectionContextMenu}
             fitView
