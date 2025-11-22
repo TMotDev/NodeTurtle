@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Home, Play, Save, Square, Undo2, Zap } from "lucide-react";
+import { Brush, BrushCleaning, Home, Play, Save, Square, Undo2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "@tanstack/react-router";
 import { Slider } from "../ui/slider";
@@ -65,6 +65,13 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
       executorRef.current.setSpeed(speed[0] * 2);
     }
   }, [speed]);
+
+  const clear = useCallback(() => {
+    if (executorRef.current) {
+      console.log("clear plressed")
+      executorRef.current.clear();
+    }
+  }, []);
 
   const executeFlow = useCallback(async () => {
     if (!executorRef.current || isExecuting || !hasStartNode) return;
@@ -204,7 +211,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
       <div className="flex-shrink-0 flex flex-col bg-gray-100 border-t p-4 gap-4">
 
         {/* Play Button - Centered, Rounded Pill */}
-        <div className="flex justify-center">
+        <div className="flex justify-between items-center">
           <button
             onClick={isExecuting ? stopExecution : executeFlow}
             disabled={!hasStartNode && !isExecuting}
@@ -219,7 +226,18 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
             `}
           >
             {isExecuting ? <Square size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
-            {isExecuting ? "Stop" : "Run Code"}
+            {isExecuting ? "Stop" : "Start"}
+          </button>
+          <button
+            onClick={clear}
+            className={`
+              flex items-center gap-2 px-3 py-2.5 rounded-full text-sm text-white font-medium cursor-pointer
+              shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 justify-center bg-pink-300 hover:bg-pink-500 ring-pink-200
+              disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400
+            `}
+          >
+            <BrushCleaning size={14} fill="currentColor" />
+            {"Clear"}
           </button>
         </div>
 

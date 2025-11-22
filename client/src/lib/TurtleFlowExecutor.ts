@@ -200,6 +200,10 @@ export class TurtleFlowExecutor {
     this.turtleEngine.setDrawDelay(delay);
   }
 
+  clear(){
+    this.turtleEngine.clear();
+  }
+
   stop() {
     this.turtleEngine.stop();
   }

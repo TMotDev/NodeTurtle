@@ -274,6 +274,7 @@ export class TurtleGraphicsEngine {
   }
 
   clear() {
+    console.log("clearing")
     this.drawingCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.turtleCtx.clearRect(0, 0, this.turtleCanvas.width, this.turtleCanvas.height);
     this.setupCanvas();
