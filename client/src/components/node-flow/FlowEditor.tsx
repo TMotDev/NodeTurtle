@@ -45,6 +45,11 @@ import MouseTrail from "@/components/MouseTrail";
 import MouseLine from "@/components/MouseLine";
 import RotateNode from "@/components/node-flow/RotateNode";
 import { Button } from "@/components/ui/button";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 export const nodeTypes = {
   nodeBase: NodeBase,
@@ -106,6 +111,7 @@ const selector = (state: AppState) => ({
   setData: state.setData,
 });
 
+
 function Flow({
   project,
   onSwitchProject
@@ -119,8 +125,7 @@ function Flow({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { markAsModified, hasUnsavedChanges } = useFlowManagerContext();
 
-  // Create a default empty project if none provided
-  const effectiveProject: Project = project || {
+  const emptyProject: Project = project || {
     id: 'empty',
     title: 'New Project',
     created_at: new Date().toISOString(),
@@ -142,24 +147,19 @@ function Flow({
     if (project?.data) {
       const n = project.data.nodes;
       const e = project.data.edges;
-      console.log("Project prop changed, updating Zustand store...");
       setData(n, e);
       setIsInitialLoad(true);
     } else if (project === null) {
-      // Handle null project - start with empty state
       setData([], []);
       setIsInitialLoad(true);
     }
   }, [project, setData]);
 
-  // Watch for changes in nodes and edges to mark as modified
   useEffect(() => {
     if (isInitialLoad) {
       setIsInitialLoad(false);
       return;
     }
-
-    // Only mark as modified if we're not in initial load
     markAsModified();
   }, [nodes, edges, markAsModified, isInitialLoad]);
 
@@ -184,9 +184,6 @@ function Flow({
     left: number;
   } | null>(null);
 
-  // ------------------------------------
-  // Cut Tool and Lazy Connect
-  // ------------------------------------
   const [toolStates, setToolStates] = useState({
     cutTool: false,
     lazyConnect: false,
@@ -224,7 +221,6 @@ function Flow({
     } else if (MPressed) {
       muteSelection();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [CtrlCPressed, CtrlVPressed, MPressed]);
 
   const onLazyConnection = useCallback(
@@ -240,9 +236,6 @@ function Flow({
     onConnection: onLazyConnection,
   });
 
-  // ------------------------------------
-  // Keyboard and Mouse Event Handlers
-  // ------------------------------------
   const handleMouseDown = useCallback(
     (event: MouseEvent) => {
       if (event.button === 2) {
@@ -266,17 +259,14 @@ function Flow({
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       let stateChanged = false;
-
       if ((event.ctrlKey || event.metaKey) && !inputStateRef.current.isCtrlPressed) {
         inputStateRef.current.isCtrlPressed = true;
         stateChanged = true;
       }
-
       if (event.altKey && !inputStateRef.current.isAltPressed) {
         inputStateRef.current.isAltPressed = true;
         stateChanged = true;
       }
-
       if (stateChanged) {
         updateToolStates();
       }
@@ -287,17 +277,14 @@ function Flow({
   const handleKeyUp = useCallback(
     (event: KeyboardEvent) => {
       let stateChanged = false;
-
       if (!event.ctrlKey && !event.metaKey && inputStateRef.current.isCtrlPressed) {
         inputStateRef.current.isCtrlPressed = false;
         stateChanged = true;
       }
-
       if (!event.altKey && inputStateRef.current.isAltPressed) {
         inputStateRef.current.isAltPressed = false;
         stateChanged = true;
       }
-
       if (stateChanged) {
         updateToolStates();
       }
@@ -319,9 +306,6 @@ function Flow({
     };
   }, [handleMouseDown, handleMouseUp, handleKeyDown, handleKeyUp]);
 
-  // ------------------------------------
-  // Context Menu handlers
-  // ------------------------------------
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: Node) => {
       if (toolStates.cutTool || toolStates.lazyConnect) return;
@@ -353,9 +337,6 @@ function Flow({
     setSelectionContextMenu(null);
   }, []);
 
-  // ------------------------------------
-  // Node, Edge and connection related handlers
-  // ------------------------------------
   const isValidConnection = useCallback(
     (connectionOrEdge: Edge | Connection) => {
       if (
@@ -368,17 +349,14 @@ function Flow({
         const target = n.find((node) => node.id === connection.target);
         const hasCycle = (node: Node, visited = new Set<string>()) => {
           if (visited.has(node.id)) return false;
-
           visited.add(node.id);
           for (const outgoer of getOutgoers(node, n, e)) {
             if (outgoer.id === connection.source) return true;
             if (hasCycle(outgoer, visited)) return true;
           }
         };
-
         if (!target) return false;
         if (target.id === connection.source) return false;
-
         return !hasCycle(target);
       }
       return false;
@@ -390,7 +368,6 @@ function Flow({
     (event: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         event.preventDefault();
-        // legacy browser support
         event.returnValue = true;
       }
     },
@@ -405,87 +382,98 @@ function Flow({
   }, [handleUnload]);
 
   return (
-    <main className="w-screen h-screen relative flex">
-      <div className="flex-1 flex flex-col">
-        <div
-          className={`w-full h-full ${toolStates.cutTool ? "cursor-crosshair" : "cursor-default"}`}
-        >
-          <ReactFlow
-            ref={reactFlowWrapper}
-            onMouseMove={handleMouseMove}
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onDrop={onDrop}
-            zoomOnDoubleClick={false}
-            onDragOver={onDragOver}
-            onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
-            onEdgeDoubleClick={(_, edge) => {
-              setEdges(edges.filter((ed) => ed.id !== edge.id));
-            }}
-            isValidConnection={isValidConnection}
-            onNodeContextMenu={onNodeContextMenu}
-            onEdgeContextMenu={(e)=>{ e.preventDefault()}}
-            onPaneClick={onPaneClick}
-            onSelectionContextMenu={onSelectionContextMenu}
-            fitView
-            selectionOnDrag={!toolStates.cutTool && !toolStates.lazyConnect}
-            panOnDrag={!toolStates.cutTool && !toolStates.lazyConnect && [1]}
-            panOnScroll={!toolStates.cutTool && !toolStates.lazyConnect}
-            deleteKeyCode={"Delete"}
-            onPaneContextMenu={(e) => {
-              e.preventDefault();
-            }}
-            selectionMode={SelectionMode.Partial}
-            multiSelectionKeyCode={"Shift"}
-          >
-            <Background />
-            <DevTools position="top-left" />
-            <MouseTrail isActive={toolStates.cutTool && !toolStates.lazyConnect} />
-            <MouseLine
-              isActive={toolStates.lazyConnect && !toolStates.cutTool}
-              connectionValid={connectionValid}
-            />
-            <Panel position="bottom-center" className="text-secondary-foreground">
-              <ToolboxIsland />
-            </Panel>
-            {onSwitchProject && (
-              <Panel position="top-right">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onSwitchProject}
-                  className="bg-background/80 backdrop-blur-sm"
-                >
-                  <FolderOpen className="h-4 w-4 mr-2" />
-                  Switch Project
-                </Button>
-              </Panel>
-            )}
-          </ReactFlow>
-        </div>
-        {contextMenu && (
-          <ContextMenu
-            onClose={() => setContextMenu(null)}
-            onDuplicate={() => duplicateNode(contextMenu.id)}
-            onDelete={() => deleteNode(contextMenu.id)}
-            data={contextMenu}
-          />
-        )}
-        {selectionContextMenu && (
-          <ContextMenu
-            onClose={() => setSelectionContextMenu(null)}
-            onDuplicate={duplicateSelection}
-            onDelete={deleteSelection}
-            data={selectionContextMenu}
-          />
-        )}
-      </div>
+    <main className="w-screen h-screen relative bg-background">
 
-      <TurtleArea project={effectiveProject} nodes={nodes} edges={edges} />
+      <ResizablePanelGroup direction="horizontal">
+
+        <ResizablePanel defaultSize={70} minSize={30} className="relative">
+          <div
+            className={`w-full h-full ${toolStates.cutTool ? "cursor-crosshair" : "cursor-default"}`}
+          >
+            <ReactFlow
+              ref={reactFlowWrapper}
+              onMouseMove={handleMouseMove}
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onDrop={onDrop}
+              zoomOnDoubleClick={false}
+              onDragOver={onDragOver}
+              onEdgeMouseEnter={(_, edge) => handleEdgeMouseEnter(edge)}
+              onEdgeDoubleClick={(_, edge) => {
+                setEdges(edges.filter((ed) => ed.id !== edge.id));
+              }}
+              isValidConnection={isValidConnection}
+              onNodeContextMenu={onNodeContextMenu}
+              onEdgeContextMenu={(e)=>{ e.preventDefault()}}
+              onPaneClick={onPaneClick}
+              onSelectionContextMenu={onSelectionContextMenu}
+              fitView
+              selectionOnDrag={!toolStates.cutTool && !toolStates.lazyConnect}
+              panOnDrag={!toolStates.cutTool && !toolStates.lazyConnect && [1]}
+              panOnScroll={!toolStates.cutTool && !toolStates.lazyConnect}
+              deleteKeyCode={"Delete"}
+              onPaneContextMenu={(e) => {
+                e.preventDefault();
+              }}
+              selectionMode={SelectionMode.Partial}
+              multiSelectionKeyCode={"Shift"}
+            >
+              <Background />
+              <DevTools position="top-left" />
+              <MouseTrail isActive={toolStates.cutTool && !toolStates.lazyConnect} />
+              <MouseLine
+                isActive={toolStates.lazyConnect && !toolStates.cutTool}
+                connectionValid={connectionValid}
+              />
+              <Panel position="bottom-center" className="text-secondary-foreground">
+                <ToolboxIsland />
+              </Panel>
+              {onSwitchProject && (
+                <Panel position="top-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onSwitchProject}
+                    className="bg-background/80 backdrop-blur-sm"
+                  >
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Switch Project
+                  </Button>
+                </Panel>
+              )}
+            </ReactFlow>
+
+            {contextMenu && (
+              <ContextMenu
+                onClose={() => setContextMenu(null)}
+                onDuplicate={() => duplicateNode(contextMenu.id)}
+                onDelete={() => deleteNode(contextMenu.id)}
+                data={contextMenu}
+              />
+            )}
+            {selectionContextMenu && (
+              <ContextMenu
+                onClose={() => setSelectionContextMenu(null)}
+                onDuplicate={duplicateSelection}
+                onDelete={deleteSelection}
+                data={selectionContextMenu}
+              />
+            )}
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        <ResizablePanel defaultSize={30} minSize={15}>
+          <div className="w-full h-full overflow-hidden">
+             <TurtleArea project={emptyProject} nodes={nodes} edges={edges} />
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </main>
   );
 }
@@ -501,13 +489,9 @@ export function FlowEditor({
     <ReactFlowProvider>
       <FlowManagerProvider>
         <DnDProvider>
-          {/* <SidebarProvider> */}
-          {/* <NodeSiderbar project={project} /> */}
-          {/* <SidebarTrigger /> */}
           <MouseProvider>
             <Flow project={project} onSwitchProject={onSwitchProject} />
           </MouseProvider>
-          {/* </SidebarProvider> */}
         </DnDProvider>
       </FlowManagerProvider>
     </ReactFlowProvider>
