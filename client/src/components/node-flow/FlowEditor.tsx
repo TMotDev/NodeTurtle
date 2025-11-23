@@ -18,6 +18,7 @@ import { useShallow } from "zustand/react/shallow";
 import { FolderOpen } from "lucide-react";
 import { TurtleArea } from "./TurtleArea";
 import ToolboxIsland from "./ToolboxIsland";
+import CommentNode from "./CommentNode";
 import type {
   Connection,
   Edge,
@@ -58,6 +59,7 @@ export const nodeTypes = {
   loopNode: LoopNode,
   rotateNode: RotateNode,
   penNode: PenNode,
+  commentNode: CommentNode
 };
 
 type AppState = {

@@ -1,4 +1,4 @@
-import { ArrowRight, Flag, Pen, Repeat2, RotateCcw } from "lucide-react";
+import { ArrowRight, Flag, Pen, Repeat2, RotateCcw, StickyNote } from "lucide-react";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { useDragDrop } from "@/hooks/FlowDragAndDropContext";
@@ -42,6 +42,13 @@ export default function ToolboxIsland() {
       icon: Pen,
       text: "group-hover:text-cyan-600",
       background: "bg-cyan-400/60"
+    },
+    {
+      id: "commentNode",
+      title: "Comment",
+      icon: StickyNote,
+      text: "group-hover:text-gray-600",
+      background: "bg-gray-400/60"
     },
   ];
 

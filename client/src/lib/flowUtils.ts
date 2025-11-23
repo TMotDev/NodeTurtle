@@ -32,6 +32,7 @@ export interface NodeRegistry {
   rotateNode: { muted: boolean; angle: number };
   loopNode: { muted: boolean; loopCount: number };
   penNode: { muted: boolean; color: string; penDown: boolean };
+  commentNode: {content: string, collapsed: boolean};
 }
 
 export type NodeType = keyof NodeRegistry;
@@ -42,6 +43,7 @@ export const INITIAL_NODE_DATA: NodeRegistry = {
   rotateNode: { muted: false, angle: 0 },
   loopNode: { muted: false, loopCount: 3 },
   penNode: { muted: false, color: "#000000", penDown: true },
+  commentNode: {content: "", collapsed: false},
 };
 
 export const NODE_EXECUTORS = {
@@ -84,6 +86,9 @@ export const NODE_EXECUTORS = {
       console.log(`color: ${nodeData.color}, pen: ${nodeData.penDown}`);
     }
   },
+  commentNode: () => {
+   return
+  },
 } satisfies Record<NodeType, (nodeData: any) => void>;
 
 export type NodePropsFor<T extends NodeType> = NodeProps & {
@@ -94,6 +99,7 @@ export type MoveNodeProps = NodePropsFor<"moveNode">;
 export type LoopNodeProps = NodePropsFor<"loopNode">;
 export type RotateNodeProps = NodePropsFor<"rotateNode">;
 export type PenNodeProps = NodePropsFor<"penNode">;
+export type CommentNodeProps = NodePropsFor<"commentNode">;
 
 export type NodeTree = {
   node: {
