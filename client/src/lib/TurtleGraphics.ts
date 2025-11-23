@@ -33,7 +33,7 @@ export class TurtleGraphicsEngine {
   private turtleCtx: CanvasRenderingContext2D;
   private turtles: Map<string, TurtleState> = new Map();
   private isRunning = false;
-  private drawDelay = 70;
+  private drawDelay = 0;
   private commandQueues: Map<string, Array<TurtleCommand>> = new Map();
   private executingCommands: Map<string, boolean> = new Map();
   private animationId: number | null = null;
@@ -68,7 +68,7 @@ export class TurtleGraphicsEngine {
   }
 
   setDrawDelay(delay: number) {
-    this.drawDelay = Math.max(1, delay); // Ensure minimum delay of 1ms
+    this.drawDelay = delay;
   }
 
   private drawGrid() {
@@ -156,52 +156,50 @@ export class TurtleGraphicsEngine {
   }
 
   private async executeCommand(turtle: TurtleState, command: TurtleCommand): Promise<void> {
-    return new Promise((resolve) => {
-        switch (command.type) {
-          case "move": {
-            const cmd = command.value as MoveCommand;
-            const endX = turtle.x + Math.cos((turtle.angle * Math.PI) / 180) * cmd.distance;
-            const endY = turtle.y - Math.sin((turtle.angle * Math.PI) / 180) * cmd.distance; // Flip Y
+    switch (command.type) {
+      case "move": {
+        const cmd = command.value as MoveCommand;
+        const endX = turtle.x + Math.cos((turtle.angle * Math.PI) / 180) * cmd.distance;
+        const endY = turtle.y - Math.sin((turtle.angle * Math.PI) / 180) * cmd.distance; // Flip Y
 
-            if (turtle.penDown) {
-              this.drawingCtx.save();
-              this.drawingCtx.fillStyle = turtle.color;
-              this.drawingCtx.strokeStyle = turtle.color;
-              this.drawingCtx.lineWidth = turtle.lineWidth;
-              this.drawingCtx.lineCap = "round";
-              this.drawingCtx.lineJoin = "round";
-              this.drawingCtx.beginPath();
-              this.drawingCtx.moveTo(turtle.x, turtle.y);
-              this.drawingCtx.lineTo(endX, endY);
-              this.drawingCtx.stroke();
-              this.drawingCtx.restore();
-            }
-            turtle.x = endX;
-            turtle.y = endY;
-            resolve();
-
-            break;
-          }
-
-          case "rotate": {
-            const cmd = command.value as RotateCommand;
-            turtle.angle += cmd.angle;
-            resolve();
-            break;
-          }
-
-          case "pen": {
-            const cmd = command.value as PenCommand;
-            turtle.penDown = cmd.isDrawing;
-            turtle.color = cmd.color;
-            resolve();
-            break;
-          }
-
-          default:
-            resolve();
+        if (turtle.penDown) {
+          this.drawingCtx.save();
+          this.drawingCtx.fillStyle = turtle.color;
+          this.drawingCtx.strokeStyle = turtle.color;
+          this.drawingCtx.lineWidth = turtle.lineWidth;
+          this.drawingCtx.lineCap = "round";
+          this.drawingCtx.lineJoin = "round";
+          this.drawingCtx.beginPath();
+          this.drawingCtx.moveTo(turtle.x, turtle.y);
+          this.drawingCtx.lineTo(endX, endY);
+          this.drawingCtx.stroke();
+          this.drawingCtx.restore();
         }
-    });
+        turtle.x = endX;
+        turtle.y = endY;
+        if (this.drawDelay > 0) {
+          await new Promise((res) => setTimeout(res, this.drawDelay));
+        }
+
+        return;
+      }
+
+      case "rotate": {
+        const cmd = command.value as RotateCommand;
+        turtle.angle += cmd.angle;
+        return;
+      }
+
+      case "pen": {
+        const cmd = command.value as PenCommand;
+        turtle.penDown = cmd.isDrawing;
+        turtle.color = cmd.color;
+        return;
+      }
+
+      default:
+        return;
+    }
   }
 
   private async processTurtleQueue(turtleId: string) {
@@ -274,7 +272,6 @@ export class TurtleGraphicsEngine {
   }
 
   clear() {
-    console.log("clearing")
     this.drawingCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.turtleCtx.clearRect(0, 0, this.turtleCanvas.width, this.turtleCanvas.height);
     this.setupCanvas();

@@ -195,8 +195,7 @@ export class TurtleFlowExecutor {
     });
   }
 
-  setSpeed(speedLevel: number) {
-    const delay = speedLevel === 10 ? 0 : Math.max(10, 160 - speedLevel * 15);
+  setDelay(delay: number) {
     this.turtleEngine.setDrawDelay(delay);
   }
 

@@ -9,9 +9,9 @@ export default defineConfig({
   plugins: [
     TanStackRouterVite({ autoCodeSplitting: true }),
     react({
-      babel: {
-        plugins: ['babel-plugin-react-compiler'],
-      },
+      // babel: {
+      //   plugins: ['babel-plugin-react-compiler'],
+      // },
     }),
     tailwindcss(),
   ],
