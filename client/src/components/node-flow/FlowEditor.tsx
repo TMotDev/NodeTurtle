@@ -431,7 +431,7 @@ function Flow({
                 isActive={toolStates.lazyConnect && !toolStates.cutTool}
                 connectionValid={connectionValid}
               />
-              <Panel position="bottom-center" className="text-secondary-foreground">
+              <Panel position="center-left" className="text-secondary-foreground">
                 <ToolboxIsland />
               </Panel>
               {onSwitchProject && (

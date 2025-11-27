@@ -1,8 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Brush, BrushCleaning, Home, Play, Save, Square, Undo2, Zap } from "lucide-react";
+import {
+  BrushCleaning,
+  ChevronDown,
+  ChevronUp,
+  ChevronsDown,
+  ChevronsUp,
+  Home,
+  Play,
+  Save,
+  Square,
+  Undo2,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "@tanstack/react-router";
 import { Slider } from "../ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { FlowTitle } from "./FlowTitle";
 import type { Edge, Node } from "@xyflow/react";
 import type { Project } from "@/api/projects";
@@ -209,40 +222,65 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
         </div>
       </div>
 
-      <div className="flex-shrink-0 flex flex-col bg-gray-100 border-t p-4 gap-4">
-        <div className="flex justify-between items-center">
-          <button
-            onClick={isExecuting ? stopExecution : executeFlow}
-            disabled={!hasStartNode && !isExecuting}
-            className={`
-              flex items-center gap-2 px-8 py-2.5 rounded-full text-sm text-white font-medium w-48 cursor-pointer
-              shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 justify-center
-              ${
-                isExecuting
-                  ? "bg-rose-500 hover:bg-rose-600 ring-rose-200"
-                  : "bg-emerald-500 hover:bg-emerald-600 ring-emerald-200"
-              }
-              disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400
-            `}
-          >
-            {isExecuting ? (
-              <Square size={14} fill="currentColor" />
-            ) : (
-              <Play size={14} fill="currentColor" />
-            )}
-            {isExecuting ? "Stop" : "Start"}
-          </button>
-          <button
-            onClick={clear}
-            className={`
-              flex items-center gap-2 px-3 py-2.5 rounded-full text-sm text-white font-medium cursor-pointer
-              shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 justify-center bg-pink-300 hover:bg-pink-500 ring-pink-200
-              disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400
-            `}
-          >
-            <BrushCleaning size={14} fill="currentColor" />
-            {"Clear"}
-          </button>
+{/* UPDATE HERE */}
+      <div className="flex-shrink-0 flex flex-col border-t gap-4">
+        <div className="flex flex-col items-center m-8 bg-white p-4 rounded-md">
+          <div className="flex gap-2">
+            <ToggleGroup className="flex gap-2" type="single" variant="outline">
+              <ToggleGroupItem value="1">
+                <ChevronsDown />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="2">
+                <ChevronDown />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="3">
+                <b>-</b>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="4">
+                <ChevronUp />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="5">
+                <ChevronsUp />
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <span className="text-xs font-medium text-gray-500 truncate">
+              {getSpeedLabel(speed[0])}
+            </span>
+          </div>
+          <div>
+            <button
+              onClick={isExecuting ? stopExecution : executeFlow}
+              disabled={!hasStartNode && !isExecuting}
+              className={`
+                flex items-center gap-2 px-8 py-2.5 rounded-full text-sm text-white font-medium w-48 cursor-pointer
+                shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 justify-center
+                ${
+                  isExecuting
+                    ? "bg-rose-500 hover:bg-rose-600 ring-rose-200"
+                    : "bg-emerald-500 hover:bg-emerald-600 ring-emerald-200"
+                }
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400
+              `}
+            >
+              {isExecuting ? (
+                <Square size={14} fill="currentColor" />
+              ) : (
+                <Play size={14} fill="currentColor" />
+              )}
+              {isExecuting ? "Stop" : "Start"}
+            </button>
+            <button
+              onClick={clear}
+              className={`
+                flex items-center gap-2 px-3 py-2.5 rounded-full text-sm text-white font-medium cursor-pointer
+                shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 justify-center bg-pink-300 hover:bg-pink-500 ring-pink-200
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400
+              `}
+            >
+              <BrushCleaning size={14} fill="currentColor" />
+              {"Clear"}
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-row items-center justify-between pt-2 border-t border-gray-100 flex-wrap">
