@@ -1,21 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   BrushCleaning,
-  ChevronDown,
-  ChevronUp,
-  ChevronsDown,
-  ChevronsUp,
   Home,
+  Minus,
   Play,
+  Rabbit,
   Save,
+  Snail,
   Square,
+  Turtle,
   Undo2,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "@tanstack/react-router";
-import { Slider } from "../ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
+import { Button } from "../ui/button";
 import { FlowTitle } from "./FlowTitle";
 import type { Edge, Node } from "@xyflow/react";
 import type { Project } from "@/api/projects";
@@ -133,9 +133,9 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
   }
 
   return (
-    <div className="bg-gray-200 w-full h-full flex flex-col border-l border overflow-hidden">
-      <div className="flex-shrink-0 border-b bg-white">
-        <div className="flex items-center justify-between pattern p-4 border-white border-b-1">
+    <div className="w-full h-full flex flex-col border-l border overflow-hidden">
+      <div className="flex-shrink-0 border-b">
+        <div className="flex items-center justify-between pattern p-4 border-white">
           <div className="flex flex-row items-center justify-between gap-3">
             {(user?.id === project.creator_id || project.creator_id === "-") && (
               <button
@@ -222,93 +222,89 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
         </div>
       </div>
 
-{/* UPDATE HERE */}
-      <div className="flex-shrink-0 flex flex-col border-t gap-4">
-        <div className="flex flex-col items-center m-8 bg-white p-4 rounded-md">
-          <div className="flex gap-2">
-            <ToggleGroup className="flex gap-2" type="single" variant="outline">
-              <ToggleGroupItem value="1">
-                <ChevronsDown />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="2">
-                <ChevronDown />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="3">
-                <b>-</b>
-              </ToggleGroupItem>
-              <ToggleGroupItem value="4">
-                <ChevronUp />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="5">
-                <ChevronsUp />
-              </ToggleGroupItem>
-            </ToggleGroup>
-            <span className="text-xs font-medium text-gray-500 truncate">
-              {getSpeedLabel(speed[0])}
-            </span>
-          </div>
-          <div>
-            <button
-              onClick={isExecuting ? stopExecution : executeFlow}
-              disabled={!hasStartNode && !isExecuting}
-              className={`
-                flex items-center gap-2 px-8 py-2.5 rounded-full text-sm text-white font-medium w-48 cursor-pointer
-                shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 justify-center
-                ${
-                  isExecuting
-                    ? "bg-rose-500 hover:bg-rose-600 ring-rose-200"
-                    : "bg-emerald-500 hover:bg-emerald-600 ring-emerald-200"
-                }
-                disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400
-              `}
-            >
-              {isExecuting ? (
-                <Square size={14} fill="currentColor" />
-              ) : (
-                <Play size={14} fill="currentColor" />
-              )}
-              {isExecuting ? "Stop" : "Start"}
-            </button>
-            <button
-              onClick={clear}
-              className={`
-                flex items-center gap-2 px-3 py-2.5 rounded-full text-sm text-white font-medium cursor-pointer
-                shadow-sm hover:shadow-md active:scale-95 transition-all duration-200 justify-center bg-pink-300 hover:bg-pink-500 ring-pink-200
-                disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400
-              `}
-            >
-              <BrushCleaning size={14} fill="currentColor" />
-              {"Clear"}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-row items-center justify-between pt-2 border-t border-gray-100 flex-wrap">
-          <div className="flex items-center gap-2">
-            <div className="w-[120px]">
-              <Slider
-                className="bg-gray-300"
-                value={speed}
-                onValueChange={setSpeed}
-                max={5}
-                min={1}
-                step={1}
-              />
+      <div className="flex-shrink-0 flex flex-col p-3 bg-gray-100">
+        <div className="flex flex-col items-center px-8 py-6 bg-white rounded-md gap-6">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex items-center gap-3 w-full justify-center">
+              <Button
+                variant={"default"}
+                size={"lg"}
+                onClick={isExecuting ? stopExecution : executeFlow}
+                disabled={!hasStartNode && !isExecuting}
+                className={`
+                  px-8 py-3 min-w-32
+                  ${
+                    isExecuting
+                      ? "bg-amber-600 hover:bg-amber-700"
+                      : "bg-emerald-600 hover:bg-emerald-700"
+                  }
+                `}
+              >
+                {isExecuting ? (
+                  <>
+                    <Square size={16} fill="currentColor" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Play size={16} fill="currentColor" />
+                    Start
+                  </>
+                )}
+              </Button>
+              <Button
+                size={"lg"}
+                variant={"outline"}
+                onClick={clear}
+                disabled={isExecuting}
+                className="text-pink-500 hover:text-ping-600"
+              >
+                <BrushCleaning size={16} />
+                Clear
+              </Button>
             </div>
-            <span className="text-xs font-medium text-gray-500 truncate">
-              {getSpeedLabel(speed[0])}
-            </span>
+            <div className="flex flex-col items-center gap-1 w-full">
+              <div className="flex items-center gap-3 justify-center">
+                <ToggleGroup
+                  className="flex"
+                  type="single"
+                  variant="outline"
+                  value={speed[0].toString()}
+                  onValueChange={(value) => value && setSpeed([parseInt(value)])}
+                >
+                  <ToggleGroupItem value="1" className="px-3">
+                    <Snail size={16} />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="2" className="px-3">
+                    <Turtle size={16} />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="3" className="px-3">
+                    <Minus size={16} />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="4" className="px-3">
+                    <Rabbit size={16} />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="5" className="px-3">
+                    <Zap size={16} />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              <span className="text-xs font-medium text-gray-500">{getSpeedLabel(speed[0])}</span>
+            </div>
           </div>
 
-          {nodes.length > 0 ? (
-            <div className="flex items-center gap-3 text-gray-500">
-              <span className="text-nowrap">{nodes.length} nodes</span>
-              <hr className="border-l h-4 border-gray-500" />
-              <span className="text-nowrap">{edges.length} connections</span>
-            </div>
-          ) : (
-            <div className="text-xs text-gray-300 italic">No nodes</div>
-          )}
+          <hr className="w-2/3 bg-gray-600"></hr>
+          <div className="flex items-center justify-center gap-3 text-xs text-gray-500 pt-2 border-gray-200 w-full">
+            {nodes.length > 0 ? (
+              <>
+                <span className="text-nowrap">{nodes.length} nodes</span>
+                <span className="text-gray-300">•</span>
+                <span className="text-nowrap">{edges.length} connections</span>
+              </>
+            ) : (
+              <span className="text-gray-400 italic">No nodes yet</span>
+            )}
+          </div>
         </div>
       </div>
     </div>
