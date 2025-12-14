@@ -162,6 +162,7 @@ function Flow({
       setIsInitialLoad(false);
       return;
     }
+    markAsModified();
   }, [nodes, edges, markAsModified, isInitialLoad]);
 
   const { copyElements, pasteElements } = useClipboard();

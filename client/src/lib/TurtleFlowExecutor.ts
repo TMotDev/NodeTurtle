@@ -125,7 +125,7 @@ private currentState: ExecutionState = "IDLE";
 
       const loopCount = currentNode.node.data?.loopCount;
       // Handle nested loops within the loop body
-      if (currentNode.node.type === "loopNode" && currentNode.loopChildren && loopCount > 0) {
+      if (currentNode.node.type === "loopNode" && currentNode.loopChildren && loopCount > 0 && !currentNode.node.data.muted) {
         let loopBodyCmds: Array<TurtleCommand> = [];
         if (currentNode.loopChildren.length > 0) {
           console.log(loopCount);
@@ -150,11 +150,10 @@ private currentState: ExecutionState = "IDLE";
       const currentCommands = [...commandsSoFar, ...nodeCommands];
 
       const loopCount = node.node.data?.loopCount;
-      if (node.node.type === "loopNode" && node.loopChildren && node.loopChildren.length > 0) {
+      if (node.node.type === "loopNode" && node.loopChildren && node.loopChildren.length > 0 && !node.node.data.muted) {
         const loopBodyCommands = this.collectSubtreeCommands(node.loopChildren[0]);
 
         for (let i = 0; i < loopCount; i++) {
-          console.log(loopCount);
           currentCommands.push(...loopBodyCommands);
         }
 
@@ -177,7 +176,7 @@ private currentState: ExecutionState = "IDLE";
     return paths;
   }
 
-  async executeFlow(nodes: Array<Node>, edges: Array<Edge>): Promise<void> {
+  executeFlow(nodes: Array<Node>, edges: Array<Edge>): void {
     // If we are already running or paused, reset first
     if (this.currentState !== "IDLE") {
       this.reset();
@@ -190,13 +189,13 @@ private currentState: ExecutionState = "IDLE";
     const paths = this.collectPaths(nodeTree);
     this.turtleEngine.reset();
 
-    // ... (Your existing turtle creation logic here) ...
     if (paths.length === 0 && nodes.some((n) => n.type === "startNode")) {
       this.turtleEngine.createTurtle("default", 0, 0, 90);
     } else {
       paths.forEach((path) => {
         this.turtleEngine.createTurtle(path.id, 0, 0, 90);
         this.turtleEngine.addCommands(path.id, path.commands);
+
       });
     }
 
