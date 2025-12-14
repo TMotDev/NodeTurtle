@@ -14,14 +14,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "@tanstack/react-router";
-import { set } from "date-fns";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { Button } from "../ui/button";
 import { FlowTitle } from "./FlowTitle";
 import type { Edge, Node } from "@xyflow/react";
 import type { Project } from "@/api/projects";
-import type {ExecutionState} from "@/lib/TurtleFlowExecutor";
-import {  TurtleFlowExecutor } from "@/lib/TurtleFlowExecutor";
+import type { ExecutionState } from "@/lib/TurtleFlowExecutor";
+import { TurtleFlowExecutor } from "@/lib/TurtleFlowExecutor";
 import { useFlowManagerContext } from "@/hooks/FlowManager";
 import useAuthStore from "@/lib/authStore";
 
@@ -35,7 +34,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const turtleCanvasRef = useRef<HTMLCanvasElement>(null);
   const executorRef = useRef<TurtleFlowExecutor | null>(null);
- const [executionStatus, setExecutionStatus] = useState<ExecutionState>("IDLE");
+  const [executionStatus, setExecutionStatus] = useState<ExecutionState>("IDLE");
   const [turtleCount, setTurtleCount] = useState(0);
   const [hasStartNode, setHasStartNode] = useState(false);
 
@@ -50,7 +49,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
 
   // Initialize turtle executor
   useEffect(() => {
-   if (canvasRef.current && turtleCanvasRef.current) {
+    if (canvasRef.current && turtleCanvasRef.current) {
       const exec = new TurtleFlowExecutor(canvasRef.current, turtleCanvasRef.current);
 
       exec.subscribe((newState) => {
@@ -105,7 +104,6 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
   const clear = useCallback(() => {
     executorRef.current?.reset();
   }, []);
-
 
   const getSpeedLabel = (value: number) => {
     switch (value) {
@@ -227,20 +225,19 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
         <div className="flex flex-col items-center px-8 py-6 bg-white rounded-md gap-6">
           <div className="flex flex-col items-center gap-3">
             <div className="flex items-center gap-3 w-full justify-center">
-             <Button
+              <Button
                 variant={"default"}
                 size={"lg"}
                 onClick={handleMainButtonClick}
                 disabled={!hasStartNode && executionStatus === "IDLE"}
-                 className={`
+                className={`
                   px-8 py-3 min-w-32
                   ${
-                    executionStatus === 'RUNNING'
+                    executionStatus === "RUNNING"
                       ? "bg-amber-600 hover:bg-amber-700"
                       : "bg-emerald-600 hover:bg-emerald-700"
                   }
                 `}
-
               >
                 {executionStatus === "IDLE" ? (
                   <>
