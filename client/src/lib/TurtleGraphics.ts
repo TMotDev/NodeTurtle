@@ -32,11 +32,14 @@ export class TurtleGraphicsEngine {
   private drawingCtx: CanvasRenderingContext2D;
   private turtleCtx: CanvasRenderingContext2D;
   private turtles: Map<string, TurtleState> = new Map();
-  private isRunning = false;
+  public isRunning = false;
+  public isPaused = false;
   private drawDelay = 0;
   private commandQueues: Map<string, Array<TurtleCommand>> = new Map();
   private executingCommands: Map<string, boolean> = new Map();
   private animationId: number | null = null;
+
+  public onAnimationComplete?: () => void;
 
   constructor(drawingCanvas: HTMLCanvasElement, turtleCanvas: HTMLCanvasElement) {
     this.canvas = drawingCanvas;
@@ -218,6 +221,13 @@ export class TurtleGraphicsEngine {
     }
 
     this.executingCommands.set(turtleId, false);
+
+    if (this.isRunning && !this.isAnyTurtleExecuting()) {
+       this.isRunning = false; // Auto-stop
+       if (this.onAnimationComplete) {
+         this.onAnimationComplete();
+       }
+    }
   }
 
   private drawTurtles() {
@@ -260,11 +270,13 @@ export class TurtleGraphicsEngine {
   start() {
     if (this.isRunning) return;
     this.isRunning = true;
+    this.isPaused = false;
     this.animate();
   }
 
-  stop() {
+  pause() {
     this.isRunning = false;
+    this.isPaused = true;
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
@@ -272,18 +284,26 @@ export class TurtleGraphicsEngine {
   }
 
   clear() {
+    this.isPaused = false;
     this.drawingCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.turtleCtx.clearRect(0, 0, this.turtleCanvas.width, this.turtleCanvas.height);
     this.setupCanvas();
   }
 
   reset() {
-    this.stop();
+    // this.pause();
+    this.isRunning = false;
+    this.isPaused = false;
+     if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
     this.clear();
     this.turtles.clear();
     this.commandQueues.clear();
     this.executingCommands.clear();
   }
+
 
   getTurtle(id: string): TurtleState | undefined {
     return this.turtles.get(id);

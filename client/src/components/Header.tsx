@@ -82,7 +82,6 @@ export default function Header() {
             )}
           </NavigationMenuList>
         </NavigationMenu>
-
         <UserMenu />
       </div>
     </header>

@@ -17,13 +17,34 @@ interface NodeTree {
   loopChildren?: Array<NodeTree>;
 }
 
+export type ExecutionState = "IDLE" | "RUNNING" | "PAUSED";
+
 export class TurtleFlowExecutor {
   private turtleEngine: TurtleGraphicsEngine;
   private pathCounter = 0;
+private stateChangeCallback?: (state: ExecutionState) => void;
+private currentState: ExecutionState = "IDLE";
 
   constructor(drawingCanvas: HTMLCanvasElement, turtleCanvas: HTMLCanvasElement) {
     this.turtleEngine = new TurtleGraphicsEngine(drawingCanvas, turtleCanvas);
+
+    this.turtleEngine.onAnimationComplete = () => {
+      this.currentState = "IDLE";
+      this.notifyStateChange();
+    };
+
   }
+
+  public subscribe(callback: (state: ExecutionState) => void) {
+    this.stateChangeCallback = callback;
+  }
+
+  private notifyStateChange() {
+    if (this.stateChangeCallback) {
+      this.stateChangeCallback(this.currentState);
+    }
+  }
+
 
   private convertFlowToNodeTree(nodes: Array<Node>, edges: Array<Edge>): NodeTree | null {
     const startNode = nodes.find((node) => node.type === "startNode");
@@ -102,11 +123,12 @@ export class TurtleFlowExecutor {
     while (currentNode) {
       commands.push(...this.nodeToCommands(currentNode.node));
 
+      const loopCount = currentNode.node.data?.loopCount;
       // Handle nested loops within the loop body
-      if (currentNode.node.type === "loopNode" && currentNode.loopChildren) {
-        const loopCount = currentNode.node.data?.loopCount || 3;
+      if (currentNode.node.type === "loopNode" && currentNode.loopChildren && loopCount > 0) {
         let loopBodyCmds: Array<TurtleCommand> = [];
         if (currentNode.loopChildren.length > 0) {
+          console.log(loopCount);
           loopBodyCmds = this.collectSubtreeCommands(currentNode.loopChildren[0]);
         }
         for (let i = 0; i < loopCount; i++) {
@@ -127,11 +149,12 @@ export class TurtleFlowExecutor {
       const nodeCommands = this.nodeToCommands(node.node);
       const currentCommands = [...commandsSoFar, ...nodeCommands];
 
+      const loopCount = node.node.data?.loopCount;
       if (node.node.type === "loopNode" && node.loopChildren && node.loopChildren.length > 0) {
-        const loopCount = node.node.data?.loopCount || 3;
         const loopBodyCommands = this.collectSubtreeCommands(node.loopChildren[0]);
 
         for (let i = 0; i < loopCount; i++) {
+          console.log(loopCount);
           currentCommands.push(...loopBodyCommands);
         }
 
@@ -155,31 +178,32 @@ export class TurtleFlowExecutor {
   }
 
   async executeFlow(nodes: Array<Node>, edges: Array<Edge>): Promise<void> {
+    // If we are already running or paused, reset first
+    if (this.currentState !== "IDLE") {
+      this.reset();
+    }
+
     this.pathCounter = 0;
     const nodeTree = this.convertFlowToNodeTree(nodes, edges);
-    if (!nodeTree) {
-      console.error("Could not create node tree from flow");
-      return;
-    }
+    if (!nodeTree) return;
 
     const paths = this.collectPaths(nodeTree);
-    console.log(`Found ${paths.length} execution paths:`);
-
     this.turtleEngine.reset();
 
-    if (paths.length === 0 && nodes.some(n => n.type === 'startNode')) {
-        this.turtleEngine.createTurtle('default', 0, 0, 90);
+    // ... (Your existing turtle creation logic here) ...
+    if (paths.length === 0 && nodes.some((n) => n.type === "startNode")) {
+      this.turtleEngine.createTurtle("default", 0, 0, 90);
     } else {
-        paths.forEach((path) => {
-            this.turtleEngine.createTurtle(path.id, 0, 0, 90);
-            this.turtleEngine.addCommands(path.id, path.commands);
-        });
+      paths.forEach((path) => {
+        this.turtleEngine.createTurtle(path.id, 0, 0, 90);
+        this.turtleEngine.addCommands(path.id, path.commands);
+      });
     }
 
-    this.turtleEngine.start();
+    this.currentState = "RUNNING";
+    this.notifyStateChange();
 
-    await this.waitForCompletion();
-    console.log("All paths completed");
+    this.turtleEngine.start();
   }
 
   private async waitForCompletion(): Promise<void> {
@@ -199,17 +223,34 @@ export class TurtleFlowExecutor {
     this.turtleEngine.setDrawDelay(delay);
   }
 
-  clear(){
+  isRunning() {
+    return this.turtleEngine.isRunning;
+  }
+
+  resume() {
+    if (this.currentState === "PAUSED") {
+      this.turtleEngine.start();
+      this.currentState = "RUNNING";
+      this.notifyStateChange();
+    }
+  }
+
+  clear() {
     this.turtleEngine.clear();
   }
 
-  stop() {
-    this.turtleEngine.stop();
+ pause() {
+    if (this.currentState === "RUNNING") {
+      this.turtleEngine.pause();
+      this.currentState = "PAUSED";
+      this.notifyStateChange();
+    }
   }
 
-  reset() {
+reset() {
     this.turtleEngine.reset();
     this.pathCounter = 0;
+    this.currentState = "IDLE";
+    this.notifyStateChange();
   }
 }
-

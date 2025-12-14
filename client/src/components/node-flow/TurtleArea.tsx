@@ -14,12 +14,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "@tanstack/react-router";
+import { set } from "date-fns";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { Button } from "../ui/button";
 import { FlowTitle } from "./FlowTitle";
 import type { Edge, Node } from "@xyflow/react";
 import type { Project } from "@/api/projects";
-import { TurtleFlowExecutor } from "@/lib/TurtleFlowExecutor";
+import type {ExecutionState} from "@/lib/TurtleFlowExecutor";
+import {  TurtleFlowExecutor } from "@/lib/TurtleFlowExecutor";
 import { useFlowManagerContext } from "@/hooks/FlowManager";
 import useAuthStore from "@/lib/authStore";
 
@@ -33,7 +35,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const turtleCanvasRef = useRef<HTMLCanvasElement>(null);
   const executorRef = useRef<TurtleFlowExecutor | null>(null);
-  const [isExecuting, setIsExecuting] = useState(false);
+ const [executionStatus, setExecutionStatus] = useState<ExecutionState>("IDLE");
   const [turtleCount, setTurtleCount] = useState(0);
   const [hasStartNode, setHasStartNode] = useState(false);
 
@@ -48,8 +50,14 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
 
   // Initialize turtle executor
   useEffect(() => {
-    if (canvasRef.current && turtleCanvasRef.current) {
-      executorRef.current = new TurtleFlowExecutor(canvasRef.current, turtleCanvasRef.current);
+   if (canvasRef.current && turtleCanvasRef.current) {
+      const exec = new TurtleFlowExecutor(canvasRef.current, turtleCanvasRef.current);
+
+      exec.subscribe((newState) => {
+        setExecutionStatus(newState);
+      });
+
+      executorRef.current = exec;
     }
 
     return () => {
@@ -79,32 +87,25 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
     }
   }, [speed]);
 
+  const handleMainButtonClick = useCallback(() => {
+    if (!executorRef.current) return;
+
+    if (executionStatus === "IDLE") {
+      // Start fresh
+      executorRef.current.executeFlow(nodes, edges);
+    } else if (executionStatus === "RUNNING") {
+      // Pause
+      executorRef.current.pause();
+    } else {
+      // Resume
+      executorRef.current.resume();
+    }
+  }, [executionStatus, nodes, edges]);
+
   const clear = useCallback(() => {
-    if (executorRef.current) {
-      executorRef.current.clear();
-    }
+    executorRef.current?.reset();
   }, []);
 
-  const executeFlow = useCallback(async () => {
-    if (!executorRef.current || isExecuting || !hasStartNode) return;
-
-    setIsExecuting(true);
-
-    try {
-      await executorRef.current.executeFlow(nodes, edges);
-    } catch (error) {
-      console.error("Error executing turtle flow:", error);
-    } finally {
-      setIsExecuting(false);
-    }
-  }, [nodes, edges, isExecuting, hasStartNode]);
-
-  const stopExecution = useCallback(() => {
-    if (executorRef.current) {
-      executorRef.current.stop();
-      setIsExecuting(false);
-    }
-  }, []);
 
   const getSpeedLabel = (value: number) => {
     switch (value) {
@@ -226,29 +227,32 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
         <div className="flex flex-col items-center px-8 py-6 bg-white rounded-md gap-6">
           <div className="flex flex-col items-center gap-3">
             <div className="flex items-center gap-3 w-full justify-center">
-              <Button
+             <Button
                 variant={"default"}
                 size={"lg"}
-                onClick={isExecuting ? stopExecution : executeFlow}
-                disabled={!hasStartNode && !isExecuting}
-                className={`
+                onClick={handleMainButtonClick}
+                disabled={!hasStartNode && executionStatus === "IDLE"}
+                 className={`
                   px-8 py-3 min-w-32
                   ${
-                    isExecuting
+                    executionStatus === 'RUNNING'
                       ? "bg-amber-600 hover:bg-amber-700"
                       : "bg-emerald-600 hover:bg-emerald-700"
                   }
                 `}
+
               >
-                {isExecuting ? (
+                {executionStatus === "IDLE" ? (
                   <>
-                    <Square size={16} fill="currentColor" />
-                    Pause
+                    <Play size={16} fill="currentColor" /> Start
+                  </>
+                ) : executionStatus === "RUNNING" ? (
+                  <>
+                    <Square size={16} fill="currentColor" /> Pause
                   </>
                 ) : (
                   <>
-                    <Play size={16} fill="currentColor" />
-                    Start
+                    <Play size={16} fill="currentColor" /> Continue
                   </>
                 )}
               </Button>
@@ -256,7 +260,6 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
                 size={"lg"}
                 variant={"outline"}
                 onClick={clear}
-                disabled={isExecuting}
                 className="text-pink-500 hover:text-ping-600"
               >
                 <BrushCleaning size={16} />

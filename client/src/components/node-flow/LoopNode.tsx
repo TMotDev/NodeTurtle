@@ -40,7 +40,7 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
         <MathInputBox
           id={`loop-${id}`}
           label="Loop count"
-          value={data.loopCount || 3}
+          value={data.loopCount || 0}
           onChange={handleLoopCountChange}
           placeholder="3"
         />

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { API } from "@/services/api";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import RequestActivationForm from "@/components/forms/RequestActivationForm";
 
 export const Route = createFileRoute("/activate/$token")({
   component: ActivationPage,
@@ -18,6 +20,8 @@ function ActivationPage() {
     success: false,
     error: null,
   });
+    const [isActivationFormOpen, setIsActivationFormOpen] = useState(false);
+
 
   const handleActivation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +45,7 @@ function ActivationPage() {
     } else {
       setFormStatus({
         success: false,
-        error: result.error || "Unexpected error occured while ",
+        error: "Activation token is invalid or has expired",
       });
     }
 
@@ -82,7 +86,17 @@ function ActivationPage() {
             {formStatus.error && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4 stroke-destructive" />
-                <AlertDescription className="text-destructive">{formStatus.error}</AlertDescription>
+                <AlertDescription className="text-destructive">
+                  {formStatus.error}.{" "}
+                  <span>
+                    <u
+                      className="pl-1 underline-offset-2 hover:text-red-900 cursor-pointer"
+                      onClick={() => setIsActivationFormOpen(true)}
+                    >
+                      resend activation email
+                    </u>
+                  </span>
+                </AlertDescription>
               </Alert>
             )}
 
@@ -99,6 +113,17 @@ function ActivationPage() {
           </form>
         </CardContent>
       </Card>
+        <Dialog open={isActivationFormOpen} onOpenChange={setIsActivationFormOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Resend Activation Link</DialogTitle>
+            <DialogDescription>
+              Enter your email to send a new account activation link.
+            </DialogDescription>
+          </DialogHeader>
+          <RequestActivationForm />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

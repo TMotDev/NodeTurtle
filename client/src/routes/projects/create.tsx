@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import type { Project } from "@/api/projects";
 import { FlowEditor } from "@/components/node-flow/FlowEditor";
-import { Toaster } from "@/components/ui/sonner";
 import { useLocalProjectManager } from "@/hooks/FlowManager";
 import { ProjectSelectionDialog } from "@/components/ProjectSelectionDialog";
 
