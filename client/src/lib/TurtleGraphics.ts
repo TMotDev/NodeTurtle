@@ -51,7 +51,7 @@ export class TurtleGraphicsEngine {
 
     this.drawingCtx = dCtx;
     this.turtleCtx = tCtx;
-    this.initCanvas();
+    // No initCanvas call needed here anymore as we don't draw the static grid
   }
 
   setDelay(delay: number) {
@@ -213,8 +213,8 @@ export class TurtleGraphicsEngine {
       this.turtleCtx.rotate(((-turtle.angle + 90) * Math.PI) / 180);
 
       this.turtleCtx.fillStyle = turtle.color;
-      this.turtleCtx.strokeStyle = "#FFF";
-      this.turtleCtx.lineWidth = 1.5;
+      this.turtleCtx.strokeStyle = "transparent";
+      this.turtleCtx.lineWidth = 0.1;
 
       this.turtleCtx.beginPath();
       this.turtleCtx.moveTo(0, -8);
@@ -228,56 +228,9 @@ export class TurtleGraphicsEngine {
     }
   }
 
-  private initCanvas() {
-    this.clearCanvas();
-  }
-
   private clearCanvas() {
-    const { width, height } = this.drawingCanvas;
-
-    // Clear and fill white
-    this.drawingCtx.fillStyle = "#ffffff";
-    this.drawingCtx.fillRect(0, 0, width, height);
-
-    // Draw grid
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const gridSize = 20;
-
-    this.drawingCtx.save();
-    this.drawingCtx.strokeStyle = "#f8f9fa";
-    this.drawingCtx.lineWidth = 1;
-
-    for (let x = 0; x <= width; x += gridSize) {
-      this.drawingCtx.beginPath();
-      this.drawingCtx.moveTo(x, 0);
-      this.drawingCtx.lineTo(x, height);
-      this.drawingCtx.stroke();
-    }
-
-    for (let y = 0; y <= height; y += gridSize) {
-      this.drawingCtx.beginPath();
-      this.drawingCtx.moveTo(0, y);
-      this.drawingCtx.lineTo(width, y);
-      this.drawingCtx.stroke();
-    }
-
-    // Draw axes
-    this.drawingCtx.strokeStyle = "#dee2e6";
-    this.drawingCtx.lineWidth = 2;
-
-    this.drawingCtx.beginPath();
-    this.drawingCtx.moveTo(0, centerY);
-    this.drawingCtx.lineTo(width, centerY);
-    this.drawingCtx.stroke();
-
-    this.drawingCtx.beginPath();
-    this.drawingCtx.moveTo(centerX, 0);
-    this.drawingCtx.lineTo(centerX, height);
-    this.drawingCtx.stroke();
-
-    this.drawingCtx.restore();
-
+    // Only clear the drawing (trails), do not fill white
+    this.drawingCtx.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
     // Clear turtle canvas
     this.turtleCtx.clearRect(0, 0, this.turtleCanvas.width, this.turtleCanvas.height);
   }
