@@ -101,23 +101,46 @@ export class TurtleFlowExecutor {
       currentCommands.push(...this.nodeToCommands(node));
     }
 
-    // Handle loop node specially - expand loop body inline
+    // Handle loop node
     if (node.type === "loopNode" && !node.data.muted) {
       const loopData = node.data as NodeRegistry["loopNode"];
       const loopCount = loopData.loopCount || 0;
       const loopEdge = edges.find(e => e.source === nodeId && e.sourceHandle === "loop");
+      const outEdges = edges.filter(e => e.source === nodeId && e.sourceHandle === "out");
+
+      // CASE 1: SPAWN NEW TURTLE EACH ITERATION
+      if (loopData.createTurtleOnIteration && loopEdge && loopCount > 0) {
+        const loopBodyPaths = this.collectPathSegment(loopEdge.target, nodes, edges);
+
+        const spawnedPaths: Array<TurtlePath> = [];
+
+        const accumulatedState = [...currentCommands];
+
+        for (let i = 0; i < loopCount; i++) {
+          accumulatedState.push(...loopBodyPaths);
+
+          if (outEdges.length > 0) {
+             for (const edge of outEdges) {
+                spawnedPaths.push(...this.collectPaths(edge.target, nodes, edges, [...accumulatedState]));
+             }
+          } else {
+             spawnedPaths.push({
+                 id: `path_${++this.pathCounter}`,
+                 commands: [...accumulatedState]
+             });
+          }
+        }
+        return spawnedPaths;
+      }
 
       if (loopEdge && loopCount > 0) {
         // Build loop body commands once
         const loopBodyPaths = this.collectPathSegment(loopEdge.target, nodes, edges);
-        // Duplicate loop body N times
         for (let i = 0; i < loopCount; i++) {
           currentCommands.push(...loopBodyPaths);
         }
       }
 
-      // Continue after loop
-      const outEdges = edges.filter(e => e.source === nodeId && e.sourceHandle === "out");
       if (outEdges.length === 0) {
         return [{ id: `path_${++this.pathCounter}`, commands: currentCommands }];
       }
