@@ -2,9 +2,11 @@ import { Repeat2 } from "lucide-react";
 import { memo, useCallback } from "react";
 
 import { Position, useReactFlow } from "@xyflow/react";
+import { TooltipArrow } from "@radix-ui/react-tooltip";
 import MathInputBox from "../MathInputBox";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { NodeHeader, NodeHeaderIcon, NodeHeaderTitle } from "./node-header";
 import { BaseNode } from "./base-node";
 import { BaseHandle } from "./base-handle";
@@ -60,12 +62,21 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
             checked={data.createTurtleOnIteration}
             onCheckedChange={handleSpawnTurtleChange}
           />
-          <Label
-            htmlFor={`spawn-${id}`}
-            className="text-xs font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            Spawn turtle each loop
-          </Label>
+
+          <Tooltip delayDuration={1000}>
+            <TooltipTrigger>
+              <Label
+                htmlFor={`spawn-${id}`}
+                className="text-xs font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Spawn Turtle Each Loop
+              </Label>
+            </TooltipTrigger>
+            <TooltipContent sideOffset={8}>
+              When enabled, a new turtle will be created at each iteration of the loop.
+              <TooltipArrow />
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </BaseNode>

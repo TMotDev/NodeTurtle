@@ -118,87 +118,92 @@ export class TurtleFlowExecutor {
     return paths;
   }
 
-  private handleLoopNode(
+private handleLoopNode(
     node: Node,
     commandsBeforeLoop: Array<TurtleCommand>,
     nodes: Array<Node>,
-    edges: Array<Edge>,
+    edges: Array<Edge>
   ): Array<TurtlePath> {
     const loopData = node.data as NodeRegistry["loopNode"];
     const loopCount = loopData.loopCount || 0;
 
-    // Find connections
-    const loopEdges = edges.filter((e) => e.source === node.id && e.sourceHandle === "loop");
-    const outEdges = edges.filter((e) => e.source === node.id && e.sourceHandle === "out");
+    const loopEdges = edges.filter(e => e.source === node.id && e.sourceHandle === "loop");
+    const outEdges = edges.filter(e => e.source === node.id && e.sourceHandle === "out");
 
-    // 1. COLLECT LOOP BODY PATHS
-    // We treat the "loop" output as a start point for a sub-graph.
-    // We pass an empty array [] as start commands because we just want the body segments.
-    let loopBodySequences: Array<Array<TurtleCommand>> = [];
+    // 1. PRE-CALCULATE LOOP BODY "DELTAS"
+    // We find all possible command sequences (paths) inside the loop body once.
+    // If the body branches (e.g. -45 and +45), this array will contain 2 sequences.
+    // We pass [] as start commands because we only want the *changes* the loop body applies.
+    let loopBodyDeltas: Array<Array<TurtleCommand>> = [];
 
     if (loopEdges.length > 0) {
-      // Collect ALL paths that stem from the loop handle (handles branching/merging body)
       for (const edge of loopEdges) {
         const paths = this.collectPaths(edge.target, nodes, edges, []);
-        loopBodySequences.push(...paths.map((p) => p.commands));
+        loopBodyDeltas.push(...paths.map(p => p.commands));
       }
     } else {
-      // Empty loop body is valid (just an empty sequence)
-      loopBodySequences = [[]];
+      // If loop input is disconnected, treat it as a "Do Nothing" op (Identity)
+      loopBodyDeltas = [[]];
     }
 
     const finalPaths: Array<TurtlePath> = [];
 
-    // CASE A: SNOWFLAKE MODE (Spawn Turtle On Iteration)
-    if (loopData.createTurtleOnIteration && loopCount > 0) {
-      // For each possible path through the loop body...
-      for (const bodySeq of loopBodySequences) {
-        const accumulatedState = [...commandsBeforeLoop];
+    // 2. THE FRONTIER: TRACK ACTIVE STATES
+    // Start with the state as it entered the node.
+    let currentFrontier: Array<Array<TurtleCommand>> = [commandsBeforeLoop];
 
-        for (let i = 0; i < loopCount; i++) {
-          // Accumulate the transformation (Loop Body)
-          accumulatedState.push(...bodySeq);
+    for (let i = 0; i < loopCount; i++) {
+      const nextFrontier: Array<Array<TurtleCommand>> = [];
 
-          // Spawn a turtle for the "Action" (Out handle) at this state
-          if (outEdges.length > 0) {
-            for (const edge of outEdges) {
-              finalPaths.push(
-                ...this.collectPaths(edge.target, nodes, edges, [...accumulatedState]),
-              );
+      // For every turtle currently alive (on the frontier)...
+      for (const baseState of currentFrontier) {
+        // ...apply EVERY possible path through the loop body
+        for (const delta of loopBodyDeltas) {
+          const newState = [...baseState, ...delta];
+
+          // This new state is now part of the frontier for the next iteration
+          nextFrontier.push(newState);
+
+          // IF SPAWNING ENABLED:
+          // Immediately send this new state to the "Out" handle to draw the branch
+          if (loopData.createTurtleOnIteration) {
+            if (outEdges.length > 0) {
+               // Continue the flow from the "Out" handle with this specific state
+               for (const edge of outEdges) {
+                 finalPaths.push(...this.collectPaths(edge.target, nodes, edges, [...newState]));
+               }
+            } else {
+               // If no out handle, just register the turtle at this point (visualize the growth)
+               finalPaths.push({
+                 id: `path_${++this.pathCounter}`,
+                 commands: [...newState]
+               });
             }
-          } else {
-            // No out handle? Just spawn the turtle at the accumulated point
-            finalPaths.push({
-              id: `path_${++this.pathCounter}`,
-              commands: [...accumulatedState],
-            });
           }
         }
       }
-      return finalPaths;
+
+      // Update frontier for the next loop iteration
+      // Iteration 1: 1 state -> 2 states
+      // Iteration 2: 2 states -> 4 states
+      currentFrontier = nextFrontier;
     }
 
-    // CASE B: STANDARD LOOP MODE (Inline Expansion)
-    // If the loop body branches into 2 paths, we get 2 separate turtles exiting the loop
-    for (const bodySeq of loopBodySequences) {
-      const expandedCommands = [...commandsBeforeLoop];
 
-      // Repeat this specific body path N times
-      for (let i = 0; i < loopCount; i++) {
-        expandedCommands.push(...bodySeq);
-      }
-
-      // Continue flow after loop
-      if (outEdges.length > 0) {
-        for (const edge of outEdges) {
-          finalPaths.push(...this.collectPaths(edge.target, nodes, edges, expandedCommands));
-        }
-      } else {
-        // Dead end after loop
-        finalPaths.push({
-          id: `path_${++this.pathCounter}`,
-          commands: expandedCommands,
-        });
+    // 3. FINAL OUTPUT (If NOT spawning on iteration)
+    // If we didn't spawn during the loop, we release all accumulated turtles now.
+    if (!loopData.createTurtleOnIteration) {
+      for (const finalState of currentFrontier) {
+         if (outEdges.length > 0) {
+            for (const edge of outEdges) {
+              finalPaths.push(...this.collectPaths(edge.target, nodes, edges, finalState));
+            }
+         } else {
+            finalPaths.push({
+              id: `path_${++this.pathCounter}`,
+              commands: finalState
+            });
+         }
       }
     }
 
