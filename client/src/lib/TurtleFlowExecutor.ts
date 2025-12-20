@@ -1,255 +1,260 @@
 import { TurtleGraphicsEngine } from "./TurtleGraphics";
-import type { MoveCommand, PenCommand, RotateCommand, TurtleCommand } from "./TurtleGraphics";
+import type { TurtleCommand } from "./TurtleGraphics";
 import type { Edge, Node } from "@xyflow/react";
+import type { NodeRegistry } from "./flowUtils";
 
-interface ExecutionPath {
+export type ExecutionState = "IDLE" | "RUNNING" | "PAUSED";
+
+interface TurtlePath {
   id: string;
   commands: Array<TurtleCommand>;
 }
 
-interface NodeTree {
-  node: {
-    id: string;
-    type: string;
-    data: any;
-  };
-  children: Array<NodeTree>;
-  loopChildren?: Array<NodeTree>;
-}
-
-export type ExecutionState = "IDLE" | "RUNNING" | "PAUSED";
-
 export class TurtleFlowExecutor {
-  private turtleEngine: TurtleGraphicsEngine;
+  private engine: TurtleGraphicsEngine;
+  private state: ExecutionState = "IDLE";
+  private onStateChange?: (state: ExecutionState) => void;
   private pathCounter = 0;
-private stateChangeCallback?: (state: ExecutionState) => void;
-private currentState: ExecutionState = "IDLE";
 
   constructor(drawingCanvas: HTMLCanvasElement, turtleCanvas: HTMLCanvasElement) {
-    this.turtleEngine = new TurtleGraphicsEngine(drawingCanvas, turtleCanvas);
-
-    this.turtleEngine.onAnimationComplete = () => {
-      this.currentState = "IDLE";
-      this.notifyStateChange();
-    };
-
+    this.engine = new TurtleGraphicsEngine(drawingCanvas, turtleCanvas);
+    this.engine.onComplete = () => this.setState("IDLE");
   }
 
-  public subscribe(callback: (state: ExecutionState) => void) {
-    this.stateChangeCallback = callback;
+  subscribe(callback: (state: ExecutionState) => void) {
+    this.onStateChange = callback;
   }
 
-  private notifyStateChange() {
-    if (this.stateChangeCallback) {
-      this.stateChangeCallback(this.currentState);
+  executeFlow(nodes: Array<Node>, edges: Array<Edge>) {
+    if (this.state !== "IDLE") this.reset();
+
+    const startNode = nodes.find(n => n.type === "startNode");
+    if (!startNode) return;
+
+    this.pathCounter = 0;
+    const paths = this.collectPaths(startNode.id, nodes, edges);
+
+    console.log("=== EXECUTION PATHS ===");
+    // paths.forEach(path => {
+    //   console.log(`Path ${path.id}:`, path.commands.length, "commands");
+    //   console.log(path.commands);
+    // });
+
+    this.engine.reset();
+
+    if (paths.length === 0) {
+      // Just start node, create single turtle
+      this.engine.createTurtle("default", 0, 0, 90);
+    } else {
+      // Create a turtle for each path
+      paths.forEach(path => {
+        this.engine.createTurtle(path.id, 0, 0, 90);
+        this.engine.queueCommands(path.id, path.commands);
+      });
+    }
+
+    this.engine.start();
+    this.setState("RUNNING");
+  }
+
+  pause() {
+    if (this.state === "RUNNING") {
+      this.engine.pause();
+      this.setState("PAUSED");
     }
   }
 
-
-  private convertFlowToNodeTree(nodes: Array<Node>, edges: Array<Edge>): NodeTree | null {
-    const startNode = nodes.find((node) => node.type === "startNode");
-    if (!startNode) return null;
-
-    const buildTree = (nodeId: string, visited = new Set<string>()): NodeTree => {
-      if (visited.has(nodeId)) {
-        const node = nodes.find((n) => n.id === nodeId)!;
-        return {
-          node: { id: node.id, type: node.type || "unknown", data: node.data },
-          children: [],
-        };
-      }
-
-      const node = nodes.find((n) => n.id === nodeId)!;
-      const newVisited = new Set(visited);
-      newVisited.add(nodeId);
-
-      let outgoingEdges = edges.filter((edge) => edge.source === nodeId);
-      let loopBodyEdges: Array<Edge> = [];
-
-      if (node.type === "loopNode") {
-        loopBodyEdges = outgoingEdges.filter((edge) => edge.sourceHandle === "loop");
-        outgoingEdges = outgoingEdges.filter(
-          (edge) => edge.sourceHandle === "out" || !edge.sourceHandle,
-        );
-      }
-
-      const children = outgoingEdges.map((edge) => buildTree(edge.target, newVisited));
-      const loopChildren = loopBodyEdges.map((edge) => buildTree(edge.target, newVisited));
-
-      const treeNode: NodeTree = {
-        node: { id: node.id, type: node.type || "unknown", data: node.data },
-        children,
-      };
-
-      if (loopChildren.length > 0) {
-        treeNode.loopChildren = loopChildren;
-      }
-
-      return treeNode;
-    };
-
-    return buildTree(startNode.id);
-  }
-
-  private nodeToCommands(node: NodeTree["node"]): Array<TurtleCommand> {
-    if (node.data.muted) return [];
-
-    switch (node.type) {
-      case "startNode":
-        return [];
-      case "moveNode": {
-        const cmd: MoveCommand = { distance: node.data.distance || 10 };
-        return [{ type: "move", value: cmd }];
-      }
-      case "rotateNode": {
-        const cmd: RotateCommand = { angle: -node.data.angle || 0 };
-        return [{ type: "rotate", value: cmd }];
-      }
-      case "penNode": {
-        const cmd: PenCommand = { isDrawing: node.data.penDown, color: node.data.color || "#000" };
-        return [{ type: "pen", value: cmd }];
-      }
-      case "loopNode":
-        return []; // Loop logic is handled during path collection
-      default:
-        return [];
+  resume() {
+    if (this.state === "PAUSED") {
+      this.engine.resume();
+      this.setState("RUNNING");
     }
   }
 
-  private collectSubtreeCommands(node: NodeTree): Array<TurtleCommand> {
-    const commands: Array<TurtleCommand> = [];
-    let currentNode: NodeTree | undefined = node;
+  reset() {
+    this.engine.reset();
+    this.setState("IDLE");
+  }
 
-    while (currentNode) {
-      commands.push(...this.nodeToCommands(currentNode.node));
+  setDelay(delay: number) {
+    this.engine.setDelay(delay);
+  }
 
-      const loopCount = currentNode.node.data?.loopCount;
-      // Handle nested loops within the loop body
-      if (currentNode.node.type === "loopNode" && currentNode.loopChildren && loopCount > 0 && !currentNode.node.data.muted) {
-        let loopBodyCmds: Array<TurtleCommand> = [];
-        if (currentNode.loopChildren.length > 0) {
-          console.log(loopCount);
-          loopBodyCmds = this.collectSubtreeCommands(currentNode.loopChildren[0]);
-        }
+  private setState(newState: ExecutionState) {
+    this.state = newState;
+    this.onStateChange?.(newState);
+  }
+
+  // Collect all possible paths through the graph (handles branching)
+  private collectPaths(
+    nodeId: string,
+    nodes: Array<Node>,
+    edges: Array<Edge>,
+    commandsSoFar: Array<TurtleCommand> = []
+  ): Array<TurtlePath> {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return [];
+
+    // Add this node's commands to current path
+    const currentCommands = [...commandsSoFar];
+    if (!node.data.muted) {
+      currentCommands.push(...this.nodeToCommands(node));
+    }
+
+    // Handle loop node
+    if (node.type === "loopNode" && !node.data.muted) {
+      const loopData = node.data as NodeRegistry["loopNode"];
+      const loopCount = loopData.loopCount || 0;
+      const loopEdge = edges.find(e => e.source === nodeId && e.sourceHandle === "loop");
+      const outEdges = edges.filter(e => e.source === nodeId && e.sourceHandle === "out");
+
+      // CASE 1: SPAWN NEW TURTLE EACH ITERATION
+      if (loopData.createTurtleOnIteration && loopEdge && loopCount > 0) {
+        const loopBodyPaths = this.collectPathSegment(loopEdge.target, nodes, edges);
+
+        const spawnedPaths: Array<TurtlePath> = [];
+
+        const accumulatedState = [...currentCommands];
+
         for (let i = 0; i < loopCount; i++) {
-          commands.push(...loopBodyCmds);
+          accumulatedState.push(...loopBodyPaths);
+
+          if (outEdges.length > 0) {
+             for (const edge of outEdges) {
+                spawnedPaths.push(...this.collectPaths(edge.target, nodes, edges, [...accumulatedState]));
+             }
+          } else {
+             spawnedPaths.push({
+                 id: `path_${++this.pathCounter}`,
+                 commands: [...accumulatedState]
+             });
+          }
+        }
+        return spawnedPaths;
+      }
+
+      if (loopEdge && loopCount > 0) {
+        // Build loop body commands once
+        const loopBodyPaths = this.collectPathSegment(loopEdge.target, nodes, edges);
+        for (let i = 0; i < loopCount; i++) {
+          currentCommands.push(...loopBodyPaths);
         }
       }
 
-      currentNode = currentNode.children.length > 0 ? currentNode.children[0] : undefined;
+      if (outEdges.length === 0) {
+        return [{ id: `path_${++this.pathCounter}`, commands: currentCommands }];
+      }
+
+      // Collect paths from each branch after loop
+      const paths: Array<TurtlePath> = [];
+      for (const edge of outEdges) {
+        paths.push(...this.collectPaths(edge.target, nodes, edges, currentCommands));
+      }
+      return paths;
+    }
+
+    // Regular node - find all outgoing edges
+    const outEdges = edges.filter(e => e.source === nodeId);
+
+    if (outEdges.length === 0) {
+      // Leaf node - this is end of a path
+      return [{ id: `path_${++this.pathCounter}`, commands: currentCommands }];
+    }
+
+    if (outEdges.length === 1) {
+      // Single edge - continue building path
+      return this.collectPaths(outEdges[0].target, nodes, edges, currentCommands);
+    }
+
+    // Multiple edges - BRANCH! Each edge becomes a separate path
+    const paths: Array<TurtlePath> = [];
+    for (const edge of outEdges) {
+      paths.push(...this.collectPaths(edge.target, nodes, edges, currentCommands));
+    }
+    return paths;
+  }
+
+  // Helper to collect commands from a segment (like loop body) without branching into separate paths
+  private collectPathSegment(
+    nodeId: string,
+    nodes: Array<Node>,
+    edges: Array<Edge>,
+    visited = new Set<string>()
+  ): Array<TurtleCommand> {
+    if (visited.has(nodeId)) return [];
+
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return [];
+
+    visited.add(nodeId);
+    const commands: Array<TurtleCommand> = [];
+
+    // Add this node's commands
+    if (!node.data.muted) {
+      commands.push(...this.nodeToCommands(node));
+    }
+
+    // Handle nested loops
+    if (node.type === "loopNode" && !node.data.muted) {
+      const loopData = node.data as NodeRegistry["loopNode"];
+      const loopCount = loopData.loopCount || 0;
+      const loopEdge = edges.find(e => e.source === nodeId && e.sourceHandle === "loop");
+
+      if (loopEdge && loopCount > 0) {
+        const loopBody = this.collectPathSegment(loopEdge.target, nodes, edges, new Set(visited));
+        for (let i = 0; i < loopCount; i++) {
+          commands.push(...loopBody);
+        }
+      }
+    }
+
+    // Continue with next node (take first edge only for segments)
+    const outEdges = edges.filter(e =>
+      e.source === nodeId &&
+      (node.type !== "loopNode" || e.sourceHandle === "out" || !e.sourceHandle)
+    );
+
+    if (outEdges.length > 0) {
+      commands.push(...this.collectPathSegment(outEdges[0].target, nodes, edges, visited));
     }
 
     return commands;
   }
 
-  private collectPaths(nodeTree: NodeTree): Array<ExecutionPath> {
-    const paths: Array<ExecutionPath> = [];
+  private nodeToCommands(node: Node): Array<TurtleCommand> {
+    switch (node.type) {
+      case "startNode":
+        return [];
 
-    const walkPath = (node: NodeTree, commandsSoFar: Array<TurtleCommand> = []) => {
-      const nodeCommands = this.nodeToCommands(node.node);
-      const currentCommands = [...commandsSoFar, ...nodeCommands];
-
-      const loopCount = node.node.data?.loopCount;
-      if (node.node.type === "loopNode" && node.loopChildren && node.loopChildren.length > 0 && !node.node.data.muted) {
-        const loopBodyCommands = this.collectSubtreeCommands(node.loopChildren[0]);
-
-        for (let i = 0; i < loopCount; i++) {
-          currentCommands.push(...loopBodyCommands);
-        }
-
-        if (node.children.length === 0) {
-          paths.push({ id: `path_${++this.pathCounter}`, commands: currentCommands });
-        } else {
-          node.children.forEach((child) => walkPath(child, currentCommands));
-        }
-        return;
+      case "moveNode": {
+        const data = node.data as NodeRegistry["moveNode"];
+        return [{
+          type: "move",
+          value: { distance: data.distance || 10 }
+        }];
       }
 
-      if (node.children.length === 0) {
-        paths.push({ id: `path_${++this.pathCounter}`, commands: currentCommands });
-      } else {
-        node.children.forEach((child) => walkPath(child, currentCommands));
+      case "rotateNode": {
+        const data = node.data as NodeRegistry["rotateNode"];
+        return [{
+          type: "rotate",
+          value: { angle: -(data.angle || 0) }
+        }];
       }
-    };
 
-    walkPath(nodeTree);
-    return paths;
-  }
+      case "penNode": {
+        const data = node.data as NodeRegistry["penNode"];
+        return [{
+          type: "pen",
+          value: {
+            isDrawing: data.penDown,
+            color: data.color || "#000"
+          }
+        }];
+      }
 
-  executeFlow(nodes: Array<Node>, edges: Array<Edge>): void {
-    // If we are already running or paused, reset first
-    if (this.currentState !== "IDLE") {
-      this.reset();
+      default:
+        return [];
     }
-
-    this.pathCounter = 0;
-    const nodeTree = this.convertFlowToNodeTree(nodes, edges);
-    if (!nodeTree) return;
-
-    const paths = this.collectPaths(nodeTree);
-    this.turtleEngine.reset();
-
-    if (paths.length === 0 && nodes.some((n) => n.type === "startNode")) {
-      this.turtleEngine.createTurtle("default", 0, 0, 90);
-    } else {
-      paths.forEach((path) => {
-        this.turtleEngine.createTurtle(path.id, 0, 0, 90);
-        this.turtleEngine.addCommands(path.id, path.commands);
-
-      });
-    }
-
-    this.currentState = "RUNNING";
-    this.notifyStateChange();
-
-    this.turtleEngine.start();
-  }
-
-  private async waitForCompletion(): Promise<void> {
-    return new Promise((resolve) => {
-      const check = () => {
-        if (!this.turtleEngine.isAnyTurtleExecuting()) {
-          resolve();
-        } else {
-          setTimeout(check, 50);
-        }
-      };
-      check();
-    });
-  }
-
-  setDelay(delay: number) {
-    this.turtleEngine.setDrawDelay(delay);
-  }
-
-  isRunning() {
-    return this.turtleEngine.isRunning;
-  }
-
-  resume() {
-    if (this.currentState === "PAUSED") {
-      this.turtleEngine.start();
-      this.currentState = "RUNNING";
-      this.notifyStateChange();
-    }
-  }
-
-  clear() {
-    this.turtleEngine.clear();
-  }
-
- pause() {
-    if (this.currentState === "RUNNING") {
-      this.turtleEngine.pause();
-      this.currentState = "PAUSED";
-      this.notifyStateChange();
-    }
-  }
-
-reset() {
-    this.turtleEngine.reset();
-    this.pathCounter = 0;
-    this.currentState = "IDLE";
-    this.notifyStateChange();
   }
 }

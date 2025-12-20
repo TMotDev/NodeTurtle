@@ -3,6 +3,8 @@ import { memo, useCallback } from "react";
 
 import { Position, useReactFlow } from "@xyflow/react";
 import MathInputBox from "../MathInputBox";
+import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
 import { NodeHeader, NodeHeaderIcon, NodeHeaderTitle } from "./node-header";
 import { BaseNode } from "./base-node";
 import { BaseHandle } from "./base-handle";
@@ -18,8 +20,15 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
     [id, updateNodeData],
   );
 
+  const handleSpawnTurtleChange = useCallback(
+    (checked: boolean) => {
+      updateNodeData(id, { createTurtleOnIteration: checked });
+    },
+    [id, updateNodeData],
+  );
+
   return (
-    <BaseNode muted={data.muted} selected={selected} className="px-3 py-2 w-40">
+    <BaseNode muted={data.muted} selected={selected} className="px-3 py-2 w-48">
       <BaseHandle id="in" type="target" position={Position.Left} />
       <BaseHandle id="out" type="source" position={Position.Right} />
       <BaseHandle
@@ -36,7 +45,7 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
         <NodeHeaderTitle className="text-white">Loop</NodeHeaderTitle>
       </NodeHeader>
 
-      <div className="mt-3">
+      <div className="mt-3 flex flex-col gap-3">
         <MathInputBox
           id={`loop-${id}`}
           label="Loop count"
@@ -44,6 +53,20 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
           onChange={handleLoopCountChange}
           placeholder="3"
         />
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id={`spawn-${id}`}
+            checked={data.createTurtleOnIteration}
+            onCheckedChange={handleSpawnTurtleChange}
+          />
+          <Label
+            htmlFor={`spawn-${id}`}
+            className="text-xs font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Spawn turtle each loop
+          </Label>
+        </div>
       </div>
     </BaseNode>
   );

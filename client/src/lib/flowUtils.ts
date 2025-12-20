@@ -30,7 +30,7 @@ export interface NodeRegistry {
   startNode: { muted: boolean };
   moveNode: { muted: boolean; distance: number };
   rotateNode: { muted: boolean; angle: number };
-  loopNode: { muted: boolean; loopCount: number };
+  loopNode: { muted: boolean; loopCount: number, createTurtleOnIteration: boolean };
   penNode: { muted: boolean; color: string; penDown: boolean };
   commentNode: {content: string, collapsed: boolean};
 }
@@ -41,7 +41,7 @@ export const INITIAL_NODE_DATA: NodeRegistry = {
   startNode: { muted: false },
   moveNode: { muted: false, distance: 50 },
   rotateNode: { muted: false, angle: 0 },
-  loopNode: { muted: false, loopCount: 3 },
+  loopNode: { muted: false, loopCount: 3, createTurtleOnIteration: true },
   penNode: { muted: false, color: "#000000", penDown: true },
   commentNode: {content: "", collapsed: false},
 };
