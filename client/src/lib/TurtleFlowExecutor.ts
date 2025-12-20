@@ -28,7 +28,7 @@ export class TurtleFlowExecutor {
   executeFlow(nodes: Array<Node>, edges: Array<Edge>) {
     if (this.state !== "IDLE") this.reset();
 
-    const startNode = nodes.find(n => n.type === "startNode");
+    const startNode = nodes.find((n) => n.type === "startNode");
     if (!startNode) return;
 
     this.pathCounter = 0;
@@ -37,17 +37,14 @@ export class TurtleFlowExecutor {
     console.log("=== EXECUTION PATHS ===");
     // paths.forEach(path => {
     //   console.log(`Path ${path.id}:`, path.commands.length, "commands");
-    //   console.log(path.commands);
     // });
 
     this.engine.reset();
 
     if (paths.length === 0) {
-      // Just start node, create single turtle
       this.engine.createTurtle("default", 0, 0, 90);
     } else {
-      // Create a turtle for each path
-      paths.forEach(path => {
+      paths.forEach((path) => {
         this.engine.createTurtle(path.id, 0, 0, 90);
         this.engine.queueCommands(path.id, path.commands);
       });
@@ -85,88 +82,35 @@ export class TurtleFlowExecutor {
     this.onStateChange?.(newState);
   }
 
-  // Collect all possible paths through the graph (handles branching)
   private collectPaths(
     nodeId: string,
     nodes: Array<Node>,
     edges: Array<Edge>,
-    commandsSoFar: Array<TurtleCommand> = []
+    commandsSoFar: Array<TurtleCommand> = [],
   ): Array<TurtlePath> {
-    const node = nodes.find(n => n.id === nodeId);
+    const node = nodes.find((n) => n.id === nodeId);
     if (!node) return [];
 
-    // Add this node's commands to current path
+    // 1. Add this node's commands to current trace
     const currentCommands = [...commandsSoFar];
     if (!node.data.muted) {
       currentCommands.push(...this.nodeToCommands(node));
     }
 
-    // Handle loop node
+    // 2. Handle Loop Node Special Logic
     if (node.type === "loopNode" && !node.data.muted) {
-      const loopData = node.data as NodeRegistry["loopNode"];
-      const loopCount = loopData.loopCount || 0;
-      const loopEdge = edges.find(e => e.source === nodeId && e.sourceHandle === "loop");
-      const outEdges = edges.filter(e => e.source === nodeId && e.sourceHandle === "out");
-
-      // CASE 1: SPAWN NEW TURTLE EACH ITERATION
-      if (loopData.createTurtleOnIteration && loopEdge && loopCount > 0) {
-        const loopBodyPaths = this.collectPathSegment(loopEdge.target, nodes, edges);
-
-        const spawnedPaths: Array<TurtlePath> = [];
-
-        const accumulatedState = [...currentCommands];
-
-        for (let i = 0; i < loopCount; i++) {
-          accumulatedState.push(...loopBodyPaths);
-
-          if (outEdges.length > 0) {
-             for (const edge of outEdges) {
-                spawnedPaths.push(...this.collectPaths(edge.target, nodes, edges, [...accumulatedState]));
-             }
-          } else {
-             spawnedPaths.push({
-                 id: `path_${++this.pathCounter}`,
-                 commands: [...accumulatedState]
-             });
-          }
-        }
-        return spawnedPaths;
-      }
-
-      if (loopEdge && loopCount > 0) {
-        // Build loop body commands once
-        const loopBodyPaths = this.collectPathSegment(loopEdge.target, nodes, edges);
-        for (let i = 0; i < loopCount; i++) {
-          currentCommands.push(...loopBodyPaths);
-        }
-      }
-
-      if (outEdges.length === 0) {
-        return [{ id: `path_${++this.pathCounter}`, commands: currentCommands }];
-      }
-
-      // Collect paths from each branch after loop
-      const paths: Array<TurtlePath> = [];
-      for (const edge of outEdges) {
-        paths.push(...this.collectPaths(edge.target, nodes, edges, currentCommands));
-      }
-      return paths;
+      return this.handleLoopNode(node, currentCommands, nodes, edges);
     }
 
-    // Regular node - find all outgoing edges
-    const outEdges = edges.filter(e => e.source === nodeId);
+    // 3. Standard Flow (Find outgoing edges)
+    const outEdges = edges.filter((e) => e.source === nodeId);
 
+    // Leaf node (End of a path)
     if (outEdges.length === 0) {
-      // Leaf node - this is end of a path
       return [{ id: `path_${++this.pathCounter}`, commands: currentCommands }];
     }
 
-    if (outEdges.length === 1) {
-      // Single edge - continue building path
-      return this.collectPaths(outEdges[0].target, nodes, edges, currentCommands);
-    }
-
-    // Multiple edges - BRANCH! Each edge becomes a separate path
+    // Branching Logic (Handles 1 or more edges automatically)
     const paths: Array<TurtlePath> = [];
     for (const edge of outEdges) {
       paths.push(...this.collectPaths(edge.target, nodes, edges, currentCommands));
@@ -174,85 +118,105 @@ export class TurtleFlowExecutor {
     return paths;
   }
 
-  // Helper to collect commands from a segment (like loop body) without branching into separate paths
-  private collectPathSegment(
-    nodeId: string,
+  private handleLoopNode(
+    node: Node,
+    commandsBeforeLoop: Array<TurtleCommand>,
     nodes: Array<Node>,
     edges: Array<Edge>,
-    visited = new Set<string>()
-  ): Array<TurtleCommand> {
-    if (visited.has(nodeId)) return [];
+  ): Array<TurtlePath> {
+    const loopData = node.data as NodeRegistry["loopNode"];
+    const loopCount = loopData.loopCount || 0;
 
-    const node = nodes.find(n => n.id === nodeId);
-    if (!node) return [];
+    // Find connections
+    const loopEdges = edges.filter((e) => e.source === node.id && e.sourceHandle === "loop");
+    const outEdges = edges.filter((e) => e.source === node.id && e.sourceHandle === "out");
 
-    visited.add(nodeId);
-    const commands: Array<TurtleCommand> = [];
+    // 1. COLLECT LOOP BODY PATHS
+    // We treat the "loop" output as a start point for a sub-graph.
+    // We pass an empty array [] as start commands because we just want the body segments.
+    let loopBodySequences: Array<Array<TurtleCommand>> = [];
 
-    // Add this node's commands
-    if (!node.data.muted) {
-      commands.push(...this.nodeToCommands(node));
+    if (loopEdges.length > 0) {
+      // Collect ALL paths that stem from the loop handle (handles branching/merging body)
+      for (const edge of loopEdges) {
+        const paths = this.collectPaths(edge.target, nodes, edges, []);
+        loopBodySequences.push(...paths.map((p) => p.commands));
+      }
+    } else {
+      // Empty loop body is valid (just an empty sequence)
+      loopBodySequences = [[]];
     }
 
-    // Handle nested loops
-    if (node.type === "loopNode" && !node.data.muted) {
-      const loopData = node.data as NodeRegistry["loopNode"];
-      const loopCount = loopData.loopCount || 0;
-      const loopEdge = edges.find(e => e.source === nodeId && e.sourceHandle === "loop");
+    const finalPaths: Array<TurtlePath> = [];
 
-      if (loopEdge && loopCount > 0) {
-        const loopBody = this.collectPathSegment(loopEdge.target, nodes, edges, new Set(visited));
+    // CASE A: SNOWFLAKE MODE (Spawn Turtle On Iteration)
+    if (loopData.createTurtleOnIteration && loopCount > 0) {
+      // For each possible path through the loop body...
+      for (const bodySeq of loopBodySequences) {
+        const accumulatedState = [...commandsBeforeLoop];
+
         for (let i = 0; i < loopCount; i++) {
-          commands.push(...loopBody);
+          // Accumulate the transformation (Loop Body)
+          accumulatedState.push(...bodySeq);
+
+          // Spawn a turtle for the "Action" (Out handle) at this state
+          if (outEdges.length > 0) {
+            for (const edge of outEdges) {
+              finalPaths.push(
+                ...this.collectPaths(edge.target, nodes, edges, [...accumulatedState]),
+              );
+            }
+          } else {
+            // No out handle? Just spawn the turtle at the accumulated point
+            finalPaths.push({
+              id: `path_${++this.pathCounter}`,
+              commands: [...accumulatedState],
+            });
+          }
         }
+      }
+      return finalPaths;
+    }
+
+    // CASE B: STANDARD LOOP MODE (Inline Expansion)
+    // If the loop body branches into 2 paths, we get 2 separate turtles exiting the loop
+    for (const bodySeq of loopBodySequences) {
+      const expandedCommands = [...commandsBeforeLoop];
+
+      // Repeat this specific body path N times
+      for (let i = 0; i < loopCount; i++) {
+        expandedCommands.push(...bodySeq);
+      }
+
+      // Continue flow after loop
+      if (outEdges.length > 0) {
+        for (const edge of outEdges) {
+          finalPaths.push(...this.collectPaths(edge.target, nodes, edges, expandedCommands));
+        }
+      } else {
+        // Dead end after loop
+        finalPaths.push({
+          id: `path_${++this.pathCounter}`,
+          commands: expandedCommands,
+        });
       }
     }
 
-    // Continue with next node (take first edge only for segments)
-    const outEdges = edges.filter(e =>
-      e.source === nodeId &&
-      (node.type !== "loopNode" || e.sourceHandle === "out" || !e.sourceHandle)
-    );
-
-    if (outEdges.length > 0) {
-      commands.push(...this.collectPathSegment(outEdges[0].target, nodes, edges, visited));
-    }
-
-    return commands;
+    return finalPaths;
   }
 
   private nodeToCommands(node: Node): Array<TurtleCommand> {
     switch (node.type) {
       case "startNode":
         return [];
-
-      case "moveNode": {
-        const data = node.data as NodeRegistry["moveNode"];
-        return [{
-          type: "move",
-          value: { distance: data.distance || 10 }
-        }];
-      }
-
-      case "rotateNode": {
-        const data = node.data as NodeRegistry["rotateNode"];
-        return [{
-          type: "rotate",
-          value: { angle: -(data.angle || 0) }
-        }];
-      }
-
+      case "moveNode":
+        return [{ type: "move", value: { distance: (node.data as any).distance || 10 } }];
+      case "rotateNode":
+        return [{ type: "rotate", value: { angle: -((node.data as any).angle || 0) } }];
       case "penNode": {
-        const data = node.data as NodeRegistry["penNode"];
-        return [{
-          type: "pen",
-          value: {
-            isDrawing: data.penDown,
-            color: data.color || "#000"
-          }
-        }];
+        const d = node.data as any;
+        return [{ type: "pen", value: { isDrawing: d.penDown, color: d.color || "#000" } }];
       }
-
       default:
         return [];
     }
