@@ -34,7 +34,7 @@ export class TurtleFlowExecutor {
     this.pathCounter = 0;
     const paths = this.collectPaths(startNode.id, nodes, edges);
 
-    console.log("=== EXECUTION PATHS ===");
+    // console.log("=== EXECUTION PATHS ===");
     // paths.forEach(path => {
     //   console.log(`Path ${path.id}:`, path.commands.length, "commands");
     // });

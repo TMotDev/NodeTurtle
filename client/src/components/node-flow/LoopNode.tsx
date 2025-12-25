@@ -15,9 +15,18 @@ import type { LoopNodeProps } from "@/lib/flowUtils";
 const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
   const { updateNodeData } = useReactFlow();
 
+  const loopCount = data.loopCount || 0;
+  const isSpawnDisabled = loopCount > 5;
+
   const handleLoopCountChange = useCallback(
     (newLoopCount: number) => {
-      updateNodeData(id, { loopCount: newLoopCount });
+      const updates: any = { loopCount: newLoopCount };
+
+      if (newLoopCount > 5) {
+        updates.createTurtleOnIteration = false;
+      }
+
+      updateNodeData(id, updates);
     },
     [id, updateNodeData],
   );
@@ -51,7 +60,7 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
         <MathInputBox
           id={`loop-${id}`}
           label="Loop count"
-          value={data.loopCount || 0}
+          value={loopCount}
           onChange={handleLoopCountChange}
           placeholder="3"
         />
@@ -61,19 +70,22 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
             id={`spawn-${id}`}
             checked={data.createTurtleOnIteration}
             onCheckedChange={handleSpawnTurtleChange}
+            disabled={isSpawnDisabled}
           />
 
           <Tooltip delayDuration={1000}>
             <TooltipTrigger>
               <Label
                 htmlFor={`spawn-${id}`}
-                className="text-xs font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className={`text-xs font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${isSpawnDisabled ? "text-gray-500" : "text-black"}`}
               >
                 Spawn Turtle Each Loop
               </Label>
             </TooltipTrigger>
             <TooltipContent sideOffset={8}>
-              When enabled, a new turtle will be created at each iteration of the loop.
+              {isSpawnDisabled
+                ? "Disabled for > 5 loops to maintain performance."
+                : "When enabled, a new turtle will be created at each iteration of the loop."}
               <TooltipArrow />
             </TooltipContent>
           </Tooltip>

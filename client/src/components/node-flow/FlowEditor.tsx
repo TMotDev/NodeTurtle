@@ -425,7 +425,7 @@ function Flow({
               multiSelectionKeyCode={"Shift"}
             >
               <Background />
-              <DevTools position="top-left" />
+              {/* <DevTools position="top-left" /> */}
               <MouseTrail isActive={toolStates.cutTool && !toolStates.lazyConnect} />
               <MouseLine
                 isActive={toolStates.lazyConnect && !toolStates.cutTool}

@@ -273,8 +273,8 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
               {/* Layer 1: Grid */}
               <canvas
                 ref={gridCanvasRef}
-                width={400}
-                height={400}
+                width={700}
+                height={700}
                 className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
                   showGrid ? "opacity-100" : "opacity-0"
                 }`}
@@ -291,8 +291,8 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
               {/* Layer 3: Turtle Cursors */}
               <canvas
                 ref={turtleCanvasRef}
-                width={400}
-                height={400}
+                width={700}
+                height={700}
                 className={`absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-300 ${
                   showTurtles ? "opacity-100" : "opacity-0"
                 }`}
