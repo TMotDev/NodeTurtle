@@ -80,7 +80,7 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
             <TooltipTrigger>
               <Label
                 htmlFor={`spawn-${id}`}
-                className={`text-xs font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${isSpawnDisabled ? "text-gray-500" : "text-black"}`}
+                className={`text-[0.7rem] font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${isSpawnDisabled ? "text-gray-500" : "text-black"}`}
               >
                 Spawn Turtle Each Loop
               </Label>
