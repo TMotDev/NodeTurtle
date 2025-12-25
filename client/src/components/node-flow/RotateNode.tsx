@@ -19,7 +19,7 @@ const RotateNode = memo(({ selected, data, id }: RotateNodeProps) => {
   );
 
   return (
-    <BaseNode selected={selected} muted={data.muted} className={`px-3 py-2 w-40`}>
+    <BaseNode selected={selected} muted={data.muted} className={`px-3 py-2 w-[11rem]`}>
       <BaseHandle id="in" type="target" position={Position.Left} />
       <BaseHandle id="out" type="source" position={Position.Right} />
 

@@ -7,6 +7,7 @@ import MathInputBox from "../MathInputBox";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import SuggestionBox from "../suggestionBox";
 import { NodeHeader, NodeHeaderIcon, NodeHeaderTitle } from "./node-header";
 import { BaseNode } from "./base-node";
 import { BaseHandle } from "./base-handle";
@@ -39,7 +40,7 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
   );
 
   return (
-    <BaseNode muted={data.muted} selected={selected} className="px-3 py-2 w-48">
+    <BaseNode muted={data.muted} selected={selected} className="px-3 py-2 w-[11rem]">
       <BaseHandle id="in" type="target" position={Position.Left} />
       <BaseHandle id="out" type="source" position={Position.Right} />
       <BaseHandle

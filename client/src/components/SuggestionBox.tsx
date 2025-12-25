@@ -16,7 +16,7 @@ export default function SuggestionBox({
 }: SuggestionBoxProps) {
   return (
     <div
-      className="nodrag w-max absolute top-full left-0 mt-2 z-30 p-1.5 bg-popover border rounded-md shadow-md flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-100"
+      className="nodrag w-full absolute top-full left-0 mt-2 z-30 p-1.5 bg-popover border rounded-md shadow-md flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-100"
       onMouseDown={(e) => e.preventDefault()}
       onMouseUp={(e) => e.preventDefault()}
       onClick={(e) => e.preventDefault()}
@@ -39,7 +39,7 @@ export default function SuggestionBox({
 
       <div className="h-4 w-px bg-border shrink-0" />
 
-      <div className="flex flex-wrap gap-1">
+      <div className="flex gap-1 w-full">
         {suggestions.map((num) => (
           <Button
             key={num}

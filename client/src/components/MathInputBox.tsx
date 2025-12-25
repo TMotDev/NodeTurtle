@@ -22,7 +22,7 @@ export default function MathInputBox({
   placeholder = "0",
   className = "",
   suggestions = [],
-  min = -Infinity, // Default to negative infinity if not provided
+  min = -Infinity,
 }: MathInputBoxProps) {
   const [displayValue, setDisplayValue] = useState(value.toString());
   const [isFocused, setIsFocused] = useState(false);
@@ -35,7 +35,6 @@ export default function MathInputBox({
     }
   }, [value, isFocused]);
 
-  // Helper to ensure values don't go below min
   const clamp = useCallback((val: number) => Math.max(min, val), [min]);
 
   const evaluateMath = useCallback(
@@ -144,7 +143,6 @@ export default function MathInputBox({
           placeholder={placeholder}
           autoComplete="off"
         />
-
         {isFocused && suggestions.length > 0 && (
           <SuggestionBox
             suggestions={suggestions}
