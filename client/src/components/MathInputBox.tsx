@@ -145,7 +145,7 @@ export default function MathInputBox({
           autoComplete="off"
         />
 
-        {suggestions.length > 0 && (
+        {isFocused && suggestions.length > 0 && (
           <SuggestionBox
             suggestions={suggestions}
             isSubtraction={isSubtraction}
