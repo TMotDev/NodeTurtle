@@ -11,6 +11,7 @@ interface MathInputBoxProps {
   placeholder?: string;
   className?: string;
   suggestions?: Array<number>;
+  min?: number; // Added min prop
 }
 
 export default function MathInputBox({
@@ -21,6 +22,7 @@ export default function MathInputBox({
   placeholder = "0",
   className = "",
   suggestions = [],
+  min = -Infinity, // Default to negative infinity if not provided
 }: MathInputBoxProps) {
   const [displayValue, setDisplayValue] = useState(value.toString());
   const [isFocused, setIsFocused] = useState(false);
@@ -32,6 +34,9 @@ export default function MathInputBox({
       setDisplayValue(value.toString());
     }
   }, [value, isFocused]);
+
+  // Helper to ensure values don't go below min
+  const clamp = useCallback((val: number) => Math.max(min, val), [min]);
 
   const evaluateMath = useCallback(
     (expression: string): number => {
@@ -48,12 +53,13 @@ export default function MathInputBox({
           return value;
         }
 
-        return Math.round(result);
+        // Apply Math.round and the clamp constraint
+        return clamp(Math.round(result));
       } catch {
         return value;
       }
     },
-    [value],
+    [value, clamp],
   );
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,15 +78,16 @@ export default function MathInputBox({
     setIsSubtraction(false);
 
     if (displayValue === "") {
-      setDisplayValue("0");
-      onChange(0);
+      const defaultValue = clamp(0);
+      setDisplayValue(defaultValue.toString());
+      onChange(defaultValue);
       return;
     }
 
     const result = evaluateMath(displayValue);
     setDisplayValue(result.toString());
     onChange(result);
-  }, [displayValue, evaluateMath, onChange]);
+  }, [displayValue, evaluateMath, onChange, clamp]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -88,29 +95,29 @@ export default function MathInputBox({
         inputRef.current?.blur();
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        const newValue = value + 1;
+        const newValue = clamp(value + 1);
         setDisplayValue(newValue.toString());
         onChange(newValue);
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        const newValue = value - 1;
+        const newValue = clamp(value - 1);
         setDisplayValue(newValue.toString());
         onChange(newValue);
       }
     },
-    [value, onChange],
+    [value, onChange, clamp],
   );
 
   const handleSuggestionClick = useCallback(
     (amount: number) => {
       const currentBase = displayValue === "" ? 0 : evaluateMath(displayValue);
       const modifier = isSubtraction ? -amount : amount;
-      const newValue = currentBase + modifier;
+      const newValue = clamp(currentBase + modifier);
 
       setDisplayValue(newValue.toString());
       onChange(newValue);
     },
-    [displayValue, isSubtraction, evaluateMath, onChange],
+    [displayValue, isSubtraction, evaluateMath, onChange, clamp],
   );
 
   const toggleOperation = useCallback(() => {
@@ -138,7 +145,7 @@ export default function MathInputBox({
           autoComplete="off"
         />
 
-        {isFocused && suggestions.length > 0 && (
+        {suggestions.length > 0 && (
           <SuggestionBox
             suggestions={suggestions}
             isSubtraction={isSubtraction}
