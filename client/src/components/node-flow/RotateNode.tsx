@@ -37,6 +37,7 @@ const RotateNode = memo(({ selected, data, id }: RotateNodeProps) => {
           value={data.angle || 0}
           onChange={handleAngleChange}
           placeholder="0"
+          suggestions={[10,15,90]}
         />
       </div>
     </BaseNode>

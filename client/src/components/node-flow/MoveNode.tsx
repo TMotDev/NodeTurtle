@@ -37,6 +37,7 @@ const MoveNode = memo(({ selected, data, id }: MoveNodeProps) => {
           value={data.distance || 50}
           onChange={handleDistanceChange}
           placeholder="50"
+          suggestions={[10,15,50]}
         />
       </div>
     </BaseNode>

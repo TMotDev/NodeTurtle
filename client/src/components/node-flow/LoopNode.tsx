@@ -63,6 +63,7 @@ const LoopNode = memo(({ selected, data, id }: LoopNodeProps) => {
           value={loopCount}
           onChange={handleLoopCountChange}
           placeholder="3"
+          suggestions={[1,3,90]}
         />
 
         <div className="flex items-center space-x-2">
