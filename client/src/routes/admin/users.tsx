@@ -336,13 +336,13 @@ function AdminUsers() {
                             >
                               Set as User
                             </DropdownMenuItem>
-                            <DropdownMenuItem
+                            {/* <DropdownMenuItem
                               onClick={() =>
                                 handleRoleChange(user.id, Role.Premium)
                               }
                             >
                               Set as Premium
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                             <DropdownMenuItem
                               onClick={() =>
                                 handleRoleChange(user.id, Role.Moderator)
