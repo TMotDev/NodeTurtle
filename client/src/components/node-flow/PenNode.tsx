@@ -1,4 +1,4 @@
-import { Pen } from "lucide-react";
+import { Palette, Pen } from "lucide-react";
 import React, { memo, useCallback, useState } from "react";
 
 import { Position, useReactFlow } from "@xyflow/react";
@@ -50,6 +50,7 @@ const PenNode = memo(({ selected, data, id }: PenNodeProps) => {
           <Label htmlFor={`color-${id}`} className="text-sm font-medium select-none nodrag">
             Color
           </Label>
+            <Palette/>
           <div className="relative nodrag rounded-md overflow-hidden w-7 h-7 border-2 border-gray-300">
             <input
               id={`color-${id}`}

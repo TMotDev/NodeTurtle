@@ -32,7 +32,6 @@ function Homepage() {
   const [visibleRows, setVisibleRows] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Use the custom hook for liked projects
   const { likedProjectIds, likeProject, unlikeProject, isProjectLiked } = useLikedProjects();
 
   const itemsPerRow = 6;

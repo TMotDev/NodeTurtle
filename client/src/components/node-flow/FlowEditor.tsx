@@ -51,6 +51,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import useAuthStore from "@/lib/authStore";
 
 export const nodeTypes = {
   nodeBase: NodeBase,
@@ -126,6 +127,7 @@ function Flow({
   );
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { markAsModified, hasUnsavedChanges } = useFlowManagerContext();
+  const { user } = useAuthStore();
 
   const emptyProject: Project = project || {
     id: 'empty',
@@ -162,7 +164,10 @@ function Flow({
       setIsInitialLoad(false);
       return;
     }
-    markAsModified();
+    if((user?.id === project?.creator_id || project?.creator_id === "-"))
+    {
+      markAsModified();
+    }
   }, [nodes, edges, markAsModified, isInitialLoad]);
 
   const { copyElements, pasteElements } = useClipboard();

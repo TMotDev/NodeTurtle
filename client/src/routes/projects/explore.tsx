@@ -63,7 +63,7 @@ function ExploreProjects() {
         };
 
         // Add sorting
-        queryParams.sort_by = currentFilters.sortBy;
+        queryParams.sort_field = currentFilters.sortBy;
         queryParams.sort_order = currentFilters.sortOrder;
 
         // Add search

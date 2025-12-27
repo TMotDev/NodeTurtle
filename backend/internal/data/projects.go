@@ -52,7 +52,7 @@ type PublicProjectFilter struct {
 	Page       int    `query:"page" validate:"min=1"`
 	Limit      int    `query:"limit" validate:"min=1,max=100"`
 	SearchTerm string `query:"search_term" validate:"omitempty"`
-	SortField  string `query:"sort_field" validate:"omitempty,oneof=created_at likes_count"`
+	SortField  string `query:"sort_field" validate:"omitempty,oneof=created_at likes_count last_edited_at"`
 	SortOrder  string `query:"sort_order" validate:"omitempty,oneof=asc desc"`
 }
 

@@ -228,7 +228,7 @@ func (s ProjectService) FeatureProject(projectID uuid.UUID, expiresAt *time.Time
 
 	query := `
 		UPDATE projects
-		SET featured_until = $2, last_edited_at = NOW()
+		SET featured_until = $2,
 		WHERE id = $1
 		RETURNING id, title, description, data, creator_id, (SELECT username FROM users WHERE id = creator_id), likes_count, featured_until, created_at, last_edited_at, is_public
 	`
@@ -498,6 +498,7 @@ func (s ProjectService) GetPublicProjects(filters data.PublicProjectFilter) ([]d
         ORDER BY p.` + filters.SortField + ` ` + filters.SortOrder + `
         LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 
+	fmt.Println(query)
 	args = append(args, filters.Limit, offset)
 
 	rows, err := s.db.Query(query, args...)

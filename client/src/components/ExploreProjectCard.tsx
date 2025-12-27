@@ -84,8 +84,6 @@ export function ExploreProjectCard({
           {project.title}
         </h3>
 
-        <p className="text-sm text-gray-600 line-clamp-3 mb-3">{project.description}</p>
-
         <div className="space-y-2 text-sm text-gray-500">
           <div className="flex items-center gap-1">
             <User className="h-3 w-3 flex-shrink-0" />
