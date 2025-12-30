@@ -35,6 +35,13 @@ import { ProjectCard } from "@/components/ProjectCard";
 export const Route = createFileRoute("/projects/")({
   beforeLoad: requireAuth(Role.User),
   component: ProjectPage,
+    head: () => ({
+    meta: [
+      {
+        title: "Turtle Graphics - My Projects",
+      },
+    ],
+  }),
 });
 
 function ProjectPage() {

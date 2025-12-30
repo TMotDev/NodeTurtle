@@ -8,6 +8,13 @@ import { ProjectSelectionDialog } from "@/components/ProjectSelectionDialog";
 
 export const Route = createFileRoute("/projects/create")({
   component: LocalEditor,
+  head: () => ({
+    meta: [
+      {
+        title: "Turtle Graphics - Create",
+      },
+    ],
+  }),
 });
 
 function LocalProject() {

@@ -29,6 +29,13 @@ import { useLikedProjects } from "@/hooks/UseLikedProjects";
 
 export const Route = createFileRoute("/projects/explore")({
   component: ExploreProjects,
+  head: () => ({
+    meta: [
+      {
+        title: "Turtle Graphics - Explore",
+      },
+    ],
+  }),
 });
 
 function ExploreProjects() {

@@ -46,6 +46,13 @@ import { API } from "@/services/api";
 export const Route = createFileRoute("/admin/projects")({
   beforeLoad: requireAuth(Role.Admin),
   component: AdminProjects,
+   head: () => ({
+    meta: [
+      {
+        title: "Turtle Graphics - Admin dashboard",
+      },
+    ],
+  }),
 });
 
 function AdminProjects() {

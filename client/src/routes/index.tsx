@@ -23,6 +23,13 @@ interface Project {
 
 export const Route = createFileRoute("/")({
   component: Homepage,
+  head: () => ({
+    meta: [
+      {
+        title: "Turtle Graphics - Home",
+      },
+    ],
+  }),
 });
 
 function Homepage() {
@@ -106,7 +113,7 @@ function Homepage() {
         <div className="pattern p-16 pb-24 flex flex-col">
           <div className="mb-8 px-16 self-center">
             <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-              Turtle Graphics
+              Node Turtle Graphics
             </h1>
             <p className="leading-7 text-xl [&:not(:first-child)]:mt-6">
               Create beautiful patterns and designs with node-based programming.

@@ -5,13 +5,22 @@ import { FlowEditor } from "@/components/node-flow/FlowEditor";
 
 export const Route = createFileRoute("/projects/$projectID")({
   // beforeLoad: requireAuth(Role.User),
+
   component: Project,
+   head: () => ({
+    meta: [
+      {
+        title: "Turtle Graphics",
+      },
+    ],
+  }),
   loader: async ({ params }) => {
     const { projectID } = params;
     const project = await fetchProjectById(projectID);
 
     return project;
   },
+
   pendingComponent: () => <div>Loading Project...</div>,
   errorComponent: ({ error }) => {
     if (error.name === "NotFound") {

@@ -1,4 +1,6 @@
-import { Outlet, createRootRoute } from "@tanstack/react-router";
+// __root.tsx
+
+import { HeadContent, Outlet, createRootRoute } from "@tanstack/react-router"; // Add HeadContent here
 import { useEffect } from "react";
 import { Toaster } from "sonner";
 import useAuthStore from "@/lib/authStore";
@@ -18,8 +20,9 @@ function Root() {
 
   return (
     <div className="h-screen w-screen overflow-x-hidden">
+      <HeadContent />
       <Outlet />
-      <Toaster richColors position="top-center" expand swipeDirections={["left", "right", "top"]}/>
+      <Toaster richColors position="top-center" expand swipeDirections={["left", "right", "top"]} />
     </div>
   );
 }

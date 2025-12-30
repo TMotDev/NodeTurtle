@@ -28,6 +28,13 @@ export const Route = createFileRoute("/projects/user/$userID")({
       throw redirect({ to: "/projects" });
     }
   },
+  head: () => ({
+    meta: [
+      {
+        title: "Turtle Graphics",
+      },
+    ],
+  }),
   pendingComponent: () => <div>Loading data...</div>,
   errorComponent: ({ error }) => <div>An error occurred while fetching the user data.</div>,
 });
@@ -72,9 +79,7 @@ function UserPage() {
           </div>
         </div>
       </main>
-      <footer className="pattern h-[10vh]">
-
-      </footer>
+      <footer className="pattern h-[10vh]"></footer>
     </div>
   );
 }
