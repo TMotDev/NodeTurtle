@@ -4,8 +4,8 @@ import { API } from "@/services/api";
 
 export enum Role {
   User = "user",
-  Premium = "premium",
-  Moderator = "moderator",
+  // Premium = "premium",
+  // Moderator = "moderator",
   Admin = "admin",
 }
 

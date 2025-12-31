@@ -47,6 +47,7 @@ export default function FeatureDialog({
     { label: "3 Days", value: "3" },
     { label: "1 Week", value: "7" },
     { label: "1 Month", value: "30" },
+    { label: "Permanent", value: "99999" },
     { label: "Custom Date", value: "custom" },
   ];
 
@@ -128,7 +129,7 @@ export default function FeatureDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[650px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Star className="w-5 h-5 text-yellow-500" />

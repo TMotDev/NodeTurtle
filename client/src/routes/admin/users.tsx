@@ -166,14 +166,14 @@ function AdminUsers() {
   const getRoleBadge = (role: Role) => {
     const roleColors: Record<Role, string> = {
       admin: "bg-purple-500",
-      moderator: "bg-blue-500",
-      premium: "bg-yellow-500",
+      // moderator: "bg-blue-500",
+      // premium: "bg-yellow-500",
       user: "outline",
     };
     const roleName: Record<Role, string> = {
       admin: "Admin",
-      moderator: "Moderator",
-      premium: "Premium",
+      // moderator: "Moderator",
+      // premium: "Premium",
       user: "User",
     };
     return (
@@ -274,8 +274,8 @@ function AdminUsers() {
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="user">User</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
-                <SelectItem value="mod">Moderator</SelectItem>
+                {/* <SelectItem value="premium">Premium</SelectItem>
+                <SelectItem value="mod">Moderator</SelectItem> */}
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
@@ -350,13 +350,13 @@ function AdminUsers() {
                             >
                               Set as Premium
                             </DropdownMenuItem> */}
-                            <DropdownMenuItem
+                            {/* <DropdownMenuItem
                               onClick={() =>
                                 handleRoleChange(user.id, Role.Moderator)
                               }
                             >
                               Set as Moderator
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                             <DropdownMenuSeparator />
                             {user.ban &&
                             isBanActive(user.ban.expires_at as string) ? (
