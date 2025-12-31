@@ -38,7 +38,7 @@ export function ExploreProjectCard({
       <Link
         to={"/projects/$projectID"}
         params={{ projectID: project.id }}
-        preloadDelay={300}
+        preloadDelay={700}
         className="absolute inset-0 z-0"
         aria-label={`View project ${project.title}`}
       />
