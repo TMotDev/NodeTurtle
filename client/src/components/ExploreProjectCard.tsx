@@ -34,26 +34,26 @@ export function ExploreProjectCard({
   };
 
   return (
-    <Link
-      href={`/projects/${project.id}`}
-      to={"/projects/$projectID"}
-      params={{ projectID: project.id }}
-      // Fixed height (h-96 / 24rem) ensures the card has a defined frame for the slide effect
-      className="group relative block w-64 h-84 rounded-lg border bg-white hover:shadow-lg transition-all duration-300 hover:border-blue-300 overflow-hidden"
-    >
-      {/* 1. Image Section: Pinned to top, fixed height */}
-      <div className="relative h-64 w-full bg-gray-100">
+    <div className="group relative block w-64 h-86 rounded-lg border bg-white hover:shadow-lg transition-all duration-300 hover:border-blue-300 overflow-hidden">
+      <Link
+        to={"/projects/$projectID"}
+        params={{ projectID: project.id }}
+        preloadDelay={300}
+        className="absolute inset-0 z-0"
+        aria-label={`View project ${project.title}`}
+      />
+
+      <div className="relative h-64 w-full bg-gray-100 pointer-events-none">
         <img
           src={generateThumbnail(project.id)}
           alt={project.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
 
-        {/* Like Button */}
-        <div className="absolute top-3 right-3 z-10">
+        <div className="absolute top-3 right-3 z-10 pointer-events-auto">
           <button
             onClick={handleLikeClick}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md backdrop-blur-sm border transition-all ${
+            className={`flex items-center gap-1 px-2 py-1 rounded-md backdrop-blur-sm border transition-all cursor-pointer ${
               isLiked
                 ? "text-red-600 bg-white/90 border-red-200 hover:bg-white shadow-sm"
                 : "text-gray-700 bg-white/80 border-white/50 hover:bg-white/90 hover:text-red-600"
@@ -64,7 +64,6 @@ export function ExploreProjectCard({
           </button>
         </div>
 
-        {/* Featured Badge */}
         {project.featured_until && new Date(project.featured_until) > new Date() && (
           <div className="absolute top-3 left-3 bg-yellow-400/90 text-yellow-900 flex gap-2 p-1 rounded-sm items-center z-10">
             <Star className="h-4 w-4 fill-yellow-900/20" />
@@ -72,24 +71,17 @@ export function ExploreProjectCard({
         )}
       </div>
 
-      {/* 2. Sliding Content Drawer */}
-      {/* - absolute bottom-0: Anchors to bottom
-         - translate-y-[calc(100%-5.5rem)]: Pushes it down so only the top header (approx 5.5rem) is visible initially
-         - group-hover:translate-y-0: Slides up to reveal description
-      */}
-      <div className="absolute bottom-0 w-full bg-white transition-transform duration-300 ease-out transform translate-y-[calc(100%-5.5rem)] group-hover:translate-y-0 z-20 flex flex-col max-h-[85%] border-t border-gray-100 shadow-[0_-5px_15px_rgba(0,0,0,0.02)]">
-
-        {/* Header Part (Always Visible) - Height approx 5.5rem (88px) */}
+      <div className="absolute bottom-0 w-full bg-white transition-transform duration-300 ease-out transform translate-y-[calc(100%-5.5rem)] group-hover:translate-y-0 z-20 flex flex-col max-h-[85%] border-t border-gray-100 shadow-[0_-5px_15px_rgba(0,0,0,0.02)] pointer-events-none">
         <div className="p-4 h-[5.5rem] shrink-0 flex flex-col justify-center">
           <h3 className="text-lg font-semibold line-clamp-1 mb-1" title={project.title}>
             {project.title}
           </h3>
           <div className="flex items-center gap-1 text-sm text-gray-500">
             <User className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate" onClick={(e) => e.stopPropagation()}>
+            <span className="truncate relative z-20 pointer-events-auto">
               by{" "}
               <Link
-                className="hover:underline"
+                className="hover:underline hover:text-blue-600 transition-colors"
                 to={`/projects/user/$userID`}
                 params={{ userID: project.creator_id }}
               >
@@ -99,7 +91,6 @@ export function ExploreProjectCard({
           </div>
         </div>
 
-        {/* Description Part (Visible on Hover) */}
         <div className="px-4 pb-4 overflow-hidden flex flex-col">
           <p className="text-sm text-gray-600 line-clamp-5 leading-relaxed">
             {project.description || (
@@ -113,6 +104,6 @@ export function ExploreProjectCard({
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
