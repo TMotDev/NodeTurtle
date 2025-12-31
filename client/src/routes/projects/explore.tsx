@@ -24,8 +24,8 @@ import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import { API } from "@/services/api";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ExploreProjectCard } from "@/components/ExploreProjectCard";
 import { useLikedProjects } from "@/hooks/UseLikedProjects";
+import {ExploreProjectCard} from "@/components/ExploreProjectCard";
 
 export const Route = createFileRoute("/projects/explore")({
   component: ExploreProjects,

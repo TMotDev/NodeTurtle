@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { Badge, Calendar, Heart, Star, User } from "lucide-react";
+import { Calendar, Heart, Star, User } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { Project } from "@/api/projects";
 import useAuthStore from "@/lib/authStore";
@@ -30,28 +30,27 @@ export function ExploreProjectCard({
       toast.error("Can't like the projects you own");
       return;
     }
-    if (isLiked) {
-      onUnlike(project);
-    } else {
-      onLike(project);
-    }
+    isLiked ? onUnlike(project) : onLike(project);
   };
 
   return (
-    <div className="hover:shadow-lg block max-w-sm w-64 rounded-lg border bg-white transition-all duration-200 hover:border-blue-300 overflow-hidden">
-      <Link
-        href={`/projects/${project.id}`}
-        to={"/projects/$projectID"}
-        params={{ projectID: project.id }}
-        className="relative aspect-square"
-      >
+    <Link
+      href={`/projects/${project.id}`}
+      to={"/projects/$projectID"}
+      params={{ projectID: project.id }}
+      // Fixed height (h-96 / 24rem) ensures the card has a defined frame for the slide effect
+      className="group relative block w-64 h-84 rounded-lg border bg-white hover:shadow-lg transition-all duration-300 hover:border-blue-300 overflow-hidden"
+    >
+      {/* 1. Image Section: Pinned to top, fixed height */}
+      <div className="relative h-64 w-full bg-gray-100">
         <img
           src={generateThumbnail(project.id)}
           alt={project.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
 
-        <div className="absolute top-3 right-3">
+        {/* Like Button */}
+        <div className="absolute top-3 right-3 z-10">
           <button
             onClick={handleLikeClick}
             className={`flex items-center gap-1 px-2 py-1 rounded-md backdrop-blur-sm border transition-all ${
@@ -65,30 +64,29 @@ export function ExploreProjectCard({
           </button>
         </div>
 
+        {/* Featured Badge */}
         {project.featured_until && new Date(project.featured_until) > new Date() && (
-          <div
-            className="absolute top-3 left-3 bg-yellow-400/90 text-yellow-900 flex gap-2 p-1 rounded-sm items-center"
-            title="Featured project"
-          >
-            <Star className="border-yellow-500/30 backdrop-blur-sm"></Star>
+          <div className="absolute top-3 left-3 bg-yellow-400/90 text-yellow-900 flex gap-2 p-1 rounded-sm items-center z-10">
+            <Star className="h-4 w-4 fill-yellow-900/20" />
           </div>
         )}
-      </Link>
+      </div>
 
-      <div className="p-4">
-        <h3 className="text-lg font-semibold line-clamp-2 mb-2" title={project.title}>
-          {project.title}
-        </h3>
+      {/* 2. Sliding Content Drawer */}
+      {/* - absolute bottom-0: Anchors to bottom
+         - translate-y-[calc(100%-5.5rem)]: Pushes it down so only the top header (approx 5.5rem) is visible initially
+         - group-hover:translate-y-0: Slides up to reveal description
+      */}
+      <div className="absolute bottom-0 w-full bg-white transition-transform duration-300 ease-out transform translate-y-[calc(100%-5.5rem)] group-hover:translate-y-0 z-20 flex flex-col max-h-[85%] border-t border-gray-100 shadow-[0_-5px_15px_rgba(0,0,0,0.02)]">
 
-        <div className="space-y-2 text-sm text-gray-500">
-          <div className="flex items-center gap-1">
+        {/* Header Part (Always Visible) - Height approx 5.5rem (88px) */}
+        <div className="p-4 h-[5.5rem] shrink-0 flex flex-col justify-center">
+          <h3 className="text-lg font-semibold line-clamp-1 mb-1" title={project.title}>
+            {project.title}
+          </h3>
+          <div className="flex items-center gap-1 text-sm text-gray-500">
             <User className="h-3 w-3 flex-shrink-0" />
-            <span
-              className="truncate"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
+            <span className="truncate" onClick={(e) => e.stopPropagation()}>
               by{" "}
               <Link
                 className="hover:underline"
@@ -99,12 +97,22 @@ export function ExploreProjectCard({
               </Link>
             </span>
           </div>
-          <div className="flex items-center gap-1">
+        </div>
+
+        {/* Description Part (Visible on Hover) */}
+        <div className="px-4 pb-4 overflow-hidden flex flex-col">
+          <p className="text-sm text-gray-600 line-clamp-5 leading-relaxed">
+            {project.description || (
+              <span className="italic text-gray-400">No description provided.</span>
+            )}
+          </p>
+
+          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-1 text-xs text-gray-400">
             <Calendar className="h-3 w-3 flex-shrink-0" />
             <span>Updated {getTimeSince(project.last_edited_at)}</span>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

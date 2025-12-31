@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { API } from "@/services/api";
-import { ExploreProjectCard } from "@/components/ExploreProjectCard";
 import useAuthStore from "@/lib/authStore";
 import { useLikedProjects } from "@/hooks/UseLikedProjects";
 import Header from "@/components/Header";
+import {ExploreProjectCard} from "@/components/ExploreProjectCard";
 
 // Mock types based on your project structure
 interface Project {
