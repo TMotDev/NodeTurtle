@@ -38,21 +38,19 @@ export function ExploreProjectCard({
   };
 
   return (
-    <Link
-      href={`/projects/${project.id}`}
-      to={"/projects/$projectID"}
-      params={{ projectID: project.id }}
-      className="block max-w-sm w-64 rounded-lg border bg-white hover:shadow-lg transition-all duration-200 hover:border-blue-300 overflow-hidden"
-    >
-      {/* Thumbnail Section with Heart Overlay */}
-      <div className="relative aspect-square">
+    <div className="hover:shadow-lg block max-w-sm w-64 rounded-lg border bg-white transition-all duration-200 hover:border-blue-300 overflow-hidden">
+      <Link
+        href={`/projects/${project.id}`}
+        to={"/projects/$projectID"}
+        params={{ projectID: project.id }}
+        className="relative aspect-square"
+      >
         <img
           src={generateThumbnail(project.id)}
           alt={project.title}
           className="w-full h-full object-cover"
         />
 
-        {/* Heart button with backdrop */}
         <div className="absolute top-3 right-3">
           <button
             onClick={handleLikeClick}
@@ -67,7 +65,6 @@ export function ExploreProjectCard({
           </button>
         </div>
 
-        {/* Featured badge if applicable */}
         {project.featured_until && new Date(project.featured_until) > new Date() && (
           <div
             className="absolute top-3 left-3 bg-yellow-400/90 text-yellow-900 flex gap-2 p-1 rounded-sm items-center"
@@ -76,9 +73,8 @@ export function ExploreProjectCard({
             <Star className="border-yellow-500/30 backdrop-blur-sm"></Star>
           </div>
         )}
-      </div>
+      </Link>
 
-      {/* Content Section */}
       <div className="p-4">
         <h3 className="text-lg font-semibold line-clamp-2 mb-2" title={project.title}>
           {project.title}
@@ -94,7 +90,11 @@ export function ExploreProjectCard({
               }}
             >
               by{" "}
-              <Link className="hover:underline" to={`/projects/user/$userID`} params={{ userID: project.creator_id }}>
+              <Link
+                className="hover:underline"
+                to={`/projects/user/$userID`}
+                params={{ userID: project.creator_id }}
+              >
                 {project.creator_username}
               </Link>
             </span>
@@ -105,6 +105,6 @@ export function ExploreProjectCard({
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
