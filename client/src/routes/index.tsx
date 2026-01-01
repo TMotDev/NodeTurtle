@@ -1,12 +1,25 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { LoaderCircle, LoaderIcon } from "lucide-react";
+import {
+  ChevronDown,
+  Globe,
+  LoaderCircle,
+  Monitor
+} from "lucide-react";
 import type { Project } from "@/api/projects";
 import { API } from "@/services/api";
 import useAuthStore from "@/lib/authStore";
 import { useLikedProjects } from "@/hooks/UseLikedProjects";
 import Header from "@/components/Header";
 import { ExploreProjectCard } from "@/components/ExploreProjectCard";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import AddProjectForm from "@/components/forms/AddProjectForm";
 
 export const Route = createFileRoute("/")({
   component: Homepage,
@@ -25,6 +38,7 @@ function Homepage() {
   const [featuredProjects, setFeaturedProjects] = useState<Array<Project>>([]);
   const [visibleRows, setVisibleRows] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddDialogOpen, setAddDialogOpen] = useState(false);
 
   const { likeProject, unlikeProject, isProjectLiked } = useLikedProjects();
 
@@ -85,6 +99,10 @@ function Homepage() {
     navigate({ to: "/projects/create" });
   };
 
+  const handleCreateCloudProject = () => {
+    setAddDialogOpen(true);
+  };
+
   const handleCreateAccount = () => {
     navigate({ to: "/register" });
   };
@@ -109,14 +127,32 @@ function Homepage() {
           <div className="mb-8 text-center">
             <div className="flex justify-center gap-4 mb-4">
               {user ? (
-                // Show buttons for logged in users
                 <>
-                  <button
-                    onClick={handleCreateProject}
-                    className="hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 font-medium"
-                  >
-                    Create a Project
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-2 active:scale-95 transition-all duration-200 cursor-pointer px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 font-medium">
+                        Create a Project
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem
+                        onClick={handleCreateProject}
+                        className="cursor-pointer py-3"
+                      >
+                        <Monitor className="mr-2 h-4 w-4" />
+                        <span>Create Local Project</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={handleCreateCloudProject}
+                        className="cursor-pointer py-3"
+                      >
+                        <Globe className="mr-2 h-4 w-4" />
+                        <span>Create Cloud Project</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
                   <button
                     onClick={handleGoToProjects}
                     className="hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer px-6 py-3 border border-gray-300 rounded-md hover:bg-gray-100 font-medium bg-gray-50"
@@ -125,7 +161,6 @@ function Homepage() {
                   </button>
                 </>
               ) : (
-                // Show buttons for non-logged in users
                 <>
                   <button
                     onClick={handleCreateProject}
@@ -198,9 +233,32 @@ function Homepage() {
             </div>
           )}
         </div>
+              <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent
+          className="sm:max-w-[425px]"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Add New Project</DialogTitle>
+            <DialogDescription>Create a new project. Fill in the details below.</DialogDescription>
+          </DialogHeader>
+          <AddProjectForm
+            onCancel={() => {
+              setAddDialogOpen(false);
+            }}
+            onSuccess={(projectID) => {
+              navigate({ to: `/projects/${projectID}` });
+              setAddDialogOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
       </main>
       <footer className="pattern h-[10vh]"></footer>
     </div>
+
   );
 }
 

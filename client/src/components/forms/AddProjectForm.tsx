@@ -25,7 +25,7 @@ const addProjectSchema = z.object({
 });
 
 interface AddProjectFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (projectID: string) => void;
   onCancel: () => void;
 }
 
@@ -56,7 +56,7 @@ export default function AddProjectForm({ onSuccess, onCancel }: AddProjectFormPr
 
     if (result.success) {
       form.reset();
-      onSuccess?.();
+      onSuccess?.(result.data.project.id);
     } else {
       setError(result.error || "Failed to create project. Please try again.");
     }
