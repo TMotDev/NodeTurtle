@@ -79,7 +79,6 @@ function ProjectPage() {
   const fetchProjects = useCallback(async () => {
     const result = await API.get(`/users/${contextUser?.id}/projects`);
 
-    console.log(result);
     if (result.success) {
       setUserProjects(result.data.projects);
     } else {

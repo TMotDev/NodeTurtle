@@ -1,25 +1,12 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { LoaderCircle, LoaderIcon } from "lucide-react";
+import type { Project } from "@/api/projects";
 import { API } from "@/services/api";
 import useAuthStore from "@/lib/authStore";
 import { useLikedProjects } from "@/hooks/UseLikedProjects";
 import Header from "@/components/Header";
-import {ExploreProjectCard} from "@/components/ExploreProjectCard";
-
-// Mock types based on your project structure
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  data?: any;
-  creator_id: string;
-  creator_username: string;
-  likes_count: number;
-  featured_until?: string;
-  created_at: string;
-  last_edited_at: string;
-  is_public: boolean;
-}
+import { ExploreProjectCard } from "@/components/ExploreProjectCard";
 
 export const Route = createFileRoute("/")({
   component: Homepage,
@@ -39,7 +26,7 @@ function Homepage() {
   const [visibleRows, setVisibleRows] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { likedProjectIds, likeProject, unlikeProject, isProjectLiked } = useLikedProjects();
+  const { likeProject, unlikeProject, isProjectLiked } = useLikedProjects();
 
   const itemsPerRow = 6;
   const totalRows = Math.ceil(featuredProjects.length / itemsPerRow);
@@ -162,55 +149,55 @@ function Homepage() {
           </div>
         </div>
 
-        {featuredProjects.length > 0 && (
-          <div className="mb-8 flex flex-col items-center content-center">
-            <div className="mb-6">
-              <h2 className="scroll-m-20 pb-2 tracking-wider text-3xl font-bold first:mt-0 -translate-y-4 bg-white px-12 py-3 rounded-t-lg">
-                Featured Projects
-              </h2>
-            </div>
-
-            <div className="flex flex-wrap items-center content-center gap-6 mb-6 px-6">
-              {visibleProjects.map((project) => (
-                <ExploreProjectCard
-                  key={project.id}
-                  project={project}
-                  onLike={handleLike}
-                  onUnlike={handleUnlike}
-                  isLiked={isProjectLiked(project.id)}
-                />
-              ))}
-            </div>
-
-            {hasMore && (
-              <div className="text-center">
-                <button
-                  onClick={loadMore}
-                  className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Load More
-                </button>
+        <div className="mb-8 flex flex-col items-center content-center">
+          <div className="mb-6">
+            <h2 className="scroll-m-20 pb-2 tracking-wider text-3xl font-bold first:mt-0 -translate-y-4 bg-white px-12 py-3 rounded-t-lg">
+              Featured Projects
+            </h2>
+          </div>
+          {featuredProjects.length > 0 ? (
+            <>
+              <div className="flex flex-wrap items-center content-center gap-6 mb-6 px-6">
+                {visibleProjects.map((project) => (
+                  <ExploreProjectCard
+                    key={project.id}
+                    project={project}
+                    onLike={handleLike}
+                    onUnlike={handleUnlike}
+                    isLiked={isProjectLiked(project.id)}
+                  />
+                ))}
               </div>
-            )}
-          </div>
-        )}
 
-        {/* Show a message when no featured projects are available */}
-        {featuredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🎨</div>
-            <h3 className="text-lg font-semibold mb-2">No Featured Projects</h3>
-            <p className="text-gray-600 mb-4">
-              Check back later for featured community projects, or explore all projects.
-            </p>
-            <button
-              onClick={() => navigate({ to: "/projects/explore" })}
-              className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
-            >
-              Explore All Projects
-            </button>
-          </div>
-        )}
+              {hasMore && (
+                <div className="text-center">
+                  <button
+                    onClick={loadMore}
+                    className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Load More
+                  </button>
+                </div>
+              )}
+            </>
+          ) : isLoading ? (
+            <LoaderCircle className="animate-spin w-16 h-16" />
+          ) : (
+            <div className="text-center">
+              <div className="text-6xl mb-4">🎨</div>
+              <h3 className="text-lg font-semibold mb-2">No Featured Projects</h3>
+              <p className="text-gray-600 mb-4">
+                Check back later for featured community projects, or explore all projects.
+              </p>
+              <button
+                onClick={() => navigate({ to: "/projects/explore" })}
+                className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+              >
+                Explore All Projects
+              </button>
+            </div>
+          )}
+        </div>
       </main>
       <footer className="pattern h-[10vh]"></footer>
     </div>
