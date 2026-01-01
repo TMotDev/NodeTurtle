@@ -8,6 +8,11 @@ import { ProjectSelectionDialog } from "@/components/ProjectSelectionDialog";
 
 export const Route = createFileRoute("/projects/create")({
   component: LocalEditor,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      projectId: (search.projectId as string) || undefined,
+    };
+  },
   head: () => ({
     meta: [
       {
@@ -19,6 +24,7 @@ export const Route = createFileRoute("/projects/create")({
 
 function LocalProject() {
   const navigate = useNavigate();
+  const { projectId } = Route.useSearch();
 
   const [project, setProject] = useState<Project | null>(null);
   const [showProjectDialog, setShowProjectDialog] = useState(true);
@@ -94,6 +100,14 @@ function LocalProject() {
       setProject((prev) => (prev ? { ...prev, title: currentFlowTitle } : null));
     }
   }, [currentFlowTitle, project]);
+
+  // Handle projectId query param on mount
+  useEffect(() => {
+    console.log("projectId from search:", projectId);
+    if (projectId) {
+      handleSelectProject(projectId);
+    }
+  }, [projectId]);
 
   return (
     <div className={showProjectDialog ? "pattern w-screen h-screen" : undefined}>

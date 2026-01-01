@@ -28,8 +28,9 @@ export const ProjectCard = ({
 }) => {
   return (
     <Link
-      to={"/projects/$projectID"}
+      to={isLocal ? "/projects/create" :"/projects/$projectID"}
       params={{ projectID: project.id }}
+      search={isLocal ? { projectId: project.id } : undefined}
       className="h-32 w-full lg:w-auto rounded-sm border-2 cursor-pointer active:scale-95 transition-all duration-200 bg-blue-50 border-gray-300 hover:border-blue-700 flex overflow-hidden"
       title={project.title}
     >
