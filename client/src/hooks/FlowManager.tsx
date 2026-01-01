@@ -52,10 +52,9 @@ export const useLocalProjectManager = () => {
   }, []);
 
   const saveLocalProject = useCallback(
-    (projectID: string) => {
+    (projectID: string, title?: string) => {
       const projects = getLocalProjects();
 
-      console.log(projects);
       const flowData: Flow = {
         nodes: getNodes(),
         edges: getEdges(),
@@ -65,7 +64,7 @@ export const useLocalProjectManager = () => {
 
       const currentProject: Project = {
         id: projectID,
-        title: currentProjectTitle,
+        title: title ?? currentProjectTitle,
         created_at:
           projects.find((f) => f.id === projectID)?.created_at || new Date().toISOString(),
         last_edited_at: new Date().toISOString(),
@@ -89,13 +88,7 @@ export const useLocalProjectManager = () => {
     [currentProjectTitle, getNodes, getEdges, getViewport, getLocalProjects],
   );
 
-  async function saveFlow(projectID: string, local: boolean = false) {
-    console.log("saving", projectID);
-    if (local) {
-      console.log("local");
-      saveLocalProject(projectID);
-      return;
-    }
+  async function saveFlow(projectID: string) {
     const flowData: Flow = {
       nodes: getNodes(),
       edges: getEdges(),

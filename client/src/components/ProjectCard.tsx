@@ -17,12 +17,14 @@ export const ProjectCard = ({
   onDelete,
   onUnlike,
   isOwned,
+  isLocal = false,
 }: {
   project: Project;
   onEdit?: (p: Project) => void;
   onDelete?: (p: Project) => void;
   onUnlike?: (p: Project) => void;
   isOwned: boolean;
+  isLocal?: boolean;
 }) => {
   return (
     <Link
@@ -88,19 +90,21 @@ export const ProjectCard = ({
 
         <div>
           <h3 className="font-semibold truncate text-lg leading-tight overflow-hidden w-48">
-            <Badge
-              className={`px-1 mb-1 ${
-                project.is_public ? "bg-green-300 text-green-900" : "bg-blue-300 text-blue-900"
-              }`}
-            >
-              {project.is_public ? "public" : "private"}
-            </Badge>
+            {!isLocal && (
+              <Badge
+                className={`px-1 mb-1 ${
+                  project.is_public ? "bg-green-300 text-green-900" : "bg-blue-300 text-blue-900"
+                }`}
+              >
+                {project.is_public ? "public" : "private"}
+              </Badge>
+            )}
             <div className="truncate" title={project.title}>
               {project.title}
             </div>
           </h3>
 
-          <div className="text-sm mt-1 opacity-80">by {project.creator_username}</div>
+          {!isOwned && <div className="text-sm mt-1 opacity-80">by {project.creator_username}</div>}
         </div>
 
         <div

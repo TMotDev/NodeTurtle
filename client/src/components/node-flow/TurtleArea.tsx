@@ -52,7 +52,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
 
   const { changeTitle } = useFlowManagerContext();
   const [title, setTitle] = useState(project.title);
-  const { saveFlow, hasUnsavedChanges } = useFlowManagerContext();
+  const { saveFlow, hasUnsavedChanges, saveCurrentFlow } = useFlowManagerContext();
   const { user } = useAuthStore();
   const router = useRouter();
   const [confirmedGoBack, setConfirmedGoBack] = useState(false);
@@ -206,7 +206,11 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
                 <button
                   className={`cursor-pointer group relative disabled:cursor-default`}
                   onClick={() => {
-                    saveFlow(project.id, project.creator_id === "-");
+                    if (project.creator_id === "-") {
+                      saveCurrentFlow(project.id, title);
+                    } else {
+                      saveFlow(project.id);
+                    }
                     setConfirmedGoBack(false);
                   }}
                   disabled={!hasUnsavedChanges}

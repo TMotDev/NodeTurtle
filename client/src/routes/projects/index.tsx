@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { ReactFlowProvider } from "@xyflow/react";
 import type { Project } from "@/api/projects";
 import Header from "@/components/Header";
 import EditProjectForm from "@/components/forms/EditProjectForm";
@@ -31,11 +32,17 @@ import { API } from "@/services/api";
 import useAuthStore, { Role } from "@/lib/authStore";
 import { requireAuth } from "@/lib/utils";
 import { ProjectCard } from "@/components/ProjectCard";
+import { useLocalProjectManager } from "@/hooks/FlowManager";
 
 export const Route = createFileRoute("/projects/")({
   beforeLoad: requireAuth(Role.User),
-  component: ProjectPage,
-    head: () => ({
+  component: () => (
+    <ReactFlowProvider>
+      <ProjectPage />
+    </ReactFlowProvider>
+  ),
+
+  head: () => ({
     meta: [
       {
         title: "Turtle Graphics - My Projects",
@@ -54,6 +61,8 @@ function ProjectPage() {
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | undefined>(undefined);
+  const { getSavedFlows, loadFlow, createNewFlow, deleteFlow, currentFlowId, currentFlowTitle } =
+    useLocalProjectManager();
 
   const openEditDialog = (project: Project) => {
     setSelectedProject(project);
@@ -108,7 +117,7 @@ function ProjectPage() {
         <div className="space-y-6 px-6">
           <Accordion
             type="multiple"
-            defaultValue={["user-projects", "liked-projects"]}
+            defaultValue={["user-projects", "liked-projects", "local-projects"]}
             className="w-full"
           >
             <AccordionItem value="user-projects">
@@ -116,7 +125,7 @@ function ProjectPage() {
                 Your Projects ({userProjects.length})
               </AccordionTrigger>
               <AccordionContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-4">
                   {userProjects.map((project) => (
                     <ProjectCard
                       key={project.id}
@@ -158,7 +167,7 @@ function ProjectPage() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-4">
                       {likedProjects.map((project) => (
                         <ProjectCard
                           key={project.id}
@@ -169,6 +178,37 @@ function ProjectPage() {
                       ))}
                     </div>
                   )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="local-projects">
+              <AccordionTrigger className="text-lg font-bold hover:no-underline">
+                Local Projects ({getSavedFlows().length})
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-4">
+                  {getSavedFlows().map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      onEdit={openEditDialog}
+                      onDelete={openDeleteDialog}
+                      isOwned={true}
+                      isLocal={true}
+                    />
+                  ))}
+                  <div
+                    className="relative h-32 w-32 rounded-sm border-2 border-dashed border-gray-300 p-4 cursor-pointer hover:border-gray-400 transition-colors duration-200 flex items-center justify-center bg-gray-50 hover:bg-gray-100"
+                    onClick={() => {
+                      setAddDialogOpen(true);
+                    }}
+                  >
+                    <div className="text-center text-gray-600">
+                      <Plus className="h-8 w-8 mx-auto mb-2" />
+                      <span className="text-sm font-medium">Add New Project</span>
+                    </div>
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>

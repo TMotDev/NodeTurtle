@@ -103,7 +103,7 @@ export class TurtleFlowExecutor {
     }
 
     // 3. Standard Flow (Find outgoing edges)
-    const outEdges = edges.filter((e) => e.source === nodeId);
+    const outEdges = edges.filter((e) => e.source === nodeId && e.sourceHandle !== "loop");
 
     // Leaf node (End of a path)
     if (outEdges.length === 0) {
@@ -118,17 +118,17 @@ export class TurtleFlowExecutor {
     return paths;
   }
 
-private handleLoopNode(
+  private handleLoopNode(
     node: Node,
     commandsBeforeLoop: Array<TurtleCommand>,
     nodes: Array<Node>,
-    edges: Array<Edge>
+    edges: Array<Edge>,
   ): Array<TurtlePath> {
     const loopData = node.data as NodeRegistry["loopNode"];
     const loopCount = loopData.loopCount || 0;
 
-    const loopEdges = edges.filter(e => e.source === node.id && e.sourceHandle === "loop");
-    const outEdges = edges.filter(e => e.source === node.id && e.sourceHandle === "out");
+    const loopEdges = edges.filter((e) => e.source === node.id && e.sourceHandle === "loop");
+    const outEdges = edges.filter((e) => e.source === node.id && e.sourceHandle === "out");
 
     // 1. PRE-CALCULATE LOOP BODY "DELTAS"
     // We find all possible command sequences (paths) inside the loop body once.
@@ -139,7 +139,7 @@ private handleLoopNode(
     if (loopEdges.length > 0) {
       for (const edge of loopEdges) {
         const paths = this.collectPaths(edge.target, nodes, edges, []);
-        loopBodyDeltas.push(...paths.map(p => p.commands));
+        loopBodyDeltas.push(...paths.map((p) => p.commands));
       }
     } else {
       // If loop input is disconnected, treat it as a "Do Nothing" op (Identity)
@@ -168,16 +168,16 @@ private handleLoopNode(
           // Immediately send this new state to the "Out" handle to draw the branch
           if (loopData.createTurtleOnIteration) {
             if (outEdges.length > 0) {
-               // Continue the flow from the "Out" handle with this specific state
-               for (const edge of outEdges) {
-                 finalPaths.push(...this.collectPaths(edge.target, nodes, edges, [...newState]));
-               }
+              // Continue the flow from the "Out" handle with this specific state
+              for (const edge of outEdges) {
+                finalPaths.push(...this.collectPaths(edge.target, nodes, edges, [...newState]));
+              }
             } else {
-               // If no out handle, just register the turtle at this point (visualize the growth)
-               finalPaths.push({
-                 id: `path_${++this.pathCounter}`,
-                 commands: [...newState]
-               });
+              // If no out handle, just register the turtle at this point (visualize the growth)
+              finalPaths.push({
+                id: `path_${++this.pathCounter}`,
+                commands: [...newState],
+              });
             }
           }
         }
@@ -189,21 +189,20 @@ private handleLoopNode(
       currentFrontier = nextFrontier;
     }
 
-
     // 3. FINAL OUTPUT (If NOT spawning on iteration)
     // If we didn't spawn during the loop, we release all accumulated turtles now.
     if (!loopData.createTurtleOnIteration) {
       for (const finalState of currentFrontier) {
-         if (outEdges.length > 0) {
-            for (const edge of outEdges) {
-              finalPaths.push(...this.collectPaths(edge.target, nodes, edges, finalState));
-            }
-         } else {
-            finalPaths.push({
-              id: `path_${++this.pathCounter}`,
-              commands: finalState
-            });
-         }
+        if (outEdges.length > 0) {
+          for (const edge of outEdges) {
+            finalPaths.push(...this.collectPaths(edge.target, nodes, edges, finalState));
+          }
+        } else {
+          finalPaths.push({
+            id: `path_${++this.pathCounter}`,
+            commands: finalState,
+          });
+        }
       }
     }
 

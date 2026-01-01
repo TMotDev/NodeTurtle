@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import type { Project } from "@/api/projects";
@@ -18,15 +18,24 @@ export const Route = createFileRoute("/projects/create")({
 });
 
 function LocalProject() {
+  const navigate = useNavigate();
+
   const [project, setProject] = useState<Project | null>(null);
   const [showProjectDialog, setShowProjectDialog] = useState(true);
 
-  const { getSavedFlows, loadFlow, createNewFlow, deleteFlow, currentFlowId, currentFlowTitle } =
-    useLocalProjectManager();
+  const {
+    getSavedFlows,
+    loadFlow,
+    createNewFlow,
+    saveCurrentFlow,
+    deleteFlow,
+    currentFlowId,
+    currentFlowTitle,
+  } = useLocalProjectManager();
 
   // When a project is selected or created, hide dialog and set project
   const handleSelectProject = (projectId: string) => {
-    console.log(projectId)
+    console.log(projectId);
     loadFlow(projectId);
     const flows = getSavedFlows();
     const selectedProject = flows.find((f) => f.id === projectId);
@@ -35,14 +44,10 @@ function LocalProject() {
   };
 
   const handleCreateNew = (title: string) => {
-    // Capture the newly created project ID
     const newProjectId = createNewFlow(title);
 
-    console.log(newProjectId)
-
-    // Use the newProjectId to create the project object
     const newProject: Project = {
-      id: newProjectId, // Use the fresh ID here
+      id: newProjectId,
       title: title,
       created_at: new Date().toISOString(),
       last_edited_at: new Date().toISOString(),
@@ -58,7 +63,9 @@ function LocalProject() {
         nodeCount: 0,
       },
     };
-    console.log(newProject)
+
+    saveCurrentFlow(newProjectId, title);
+
     setProject(newProject);
     setShowProjectDialog(false);
   };
@@ -68,9 +75,9 @@ function LocalProject() {
   };
 
   const handleCloseDialog = () => {
-    // If no project is selected and dialog is closed, create a new empty project
     if (!project) {
-      handleCreateNew("Untitled Project");
+      // If no project is selected and dialog is closed, redirect to home page
+      navigate({ to: "/" });
     } else {
       setShowProjectDialog(false);
     }
@@ -98,9 +105,7 @@ function LocalProject() {
         onDeleteProject={handleDeleteProject}
         onClose={handleCloseDialog}
       />
-
       {!showProjectDialog && <FlowEditor project={project} onSwitchProject={handleSwitchProject} />}
-
     </div>
   );
 }

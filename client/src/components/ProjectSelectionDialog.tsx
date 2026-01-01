@@ -12,14 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
@@ -53,9 +46,9 @@ export function ProjectSelectionDialog({
   const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
 
   const handleCreateNew = () => {
-    if (newProjectTitle.trim()) {
+    if (newProjectTitle.trim().length > 0) {
+      setNewProjectTitle(newProjectTitle.trim());
       onCreateNew(newProjectTitle.trim());
-      setNewProjectTitle("Untitled Project");
     }
   };
 
@@ -68,22 +61,16 @@ export function ProjectSelectionDialog({
     if (deleteProjectId) {
       onDeleteProject(deleteProjectId);
       setDeleteProjectId(null);
-      sortedProjects.filter(p => p.id !== deleteProjectId)
+      sortedProjects.filter((p) => p.id !== deleteProjectId);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return new Date(dateString).toLocaleDateString();
   };
 
   const sortedProjects = [...savedProjects].sort(
-    (a, b) => new Date(b.last_edited_at).getTime() - new Date(a.last_edited_at).getTime()
+    (a, b) => new Date(b.last_edited_at).getTime() - new Date(a.last_edited_at).getTime(),
   );
 
   return (
@@ -135,7 +122,7 @@ export function ProjectSelectionDialog({
             <Separator />
 
             {/* Existing Projects Section */}
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
               <h3 className="text-lg font-semibold mb-3">
                 Existing Projects ({savedProjects.length})
               </h3>
@@ -160,9 +147,7 @@ export function ProjectSelectionDialog({
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <CardTitle className="text-base truncate">
-                                {project.title}
-                              </CardTitle>
+                              <CardTitle className="text-base truncate">{project.title}</CardTitle>
                               <CardDescription className="flex items-center gap-2 text-xs mt-1">
                                 <Calendar className="h-3 w-3" />
                                 {formatDate(project.last_edited_at)}
@@ -181,12 +166,8 @@ export function ProjectSelectionDialog({
                         <CardContent className="pt-0">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <AudioLines className="h-3 w-3" />
                               <span>{project.data?.nodeCount || 0} nodes</span>
                             </div>
-                            <Badge variant="secondary" className="text-xs">
-                              Local
-                            </Badge>
                           </div>
                         </CardContent>
                       </Card>
