@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import type { Project } from "@/api/projects";
@@ -24,6 +24,8 @@ export const Route = createFileRoute("/projects/create")({
 
 function LocalProject() {
   const navigate = useNavigate();
+  const router = useRouter();
+
   const { projectId } = Route.useSearch();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -82,8 +84,11 @@ function LocalProject() {
 
   const handleCloseDialog = () => {
     if (!project) {
-      // If no project is selected and dialog is closed, redirect to home page
-      navigate({ to: "/" });
+      if (router.history.canGoBack()) {
+        router.history.back();
+      } else {
+        router.navigate({ to: "/" });
+      }
     } else {
       setShowProjectDialog(false);
     }

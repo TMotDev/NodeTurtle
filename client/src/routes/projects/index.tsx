@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -52,6 +52,8 @@ export const Route = createFileRoute("/projects/")({
 });
 
 function ProjectPage() {
+  const navigate = useNavigate();
+
   const contextUser = useAuthStore((state) => state.user);
 
   const [userProjects, setUserProjects] = useState<Array<Project>>([]);
@@ -202,6 +204,7 @@ function ProjectPage() {
                     className="relative h-32 w-32 rounded-sm border-2 border-dashed border-gray-300 p-4 cursor-pointer hover:border-gray-400 transition-colors duration-200 flex items-center justify-center bg-gray-50 hover:bg-gray-100"
                     onClick={() => {
                       setAddDialogOpen(true);
+                      navigate({ to: `/projects/create`, search: { projectId: undefined } });
                     }}
                   >
                     <div className="text-center text-gray-600">

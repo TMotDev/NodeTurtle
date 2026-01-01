@@ -96,7 +96,7 @@ function Homepage() {
   };
 
   const handleCreateProject = () => {
-    navigate({ to: "/projects/create" });
+    navigate({ to: "/projects/create", search: {projectId: undefined} });
   };
 
   const handleCreateCloudProject = () => {
