@@ -113,7 +113,7 @@ function ProjectPage() {
   }, [fetchProjects, fetchLikedProjects]);
 
   return (
-    <div className="flex flex-col min-h-screen overflow-x-hidden">
+    <div className="flex flex-col min-h-screen overflow-x-hidden useGutter">
       <Header />
       <main className="w-full lg:w-3/4 self-center">
         <div className="space-y-6 px-6">

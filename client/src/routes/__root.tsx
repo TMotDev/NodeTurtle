@@ -19,7 +19,7 @@ function Root() {
   }, [checkAuthStatus, user]);
 
   return (
-    <div className="h-screen w-screen overflow-x-hidden">
+    <div className="h-screen w-screen overflow-x-hidden root">
       <HeadContent />
       <Outlet />
       <Toaster richColors position="top-center" expand swipeDirections={["left", "right", "top"]} />
