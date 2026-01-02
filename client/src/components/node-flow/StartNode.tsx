@@ -1,4 +1,4 @@
-import { Flag, Loader2 } from "lucide-react";
+import { Flag } from "lucide-react";
 import { memo } from "react";
 import { Position } from "@xyflow/react";
 import { BaseNode } from "./base-node";

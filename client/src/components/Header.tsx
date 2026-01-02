@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Turtle } from "lucide-react";
+import { Turtle } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import UserMenu from "./UserMenu";
 import { navigationMenuTriggerStyle } from "./ui/navigation-menu";

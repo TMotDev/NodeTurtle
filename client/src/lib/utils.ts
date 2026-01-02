@@ -236,8 +236,8 @@ export const requireAuth = (requiredRole?: Role) => {
     if (requiredRole) {
       const roleHierarchy = {
         [Role.User]: 0,
-        [Role.Premium]: 1,
-        [Role.Moderator]: 2,
+        // [Role.Premium]: 1,
+        // [Role.Moderator]: 2,
         [Role.Admin]: 3,
       };
 

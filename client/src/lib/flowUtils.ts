@@ -148,7 +148,7 @@ export const createAsciiTree = (
   return lines;
 };
 
-export const createFlowSummary = (nodeTree: NodeTree, results: Array<any>): Array<string> => {
+export const createFlowSummary = (nodeTree: NodeTree): Array<string> => {
   const summary: Array<string> = [];
   const nodeCount = new Map<string, number>();
   const loopRefs = new Set<string>();

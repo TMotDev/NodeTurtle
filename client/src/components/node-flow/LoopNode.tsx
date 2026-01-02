@@ -7,7 +7,6 @@ import MathInputBox from "../MathInputBox";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import SuggestionBox from "../suggestionBox";
 import { NodeHeader, NodeHeaderIcon, NodeHeaderTitle } from "./node-header";
 import { BaseNode } from "./base-node";
 import { BaseHandle } from "./base-handle";

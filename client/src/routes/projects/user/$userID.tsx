@@ -36,7 +36,7 @@ export const Route = createFileRoute("/projects/user/$userID")({
     ],
   }),
   pendingComponent: () => <div>Loading data...</div>,
-  errorComponent: ({ error }) => <div>An error occurred while fetching the user data.</div>,
+  errorComponent: () => <div>An error occurred while fetching the user data.</div>,
 });
 
 function UserPage() {

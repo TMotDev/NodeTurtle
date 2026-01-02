@@ -8,7 +8,7 @@ import {
   uuidSchema,
   validateData,
 } from "./utils";
-import type { ApiResponse, PaginatedResponse } from "./utils";
+import type { PaginatedResponse } from "./utils";
 import type { User } from "@/services/api";
 import { API } from "@/services/api";
 

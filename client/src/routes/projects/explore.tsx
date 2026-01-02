@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, Calendar, Grid, Heart, List, Search, User } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import { ArrowDown, ArrowUp, Search } from "lucide-react";
+import {  toast } from "sonner";
 import type { Project } from "@/api/projects";
-import useAuthStore from "@/lib/authStore";
 import {
   Select,
   SelectContent,
@@ -39,11 +38,9 @@ export const Route = createFileRoute("/projects/explore")({
 });
 
 function ExploreProjects() {
-  const user = useAuthStore((state) => state.user);
   const [projects, setProjects] = useState<Array<Project>>([]);
 
   const {
-    likedProjectIds,
     likeProject: hookLikeProject,
     unlikeProject: hookUnlikeProject,
     isProjectLiked,

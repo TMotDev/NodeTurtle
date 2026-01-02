@@ -2,13 +2,13 @@ import { Save } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarHeader } from "../ui/sidebar";
 import { Button } from "../ui/button";
 import { FlowTitle } from "./FlowTitle";
-import type { Flow, Project } from "@/api/projects";
+import type { Project } from "@/api/projects";
 import { useFlowManagerContext } from "@/hooks/FlowManager";
 
 export default function NodeSidebar({ project }: { project: Project }) {
   const { saveFlow, changeTitle } = useFlowManagerContext();
 
-  const { hasUnsavedChanges, setHasUnsavedChanges } = useFlowManagerContext();
+  const { hasUnsavedChanges } = useFlowManagerContext();
 
   return (
     <Sidebar>

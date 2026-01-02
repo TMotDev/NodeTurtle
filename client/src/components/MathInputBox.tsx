@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import SuggestionBox from "./suggestionBox";
+import SuggestionBox from "./SuggestionBox";
 
 interface MathInputBoxProps {
   id: string;

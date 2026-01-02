@@ -112,7 +112,7 @@ export class TurtleGraphicsEngine {
   private animate = () => {
     if (!this.isRunning) return;
 
-    this.turtles.forEach((turtle, id) => {
+    this.turtles.forEach((_, id) => {
       this.processTurtleQueue(id);
     });
 

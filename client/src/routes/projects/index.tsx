@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ReactFlowProvider } from "@xyflow/react";
 import type { Project } from "@/api/projects";
@@ -63,8 +63,7 @@ function ProjectPage() {
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | undefined>(undefined);
-  const { getSavedFlows, loadFlow, createNewFlow, deleteFlow, currentFlowId, currentFlowTitle } =
-    useLocalProjectManager();
+  const { getSavedFlows } = useLocalProjectManager();
 
   const openEditDialog = (project: Project) => {
     setSelectedProject(project);

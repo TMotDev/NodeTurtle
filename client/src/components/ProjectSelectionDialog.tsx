@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AudioLines, Calendar, FileText, Plus, Trash2 } from "lucide-react";
+import { Calendar, FileText, Plus, Trash2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 import type { Project } from "@/api/projects";
 import {

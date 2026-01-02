@@ -177,10 +177,6 @@ function Homepage() {
                 </>
               )}
             </div>
-            <p className="text-sm text-gray-600 max-w-md mx-auto">
-              {!user &&
-                "Creating an account allows registered users to save multiple projects instead of just one locally saved project."}
-            </p>
           </div>
         </div>
 

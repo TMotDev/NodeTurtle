@@ -5,7 +5,7 @@ import { INITIAL_NODE_DATA } from "@/lib/flowUtils";
 
 export const useDragDrop = () => {
   const { screenToFlowPosition, setNodes } = useReactFlow();
-  const [type, setType] = useDnD();
+  const [_, setType] = useDnD();
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();

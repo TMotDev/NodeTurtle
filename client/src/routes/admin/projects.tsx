@@ -1,9 +1,9 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { MoreHorizontal, Search, Star } from "lucide-react";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import type { Project } from "@/api/projects";
-import useAuthStore, { Role } from "@/lib/authStore";
+import { Role } from "@/lib/authStore";
 import {
   Table,
   TableBody,

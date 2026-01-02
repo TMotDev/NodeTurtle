@@ -31,7 +31,6 @@ import type { Project } from "@/api/projects";
 import PenNode from "@/components/node-flow/PenNode";
 import { ContextMenu } from "@/components/node-flow/ContextMenu";
 import NodeBase from "@/components/node-flow/baseNode";
-import { DevTools } from "@/components/devtools";
 import { MouseProvider, useMousePosition } from "@/hooks/FlowMousePosition";
 import { useClipboard } from "@/hooks/FlowClipBoardContext";
 import { useNodeOperations } from "@/hooks/NodeActionsContext";
@@ -175,7 +174,7 @@ function Flow({
   const { duplicateNode, deleteNode, deleteSelection, duplicateSelection, muteSelection } =
     useNodeOperations();
 
-  const { onDragOver, onDrop, onDragStart } = useDragDrop();
+  const { onDragOver, onDrop } = useDragDrop();
 
   const CtrlCPressed = useKeyPress(["Control+c"]);
   const CtrlVPressed = useKeyPress(["Control+v"]);

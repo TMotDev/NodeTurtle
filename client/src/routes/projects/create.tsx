@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import type { Project } from "@/api/projects";
@@ -23,7 +23,6 @@ export const Route = createFileRoute("/projects/create")({
 });
 
 function LocalProject() {
-  const navigate = useNavigate();
   const router = useRouter();
 
   const { projectId } = Route.useSearch();
@@ -37,16 +36,15 @@ function LocalProject() {
     createNewFlow,
     saveCurrentFlow,
     deleteFlow,
-    currentFlowId,
     currentFlowTitle,
   } = useLocalProjectManager();
 
   // When a project is selected or created, hide dialog and set project
-  const handleSelectProject = (projectId: string) => {
-    console.log(projectId);
-    loadFlow(projectId);
+  const handleSelectProject = (id: string) => {
+    console.log(id);
+    loadFlow(id);
     const flows = getSavedFlows();
-    const selectedProject = flows.find((f) => f.id === projectId);
+    const selectedProject = flows.find((f) => f.id === id);
     setProject(selectedProject || null);
     setShowProjectDialog(false);
   };
@@ -78,8 +76,8 @@ function LocalProject() {
     setShowProjectDialog(false);
   };
 
-  const handleDeleteProject = (projectId: string) => {
-    deleteFlow(projectId);
+  const handleDeleteProject = (id: string) => {
+    deleteFlow(id);
   };
 
   const handleCloseDialog = () => {

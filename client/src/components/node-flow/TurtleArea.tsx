@@ -41,7 +41,7 @@ export const TurtleArea: React.FC<TurtleAreaProps> = ({ nodes, edges, project })
 
   const executorRef = useRef<TurtleFlowExecutor | null>(null);
   const [executionStatus, setExecutionStatus] = useState<ExecutionState>("IDLE");
-  const [turtleCount, setTurtleCount] = useState(0);
+  const [turtleCount, _] = useState(0);
   const [hasStartNode, setHasStartNode] = useState(false);
 
   // View Controls
