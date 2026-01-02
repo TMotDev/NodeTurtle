@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"NodeTurtleAPI/internal/api/handlers"
@@ -69,23 +71,57 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 	projectHandler := handlers.NewProjectHandler(&projectService)
 
 	// setup middleware
-	// TODO: requestloggerwithconfig
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "ip:${remote_ip} method:${method}, uri:${uri}, status:${status}, error:${error}\n",
 	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:3000"}, // TODO: alloworigins env variable?
+		AllowOrigins:     cfg.Server.AllowOrigins,
 		AllowCredentials: true,
 	}))
 
+	// Setup API routes
 	setupRoutes(e, &authHandler, &userHandler, &tokenHandler, &projectHandler, &authService, &userService)
+
+	// Setup frontend serving if path is provided
+	if cfg.Server.FrontendPath != "" {
+		setupClient(e, cfg.Server.FrontendPath)
+	}
 
 	return &Server{
 		echo:   e,
 		config: cfg,
 		db:     db,
 	}
+}
+
+func setupClient(e *echo.Echo, frontendPath string) {
+	// Resolve to absolute path
+	absPath, err := filepath.Abs(frontendPath)
+	if err != nil {
+		fmt.Printf("Warning: Could not resolve frontend path: %v\n", err)
+		return
+	}
+
+	// Verify the path exists
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		fmt.Printf("Warning: Frontend path does not exist: %s\n", absPath)
+		return
+	}
+
+	fmt.Printf("Serving frontend from: %s\n", absPath)
+
+	// Serve static files from assets directory
+	e.Static("/assets", filepath.Join(absPath, "assets"))
+
+	// Catch-all route for SPA (must be LAST)
+	e.GET("/*", func(c echo.Context) error {
+		// Don't serve index.html for API routes
+		if len(c.Path()) >= 4 && c.Path()[:4] == "/api" {
+			return echo.NewHTTPError(404, "Not found")
+		}
+		return c.File(filepath.Join(absPath, "index.html"))
+	})
 }
 
 func setupRoutes(e *echo.Echo, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, tokenHandler *handlers.TokenHandler, projectHandler *handlers.ProjectHandler, authService *auth.AuthService, userService *users.UserService) {

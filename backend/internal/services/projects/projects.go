@@ -498,7 +498,6 @@ func (s ProjectService) GetPublicProjects(filters data.PublicProjectFilter) ([]d
         ORDER BY p.` + filters.SortField + ` ` + filters.SortOrder + `
         LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 
-	fmt.Println(query)
 	args = append(args, filters.Limit, offset)
 
 	rows, err := s.db.Query(query, args...)
