@@ -228,7 +228,7 @@ func (s ProjectService) FeatureProject(projectID uuid.UUID, expiresAt *time.Time
 
 	query := `
 		UPDATE projects
-		SET featured_until = $2,
+		SET featured_until = $2
 		WHERE id = $1
 		RETURNING id, title, description, data, creator_id, (SELECT username FROM users WHERE id = creator_id), likes_count, featured_until, created_at, last_edited_at, is_public
 	`
@@ -250,6 +250,7 @@ func (s ProjectService) FeatureProject(projectID uuid.UUID, expiresAt *time.Time
 		if err == sql.ErrNoRows {
 			return nil, services.ErrProjectNotFound
 		}
+		fmt.Println(err)
 		return nil, err
 	}
 

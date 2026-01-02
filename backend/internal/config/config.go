@@ -49,7 +49,7 @@ type JWTConfig struct {
 	ExpireTime int // in hours
 }
 
-func Load(configPath, envFile string) (*Config, error) {
+func Load(envFile string) (*Config, error) {
 	// Load environment variables from file
 	if envFile != "" {
 		if err := godotenv.Load(envFile); err != nil {

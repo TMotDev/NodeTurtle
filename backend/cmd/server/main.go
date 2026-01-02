@@ -14,12 +14,12 @@ import (
 
 func main() {
 	// Define flags for configuration
-	configPath := flag.String("config", "", "Path to config file")
+	// configPath := flag.String("config", "", "Path to config file")
 	envFile := flag.String("env", ".env", "Path to .env file")
 	flag.Parse()
 
 	// Load configuration
-	cfg, err := config.Load(*configPath, *envFile)
+	cfg, err := config.Load(*envFile)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
