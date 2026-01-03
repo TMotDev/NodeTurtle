@@ -8,216 +8,92 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as NotfoundRouteImport } from './routes/notfound'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as ResetTokenRouteImport } from './routes/reset/$token'
+import { Route as ProjectsExploreRouteImport } from './routes/projects/explore'
+import { Route as ProjectsCreateRouteImport } from './routes/projects/create'
+import { Route as ProjectsProjectIDRouteImport } from './routes/projects/$projectID'
+import { Route as DeactivateTokenRouteImport } from './routes/deactivate/$token'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminProjectsRouteImport } from './routes/admin/projects'
+import { Route as ActivateTokenRouteImport } from './routes/activate/$token'
+import { Route as ProjectsUserUserIDRouteImport } from './routes/projects/user/$userID'
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as RegisterImport } from './routes/register'
-import { Route as NotfoundImport } from './routes/notfound'
-import { Route as LoginImport } from './routes/login'
-import { Route as IndexImport } from './routes/index'
-import { Route as ProjectsIndexImport } from './routes/projects/index'
-import { Route as ResetTokenImport } from './routes/reset/$token'
-import { Route as ProjectsExploreImport } from './routes/projects/explore'
-import { Route as ProjectsCreateImport } from './routes/projects/create'
-import { Route as ProjectsProjectIDImport } from './routes/projects/$projectID'
-import { Route as DeactivateTokenImport } from './routes/deactivate/$token'
-import { Route as AdminUsersImport } from './routes/admin/users'
-import { Route as AdminProjectsImport } from './routes/admin/projects'
-import { Route as ActivateTokenImport } from './routes/activate/$token'
-import { Route as ProjectsUserUserIDImport } from './routes/projects/user/$userID'
-
-// Create/Update Routes
-
-const RegisterRoute = RegisterImport.update({
+const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const NotfoundRoute = NotfoundImport.update({
+const NotfoundRoute = NotfoundRouteImport.update({
   id: '/notfound',
   path: '/notfound',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const LoginRoute = LoginImport.update({
+const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const IndexRoute = IndexImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ProjectsIndexRoute = ProjectsIndexImport.update({
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ResetTokenRoute = ResetTokenImport.update({
+const ResetTokenRoute = ResetTokenRouteImport.update({
   id: '/reset/$token',
   path: '/reset/$token',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ProjectsExploreRoute = ProjectsExploreImport.update({
+const ProjectsExploreRoute = ProjectsExploreRouteImport.update({
   id: '/projects/explore',
   path: '/projects/explore',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ProjectsCreateRoute = ProjectsCreateImport.update({
+const ProjectsCreateRoute = ProjectsCreateRouteImport.update({
   id: '/projects/create',
   path: '/projects/create',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ProjectsProjectIDRoute = ProjectsProjectIDImport.update({
+const ProjectsProjectIDRoute = ProjectsProjectIDRouteImport.update({
   id: '/projects/$projectID',
   path: '/projects/$projectID',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const DeactivateTokenRoute = DeactivateTokenImport.update({
+const DeactivateTokenRoute = DeactivateTokenRouteImport.update({
   id: '/deactivate/$token',
   path: '/deactivate/$token',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AdminUsersRoute = AdminUsersImport.update({
+const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AdminProjectsRoute = AdminProjectsImport.update({
+const AdminProjectsRoute = AdminProjectsRouteImport.update({
   id: '/admin/projects',
   path: '/admin/projects',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ActivateTokenRoute = ActivateTokenImport.update({
+const ActivateTokenRoute = ActivateTokenRouteImport.update({
   id: '/activate/$token',
   path: '/activate/$token',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ProjectsUserUserIDRoute = ProjectsUserUserIDImport.update({
+const ProjectsUserUserIDRoute = ProjectsUserUserIDRouteImport.update({
   id: '/projects/user/$userID',
   path: '/projects/user/$userID',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-// Populate the FileRoutesByPath interface
-
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginImport
-      parentRoute: typeof rootRoute
-    }
-    '/notfound': {
-      id: '/notfound'
-      path: '/notfound'
-      fullPath: '/notfound'
-      preLoaderRoute: typeof NotfoundImport
-      parentRoute: typeof rootRoute
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterImport
-      parentRoute: typeof rootRoute
-    }
-    '/activate/$token': {
-      id: '/activate/$token'
-      path: '/activate/$token'
-      fullPath: '/activate/$token'
-      preLoaderRoute: typeof ActivateTokenImport
-      parentRoute: typeof rootRoute
-    }
-    '/admin/projects': {
-      id: '/admin/projects'
-      path: '/admin/projects'
-      fullPath: '/admin/projects'
-      preLoaderRoute: typeof AdminProjectsImport
-      parentRoute: typeof rootRoute
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersImport
-      parentRoute: typeof rootRoute
-    }
-    '/deactivate/$token': {
-      id: '/deactivate/$token'
-      path: '/deactivate/$token'
-      fullPath: '/deactivate/$token'
-      preLoaderRoute: typeof DeactivateTokenImport
-      parentRoute: typeof rootRoute
-    }
-    '/projects/$projectID': {
-      id: '/projects/$projectID'
-      path: '/projects/$projectID'
-      fullPath: '/projects/$projectID'
-      preLoaderRoute: typeof ProjectsProjectIDImport
-      parentRoute: typeof rootRoute
-    }
-    '/projects/create': {
-      id: '/projects/create'
-      path: '/projects/create'
-      fullPath: '/projects/create'
-      preLoaderRoute: typeof ProjectsCreateImport
-      parentRoute: typeof rootRoute
-    }
-    '/projects/explore': {
-      id: '/projects/explore'
-      path: '/projects/explore'
-      fullPath: '/projects/explore'
-      preLoaderRoute: typeof ProjectsExploreImport
-      parentRoute: typeof rootRoute
-    }
-    '/reset/$token': {
-      id: '/reset/$token'
-      path: '/reset/$token'
-      fullPath: '/reset/$token'
-      preLoaderRoute: typeof ResetTokenImport
-      parentRoute: typeof rootRoute
-    }
-    '/projects/': {
-      id: '/projects/'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/projects/user/$userID': {
-      id: '/projects/user/$userID'
-      path: '/projects/user/$userID'
-      fullPath: '/projects/user/$userID'
-      preLoaderRoute: typeof ProjectsUserUserIDImport
-      parentRoute: typeof rootRoute
-    }
-  }
-}
-
-// Create and export the route tree
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -235,7 +111,6 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsIndexRoute
   '/projects/user/$userID': typeof ProjectsUserUserIDRoute
 }
-
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
@@ -252,9 +127,8 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsIndexRoute
   '/projects/user/$userID': typeof ProjectsUserUserIDRoute
 }
-
 export interface FileRoutesById {
-  __root__: typeof rootRoute
+  __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notfound': typeof NotfoundRoute
@@ -270,7 +144,6 @@ export interface FileRoutesById {
   '/projects/': typeof ProjectsIndexRoute
   '/projects/user/$userID': typeof ProjectsUserUserIDRoute
 }
-
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
@@ -322,7 +195,6 @@ export interface FileRouteTypes {
     | '/projects/user/$userID'
   fileRoutesById: FileRoutesById
 }
-
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
@@ -338,6 +210,109 @@ export interface RootRouteChildren {
   ResetTokenRoute: typeof ResetTokenRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   ProjectsUserUserIDRoute: typeof ProjectsUserUserIDRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notfound': {
+      id: '/notfound'
+      path: '/notfound'
+      fullPath: '/notfound'
+      preLoaderRoute: typeof NotfoundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset/$token': {
+      id: '/reset/$token'
+      path: '/reset/$token'
+      fullPath: '/reset/$token'
+      preLoaderRoute: typeof ResetTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/explore': {
+      id: '/projects/explore'
+      path: '/projects/explore'
+      fullPath: '/projects/explore'
+      preLoaderRoute: typeof ProjectsExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/create': {
+      id: '/projects/create'
+      path: '/projects/create'
+      fullPath: '/projects/create'
+      preLoaderRoute: typeof ProjectsCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$projectID': {
+      id: '/projects/$projectID'
+      path: '/projects/$projectID'
+      fullPath: '/projects/$projectID'
+      preLoaderRoute: typeof ProjectsProjectIDRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deactivate/$token': {
+      id: '/deactivate/$token'
+      path: '/deactivate/$token'
+      fullPath: '/deactivate/$token'
+      preLoaderRoute: typeof DeactivateTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/projects': {
+      id: '/admin/projects'
+      path: '/admin/projects'
+      fullPath: '/admin/projects'
+      preLoaderRoute: typeof AdminProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activate/$token': {
+      id: '/activate/$token'
+      path: '/activate/$token'
+      fullPath: '/activate/$token'
+      preLoaderRoute: typeof ActivateTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/user/$userID': {
+      id: '/projects/user/$userID'
+      path: '/projects/user/$userID'
+      fullPath: '/projects/user/$userID'
+      preLoaderRoute: typeof ProjectsUserUserIDRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -356,75 +331,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsIndexRoute: ProjectsIndexRoute,
   ProjectsUserUserIDRoute: ProjectsUserUserIDRoute,
 }
-
-export const routeTree = rootRoute
+export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/login",
-        "/notfound",
-        "/register",
-        "/activate/$token",
-        "/admin/projects",
-        "/admin/users",
-        "/deactivate/$token",
-        "/projects/$projectID",
-        "/projects/create",
-        "/projects/explore",
-        "/reset/$token",
-        "/projects/",
-        "/projects/user/$userID"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/login": {
-      "filePath": "login.tsx"
-    },
-    "/notfound": {
-      "filePath": "notfound.tsx"
-    },
-    "/register": {
-      "filePath": "register.tsx"
-    },
-    "/activate/$token": {
-      "filePath": "activate/$token.tsx"
-    },
-    "/admin/projects": {
-      "filePath": "admin/projects.tsx"
-    },
-    "/admin/users": {
-      "filePath": "admin/users.tsx"
-    },
-    "/deactivate/$token": {
-      "filePath": "deactivate/$token.tsx"
-    },
-    "/projects/$projectID": {
-      "filePath": "projects/$projectID.tsx"
-    },
-    "/projects/create": {
-      "filePath": "projects/create.tsx"
-    },
-    "/projects/explore": {
-      "filePath": "projects/explore.tsx"
-    },
-    "/reset/$token": {
-      "filePath": "reset/$token.tsx"
-    },
-    "/projects/": {
-      "filePath": "projects/index.tsx"
-    },
-    "/projects/user/$userID": {
-      "filePath": "projects/user/$userID.tsx"
-    }
-  }
-}
-ROUTE_MANIFEST_END */

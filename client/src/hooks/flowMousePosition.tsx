@@ -1,5 +1,4 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from "react";
-
 interface MousePosition {
   x: number;
   y: number;
