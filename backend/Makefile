@@ -60,9 +60,6 @@ db/migrations/new:
 	@echo "Creating migration files for ${name}..."
 	migrate create -seq -ext=.sql -dir=$(MIGRATIONS_DIR) ${name}
 
-db/psql:
-	psql ${DB_URL}
-
 # --- MAIN DATABASE COMMANDS ---
 
 # Apply all migrations
@@ -80,10 +77,22 @@ db/migrations/migrate-down-1:
 	@echo "Rolling back one migration..."
 	@migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" -verbose down 1
 
-# Create database
 db/create:
 	@echo "Creating database..."
-	@set PGPASSWORD=$(DB_PASSWORD) && createdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) $(DB_NAME)
+	@set PGPASSWORD=$(DB_PASSWORD) && "$(PG_BIN)createdb" -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) $(DB_NAME) [cite: 6]
+
+# Create test database
+test/db/create:
+	@echo "Creating test database..."
+	@set PGPASSWORD=$(TEST_DB_PASSWORD) && "$(PG_BIN)createdb" -h $(TEST_DB_HOST) -p $(TEST_DB_PORT) -U $(TEST_DB_USER) $(TEST_DB_NAME)
+
+# Open PSQL shell (Connecting to 'postgres' system db first to avoid 'db doesn't exist' error)
+db/psql:
+	@set PGPASSWORD=$(DB_PASSWORD) && "$(PG_BIN)psql" -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) -d postgres
+
+# Full Setup (One command for fresh installs)
+setup/all: db/create test/db/create db/migrations/up test/db/migrate/up
+	@echo "All databases created and migrated."
 
 # Drop database
 db/drop:
@@ -95,11 +104,6 @@ db/reset: db/drop db/create db/migrations/up
 	@echo "Database reset complete"
 
 # --- TEST DATABASE COMMANDS ---
-
-# Create Test database
-test/db/create:
-	@echo "Creating TEST database..."
-	@set PGPASSWORD=$(TEST_DB_PASSWORD) && createdb -h $(TEST_DB_HOST) -p $(TEST_DB_PORT) -U $(TEST_DB_USER) $(TEST_DB_NAME)
 
 # Drop Test database
 test/db/drop:
@@ -119,6 +123,14 @@ test/db/migrate/down:
 # Reset Test Database
 test/db/reset: test/db/drop test/db/create test/db/migrate/up
 	@echo "Test Database reset complete"
+
+db/migrations/up:
+	@echo "Running up migrations..."
+	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" -verbose up
+
+test/db/migrate/up:
+	@echo "Running test migrations..."
+	migrate -path $(MIGRATIONS_DIR) -database "$(TEST_DB_URL)" -verbose up
 
 # --- TESTING & TOOLS ---
 
